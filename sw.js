@@ -1,42 +1,57 @@
 /* Planer Service Worker: macht die ganze App offline nutzbar – Planer, Schule, Pause, Training, Mobility,
- * Atmung, Bahnplan und Bibel. Seiten: erst Netz (Updates kommen sofort an), ohne Netz aus dem Speicher.
- * Übrige Dateien: aus dem Speicher, im Hintergrund aktualisiert. Die Cloud-Sicherung ist nur ein Zusatz –
+ * Atmung, Bahnplan und Bibel. Seiten und Dateien kommen sofort aus dem Speicher
+ * und werden im Hintergrund aufgefrischt; eine neue Version lädt „Version aktualisieren“ sofort.
+ * Die Cloud-Sicherung ist nur ein Zusatz –
  * ohne Netz läuft alles mit den Daten auf dem Gerät weiter. */
-const VERSION = 'planer-app-v1';
-const SHELL = ['./', './index.html', './schule/', './pause/', './training/', './training/mobility/', './training/atmung/', './training/bahnplan/',
-  './bibel/', './bibel/elb1905.json', './manifest.json', './inter.woff2', './icon-192.png', './icon-512.png', './icon-maskable-192.png', './icon-maskable-512.png',
-  './apple-touch-icon.png', './favicon.png'];
+const VERSION = 'planer-2.0.0';
+const SHELL = [
+  './', './index.html', './schule/', './pause/', './training/', './training/mobility/',
+  './training/atmung/', './training/bahnplan/', './bibel/', './bibel/elb1905.json', './manifest.json', './inter.woff2',
+  './icon-192.png', './icon-512.png', './icon-maskable-192.png', './icon-maskable-512.png', './apple-touch-icon.png', './favicon.png',
+  './bibel/js/1-app.js?v=2.0.0', './js/1-app.js?v=2.0.0', './pause/js/1-app.js?v=2.0.0', './schule/js/1-app.js?v=2.0.0', './sg/design.js?v=2.0.0', './sg/install.js?v=2.0.0',
+  './sg/training-suite.js?v=2.0.0', './sg/uebersicht.js?v=2.0.0', './sg/verbund.js?v=2.0.0', './training/atmung/js/1-app.js?v=2.0.0', './training/bahnplan/js/1-app.js?v=2.0.0', './training/js/1-core.js?v=2.0.0',
+  './training/js/10-app.js?v=2.0.0', './training/js/11-app.js?v=2.0.0', './training/js/12-app.js?v=2.0.0', './training/js/13-app.js?v=2.0.0', './training/js/14-app.js?v=2.0.0', './training/js/2-pools.js?v=2.0.0',
+  './training/js/3-sports.js?v=2.0.0', './training/js/4-stretch.js?v=2.0.0', './training/js/5-rodeln.js?v=2.0.0', './training/js/6-gym.js?v=2.0.0', './training/js/7-weather.js?v=2.0.0', './training/js/8-github.js?v=2.0.0',
+  './training/js/9-analysis.js?v=2.0.0', './training/js/csv-worker.js?v=2.0.0', './training/mobility/js/1-app.js?v=2.0.0'
+];
 
 self.addEventListener('install', e => {
-  // einzeln laden: fehlt eine Datei, landen die übrigen trotzdem im Speicher
-  e.waitUntil(caches.open(VERSION).then(c => Promise.all(SHELL.map(u => c.add(u).catch(() => {})))).then(() => self.skipWaiting()));
+  // einzeln und am HTTP-Zwischenspeicher vorbei laden: fehlt eine Datei, landen die übrigen trotzdem im Speicher
+  e.waitUntil(caches.open(VERSION).then(c => Promise.all(SHELL.map(u => fetch(new Request(u, { cache: 'reload' }))
+    .then(r => r.ok ? c.put(u, r) : null).catch(() => {})))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 // ohne Netz: passende Seite aus dem Speicher, sonst die Startseite des jeweiligen Teils
-function fallback(url) {
+function part(url) {
   const p = new URL(url).pathname, base = self.registration.scope.replace(location.origin, '');
   const rest = p.startsWith(base) ? p.slice(base.length) : '';
-  const part = ['training/mobility/', 'training/atmung/', 'training/bahnplan/', 'training/', 'bibel/', 'schule/', 'pause/'].find(x => rest.startsWith(x));
-  return caches.match('./' + (part || ''));
+  return './' + (['training/mobility/', 'training/atmung/', 'training/bahnplan/', 'training/', 'bibel/', 'schule/', 'pause/'].find(x => rest.startsWith(x)) || '');
+}
+function refresh(c, req, key) {
+  return fetch(req).then(res => { if (res.ok && res.type === 'basic') c.put(key || req, res.clone()); return res; });
 }
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   if (req.mode === 'navigate') {
-    e.respondWith(fetch(req).then(res => {
-      if (res.ok) { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); }
-      return res;
-    }).catch(() => caches.match(req, { ignoreSearch: true }).then(hit => hit || fallback(req.url))));
+    // Seiten sofort aus dem Speicher (schnell, auch ohne Netz) – im Hintergrund wird die Kopie aufgefrischt
+    const key = part(req.url);
+    e.respondWith(caches.open(VERSION).then(c => c.match(key).then(hit => {
+      const net = refresh(c, new Request(req.url, { cache: 'no-cache' }), key);
+      if (hit) { e.waitUntil(net.catch(() => {})); return hit; }
+      return net.catch(() => caches.match('./'));
+    })));
     return;
   }
-  e.respondWith(caches.open(VERSION).then(c => c.match(req, { ignoreSearch: true }).then(hit => {
-    const net = fetch(req).then(res => { if (res.ok) c.put(req, res.clone()); return res; }).catch(() => hit);
-    return hit || net;
-  })));
+  // Dateien gehören fest zu einer Version (Skripte tragen ?v=…): nur aus dem Speicher, nichts nachladen –
+  // so bleibt auch der übersetzte Code im Browser erhalten. Neue Dateien kommen mit der nächsten Version.
+  e.respondWith(caches.open(VERSION).then(c => c.match(req, { ignoreSearch: true }).then(hit => hit || refresh(c, req))));
 });
+// die App fragt nach der Version (für „Version aktualisieren“)
+self.addEventListener('message', e => { if (e.data === 'version') (e.ports && e.ports[0] ? e.ports[0] : e.source).postMessage({ version: VERSION }); });
 // Tipp auf eine Erinnerung öffnet die App
 self.addEventListener('notificationclick', e => {
   e.notification.close();
