@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#131313">
+<title>Sportwissenschaft</title>
+<meta name="description" content="Sportwissenschaft für Rennrodler: Lehrbuch lesen, Karteikarten, Quiz und Suche – offline">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../favicon.png">
+<style>
+/* Sportwissenschaft – Lehrbuch mit Lesemodus, Karteikarten, Quiz und Suche. Farben kommen aus dem gemeinsamen Design
+ * (Variablen unten nur als Rückfall). Der ganze Buchinhalt steckt in js/buch.js und läuft dadurch offline. */
+:root { --bg: #131313; --s1: #202020; --s2: #272727; --s3: #2f2f2f; --line: #2c2c2c; --ink: #ebebea; --muted: #9b9a97; --faint: #6b6a67; --acc: #529cca; --accfg: #10151c;
+  --ok: #30d158; --bad: #ff6b6b; --warn: #ff9f0a; --tr: #5ac8fa; --fs: 16.5px; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent;
+  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: var(--acc); }
+.bar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 2px; height: calc(56px + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) 6px 0; background: var(--bg); transition: background .2s; }
+.bar.sc { background: var(--s1); }
+.bar h2 { flex: 1; min-width: 0; margin: 0 0 0 6px; font-size: 18px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#tools { display: flex; align-items: center; flex: none; }
+.ib { width: 44px; height: 44px; border: 0; border-radius: 50%; background: none; display: flex; align-items: center; justify-content: center; flex: none; }
+.ib svg { width: 23px; height: 23px; }
+.ib:active { background: var(--s2); }
+.ib.txt { width: auto; padding: 0 12px; border-radius: 22px; font-weight: 600; font-size: 14px; }
+main { max-width: 760px; margin: 0 auto; padding: 0 16px 24px; }
+h1 { font-size: 28px; line-height: 1.15; letter-spacing: -.02em; margin: 6px 4px 4px; font-weight: 700; }
+.sub { color: var(--muted); margin: 0 4px 18px; font-size: 14.5px; }
+.grp { margin: 0 0 22px; }
+.grp > header { display: flex; align-items: baseline; margin: 0 6px 8px; font-size: 13.5px; color: var(--muted); font-weight: 600; }
+.grp > header span { flex: 1; }
+.cells { background: var(--s1); border-radius: 16px; overflow: hidden; }
+.row { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 64px; padding: 10px 14px; border: 0; background: none; text-align: left; border-top: 1px solid var(--line); }
+.row:first-child { border-top: 0; }
+.row:active { background: var(--s2); }
+.row .num { width: 36px; height: 36px; border-radius: 12px; background: var(--s3); display: flex; align-items: center; justify-content: center; font-weight: 700; flex: none; font-size: 15px; }
+.row .num.done { background: color-mix(in srgb, var(--ok) 24%, transparent); color: var(--ok); }
+.row .tx { flex: 1; min-width: 0; }
+.row .tx b { display: block; font-weight: 600; font-size: 15.5px; line-height: 1.3; }
+.row .tx small { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.row .pc { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; flex: none; }
+.meter { height: 5px; border-radius: 3px; background: var(--s3); overflow: hidden; margin-top: 7px; }
+.meter i { display: block; height: 100%; background: var(--acc); border-radius: 3px; }
+.card { background: var(--s1); border-radius: 18px; padding: 16px; margin: 0 0 16px; }
+.hero { display: flex; gap: 16px; align-items: center; }
+.ring { width: 64px; height: 64px; flex: none; }
+.btn { border: 0; border-radius: 24px; height: 46px; padding: 0 18px; background: var(--s2); font-weight: 600; font-size: 15px; }
+.btn.p { background: var(--acc); color: var(--accfg); }
+.btn.bad { background: color-mix(in srgb, var(--bad) 22%, var(--s2)); }
+.btn:disabled { opacity: .45; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.btns .btn { flex: 1; min-width: 130px; }
+.chips { display: flex; gap: 7px; overflow-x: auto; margin: 0 -16px 14px; padding: 2px 16px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: none; height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--line); background: none; font-size: 14px; font-weight: 600; color: var(--muted); }
+.chip.on { background: var(--s2); color: var(--ink); border-color: transparent; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 16px; }
+.stat { background: var(--s1); border-radius: 16px; padding: 12px; }
+.stat b { display: block; font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat small { color: var(--muted); font-size: 12.5px; }
+.empty { color: var(--muted); text-align: center; padding: 30px 10px; }
+/* ---------- Lesemodus ---------- */
+.book { font-size: var(--fs); line-height: 1.6; }
+.book h1 { font-size: 26px; margin: 4px 0 14px; }
+.book .kap { color: var(--acc); font-weight: 700; font-size: 13.5px; margin: 10px 0 0; }
+.book h3 { font-size: 1.18em; line-height: 1.3; margin: 1.9em 0 .5em; scroll-margin-top: 70px; }
+.book h4 { font-size: 1.04em; margin: 1.5em 0 .4em; color: var(--ink); scroll-margin-top: 70px; }
+.book p, .book ul, .book ol { margin: 0 0 .85em; scroll-margin-top: 70px; }
+.book ul, .book ol { padding-left: 1.3em; }
+.book li { margin: .25em 0; }
+.book b { font-weight: 650; }
+.book .note { background: var(--s1); border-left: 3px solid var(--warn); border-radius: 0 12px 12px 0; padding: 10px 12px; }
+.src { font-size: .82em; color: var(--muted); font-style: normal; }
+.src::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--faint); margin: 0 5px 1px 2px; vertical-align: middle; }
+.src.ok::before { background: var(--ok); } .src.one::before { background: var(--warn); } .src.tr::before { background: var(--tr); }
+.tw { overflow-x: auto; margin: 0 0 1em; border-radius: 12px; background: var(--s1); scroll-margin-top: 70px; }
+.book table { border-collapse: collapse; width: 100%; font-size: .9em; line-height: 1.45; }
+.book th, .book td { text-align: left; vertical-align: top; padding: 9px 11px; border-top: 1px solid var(--line); }
+.book th { color: var(--muted); font-weight: 600; font-size: .92em; border-top: 0; }
+@media (max-width: 599px) { /* Tabellen als Karten: jede Zeile ein Block mit Spaltennamen */
+  .tw.st { background: none; overflow: visible; }
+  .tw.st table, .tw.st tbody, .tw.st tr, .tw.st td { display: block; width: auto; }
+  .tw.st thead { display: none; }
+  .tw.st tr { background: var(--s1); border-radius: 12px; padding: 4px 0; margin: 0 0 8px; }
+  .tw.st td { border: 0; padding: 5px 12px; }
+  .tw.st td::before { content: attr(data-l); display: block; font-size: .78em; font-weight: 700; color: var(--muted); }
+  .tw.st td[data-l="Mach das"]::before { color: var(--ok); } .tw.st td[data-l="Lass das"]::before { color: var(--bad); }
+}
+.flash { animation: fl 1.8s ease-out; border-radius: 8px; }
+@keyframes fl { 0%, 30% { background: color-mix(in srgb, var(--acc) 30%, transparent); } 100% { background: transparent; } }
+.pager { display: flex; gap: 8px; margin: 28px 0 8px; }
+.pager button { flex: 1; text-align: left; border: 0; background: var(--s1); border-radius: 16px; padding: 12px 14px; min-height: 64px; }
+.pager button small { display: block; color: var(--muted); font-size: 12.5px; }
+.pager button b { font-weight: 600; font-size: 14.5px; }
+.pager .nx { text-align: right; }
+.progtop { position: fixed; left: 0; right: 0; top: 0; height: 3px; z-index: 31; pointer-events: none; }
+.progtop i { display: block; height: 100%; background: var(--acc); width: 0; }
+/* Blatt von unten (Inhalt, Schrift) */
+.sheet { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.45); display: none; align-items: flex-end; justify-content: center; }
+.sheet.on { display: flex; }
+.sheet .pn { width: 100%; max-width: 640px; max-height: 82vh; overflow-y: auto; background: var(--s1); border-radius: 26px 26px 0 0; padding: 10px 8px calc(18px + env(safe-area-inset-bottom, 0px)); }
+.sheet h3 { margin: 8px 14px 10px; font-size: 18px; }
+.sheet .row { border-radius: 14px; border-top: 0; min-height: 50px; }
+.sheet .row.cur { background: var(--s2); }
+/* ---------- Karteikarten ---------- */
+.fc { background: var(--s1); border-radius: 22px; padding: 20px 18px; min-height: 300px; display: flex; flex-direction: column; margin: 0 0 14px; touch-action: pan-y; transition: transform .18s; }
+.fc .lab { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.fc .q { font-size: 20px; line-height: 1.38; font-weight: 600; margin: 14px 0 10px; }
+.fc .tag { font-size: 12px; font-weight: 700; letter-spacing: .02em; }
+.fc .tag.l { color: var(--bad); } .fc .tag.m { color: var(--ok); }
+.fc .hint { color: var(--muted); font-size: 14.5px; margin-top: auto; }
+.fc .a { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 14px; font-size: 17px; line-height: 1.45; }
+.fc .why { color: var(--muted); font-size: 14.5px; margin-top: 10px; }
+.fc .go { margin-top: 12px; font-size: 14px; }
+.progline { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; margin: 2px 4px 10px; font-variant-numeric: tabular-nums; }
+/* ---------- Quiz ---------- */
+.qq { font-size: 19px; font-weight: 600; line-height: 1.38; margin: 6px 2px 16px; }
+.opt { display: block; width: 100%; text-align: left; border: 2px solid transparent; background: var(--s1); border-radius: 16px; padding: 14px 16px; margin: 0 0 9px; font-size: 15.5px; line-height: 1.4; }
+.opt.right { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, var(--s1)); }
+.opt.wrong { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, var(--s1)); }
+.opt:disabled { color: var(--ink); cursor: default; }
+.expl { background: var(--s1); border-radius: 16px; padding: 14px 16px; margin: 6px 0 14px; font-size: 15px; }
+.expl b { display: block; margin-bottom: 4px; }
+.dots { display: flex; gap: 4px; margin: 0 2px 12px; }
+.dots i { flex: 1; height: 4px; border-radius: 2px; background: var(--s3); }
+.dots i.ok { background: var(--ok); } .dots i.no { background: var(--bad); } .dots i.cur { background: var(--acc); }
+.res { text-align: center; padding: 10px 0 6px; }
+.res .big { font-size: 46px; font-weight: 800; letter-spacing: -.02em; }
+.hist { font-variant-numeric: tabular-nums; }
+/* ---------- Suche ---------- */
+.search { display: flex; align-items: center; gap: 10px; height: 52px; border-radius: 26px; background: var(--s2); padding: 0 16px; margin: 4px 0 14px; }
+.search svg { width: 21px; height: 21px; color: var(--muted); flex: none; }
+.search input { flex: 1; min-width: 0; border: 0; background: none; outline: none; font-size: 16.5px; height: 100%; }
+.hit { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 11px 14px; border-top: 1px solid var(--line); }
+.hit:first-child { border-top: 0; }
+.hit small { display: block; color: var(--muted); font-size: 12.5px; margin-bottom: 2px; }
+.hit span { font-size: 14.5px; line-height: 1.45; }
+mark { background: color-mix(in srgb, var(--acc) 35%, transparent); color: var(--ink); border-radius: 3px; padding: 0 1px; }
+/* ---------- untere Leiste (wie Bahnplan; Glas kommt aus dem gemeinsamen Design) ---------- */
+.tabs { position: fixed; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); max-width: 560px; margin: 0 auto; z-index: 40; display: flex; height: 60px; padding: 0 6px;
+  border-radius: 30px; background: var(--s1); border: 1px solid rgba(255,255,255,.08); box-shadow: 0 8px 28px rgba(0,0,0,.45); }
+.tabs button { flex: 1; border: 0; background: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; font-weight: 600; border-radius: 24px; margin: 5px 0; position: relative; }
+.tabs button svg { width: 22px; height: 22px; }
+.tabs button.on { color: var(--ink); background: rgba(255,255,255,.12); }
+.tabs .bd { position: absolute; top: 4px; left: calc(50% + 8px); min-width: 17px; height: 17px; border-radius: 9px; background: var(--acc); color: var(--accfg); font-size: 10.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+.reading .tabs { transform: translateY(140%); transition: transform .2s; }
+.reading.showtabs .tabs { transform: none; }
+@media print { .tabs, .bar, .pager, .progtop { display: none !important; } body { padding: 0; } }
+</style>
+<!-- verbund-design:start -->
+<script data-design="bahn" data-sync="" src="../sg/design.js?v=2.1.0"></script>
+<!-- verbund-design:end -->
+</head>
+<body>
+<div class="progtop"><i></i></div>
+<header class="bar"><button class="ib" id="back" aria-label="Zurück"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H5M11 5l-7 7 7 7"/></svg></button><h2 id="title">Sportwissenschaft</h2><span id="tools"></span></header>
+<main id="main"></main>
+<nav class="tabs" aria-label="Sportwissenschaft">
+  <button data-t="lesen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5"/></svg>Lesen</button>
+  <button data-t="karten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="14" height="14" rx="2.5"/><path d="M7 3h11.5A2.5 2.5 0 0 1 21 5.5V17"/></svg>Karten</button>
+  <button data-t="quiz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/></svg>Quiz</button>
+  <button data-t="suche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Suche</button>
+</nav>
+<div class="sheet" id="sheet"><div class="pn"></div></div>
+<script src="js/buch.js?v=2.1.0"></script>
+<script src="js/1-app.js?v=2.1.0"></script>
+</body>
+</html>

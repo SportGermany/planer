@@ -3,16 +3,16 @@
  * und werden im Hintergrund aufgefrischt; eine neue Version lädt „Version aktualisieren“ sofort.
  * Die Cloud-Sicherung ist nur ein Zusatz –
  * ohne Netz läuft alles mit den Daten auf dem Gerät weiter. */
-const VERSION = 'planer-2.0.0';
+const VERSION = 'planer-2.1.0';
 const SHELL = [
   './', './index.html', './schule/', './pause/', './training/', './training/mobility/',
-  './training/atmung/', './training/bahnplan/', './bibel/', './bibel/elb1905.json', './manifest.json', './inter.woff2',
-  './icon-192.png', './icon-512.png', './icon-maskable-192.png', './icon-maskable-512.png', './apple-touch-icon.png', './favicon.png',
-  './bibel/js/1-app.js?v=2.0.0', './js/1-app.js?v=2.0.0', './pause/js/1-app.js?v=2.0.0', './schule/js/1-app.js?v=2.0.0', './sg/design.js?v=2.0.0', './sg/install.js?v=2.0.0',
-  './sg/training-suite.js?v=2.0.0', './sg/uebersicht.js?v=2.0.0', './sg/verbund.js?v=2.0.0', './training/atmung/js/1-app.js?v=2.0.0', './training/bahnplan/js/1-app.js?v=2.0.0', './training/js/1-core.js?v=2.0.0',
-  './training/js/10-app.js?v=2.0.0', './training/js/11-app.js?v=2.0.0', './training/js/12-app.js?v=2.0.0', './training/js/13-app.js?v=2.0.0', './training/js/14-app.js?v=2.0.0', './training/js/2-pools.js?v=2.0.0',
-  './training/js/3-sports.js?v=2.0.0', './training/js/4-stretch.js?v=2.0.0', './training/js/5-rodeln.js?v=2.0.0', './training/js/6-gym.js?v=2.0.0', './training/js/7-weather.js?v=2.0.0', './training/js/8-github.js?v=2.0.0',
-  './training/js/9-analysis.js?v=2.0.0', './training/js/csv-worker.js?v=2.0.0', './training/mobility/js/1-app.js?v=2.0.0'
+  './training/atmung/', './training/bahnplan/', './bibel/', './bibel/elb1905.json', './wissen/', './manifest.json',
+  './inter.woff2', './icon-192.png', './icon-512.png', './icon-maskable-192.png', './icon-maskable-512.png', './apple-touch-icon.png',
+  './favicon.png', './bibel/js/1-app.js?v=2.1.0', './js/1-app.js?v=2.1.0', './pause/js/1-app.js?v=2.1.0', './schule/js/1-app.js?v=2.1.0', './sg/design.js?v=2.1.0',
+  './sg/install.js?v=2.1.0', './sg/training-suite.js?v=2.1.0', './sg/uebersicht.js?v=2.1.0', './sg/verbund.js?v=2.1.0', './training/atmung/js/1-app.js?v=2.1.0', './training/bahnplan/js/1-app.js?v=2.1.0',
+  './training/js/1-core.js?v=2.1.0', './training/js/10-app.js?v=2.1.0', './training/js/11-app.js?v=2.1.0', './training/js/12-app.js?v=2.1.0', './training/js/13-app.js?v=2.1.0', './training/js/14-app.js?v=2.1.0',
+  './training/js/2-pools.js?v=2.1.0', './training/js/3-sports.js?v=2.1.0', './training/js/4-stretch.js?v=2.1.0', './training/js/5-rodeln.js?v=2.1.0', './training/js/6-gym.js?v=2.1.0', './training/js/7-weather.js?v=2.1.0',
+  './training/js/8-github.js?v=2.1.0', './training/js/9-analysis.js?v=2.1.0', './training/js/csv-worker.js?v=2.1.0', './training/mobility/js/1-app.js?v=2.1.0', './wissen/js/1-app.js?v=2.1.0', './wissen/js/buch.js?v=2.1.0'
 ];
 
 self.addEventListener('install', e => {
@@ -28,7 +28,7 @@ self.addEventListener('activate', e => {
 function part(url) {
   const p = new URL(url).pathname, base = self.registration.scope.replace(location.origin, '');
   const rest = p.startsWith(base) ? p.slice(base.length) : '';
-  return './' + (['training/mobility/', 'training/atmung/', 'training/bahnplan/', 'training/', 'bibel/', 'schule/', 'pause/'].find(x => rest.startsWith(x)) || '');
+  return './' + (['training/mobility/', 'training/atmung/', 'training/bahnplan/', 'training/', 'bibel/', 'schule/', 'pause/', 'wissen/'].find(x => rest.startsWith(x)) || '');
 }
 function refresh(c, req, key) {
   return fetch(req).then(res => { if (res.ok && res.type === 'basic') c.put(key || req, res.clone()); return res; });

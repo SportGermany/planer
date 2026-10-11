@@ -68,6 +68,11 @@
     t_r_lauf: { a: "training", t: "Läufe & Zeiten", s: "Start-, Zwischen- und Endzeiten", ic: "timer", c: "#4aa3df", r: "bahnplan/laeufe" },
     t_r_buch: { a: "training", t: "Bahnplan drucken", s: "Buch für deinen Start", ic: "print", c: "#4aa3df", r: "bahnplan/buch" },
     t_r_warm: { a: "training", t: "Rodeln-Aufwärmen", s: "15 Minuten, durchgehend bewegt", ic: "play", c: "#4aa3df", r: "lauf", fn: "click:btnRodelnStart" },
+    t_sw: { a: "training", t: "Sportwissenschaft", s: "Lehrbuch, Karteikarten, Quiz, Suche", ic: "book", c: "#5ac8fa", k: ["t_sw_lesen", "t_sw_karten", "t_sw_quiz", "t_sw_suche"] },
+    t_sw_lesen: { a: "training", t: "Lehrbuch lesen", s: "8 Kapitel, Fortschritt wird gespeichert", ic: "book", c: "#5ac8fa", u: "wissen/#lesen", w: "sportwissenschaft buch kapitel muskel energie ernährung regeneration" },
+    t_sw_karten: { a: "training", t: "Karteikarten", s: "Merksätze und Mach-das/Lass-das", ic: "list", c: "#5ac8fa", u: "wissen/#karten", w: "lernen merksätze sportwissenschaft" },
+    t_sw_quiz: { a: "training", t: "Wissensquiz", s: "Mit Auswertung, Fehler kommen wieder", ic: "quiz", c: "#5ac8fa", u: "wissen/#quiz", w: "quiz test sportwissenschaft" },
+    t_sw_suche: { a: "training", t: "Im Buch suchen", s: "z. B. Eisbad oder Dehnen", ic: "search", c: "#5ac8fa", u: "wissen/#suche", w: "suche eisbad dehnen sportwissenschaft" },
     t_ausw: { a: "training", t: "Auswertung", s: "Analyse, Fitness, Rekorde, Export", ic: "chart", c: "#8f7cf7", k: ["t_d_ana", "t_f_fit", "t_f_rek", "t_f_ready", "t_d_exp"] },
     t_d_ana: { a: "training", t: "Analyse", s: "12 Wochen, km pro Woche, Aktivitäten", ic: "chart", c: "#8f7cf7", r: "daten" },
     t_f_fit: { a: "training", t: "Fitness", s: "Wochenrückblick, Muskelgruppen", ic: "pulse", c: "#8f7cf7", r: "fitness" },
@@ -96,7 +101,7 @@
   };
   var ROOT = {
     planer: ["p_heute", "p_kal", "p_auf", "p_woche", "p_schule", "p_pause"],
-    training: ["t_heute", "t_kal", "t_std", "t_woche", "t_lauf", "t_mob", "t_atm", "t_rod", "t_ausw"],
+    training: ["t_heute", "t_kal", "t_std", "t_woche", "t_lauf", "t_mob", "t_atm", "t_rod", "t_sw", "t_ausw"],
     bibel: ["b_heute", "b_lesen", "b_bib", "b_meine"]
   };
   var PARENT = {};
@@ -337,6 +342,8 @@
       var C = window.SharedCalendar, t = isoDay(new Date());
       if (id === "p_auf" && C && C.tasks) { var n = C.tasks.list().filter(function (q) { return !q.done && q.due && q.due <= t; }).length; return n ? '<span class="cnt">' + n + "</span>" : ""; }
       if ((id === "p_kal" || id === "t_kal") && C && C.allItems) { var m = C.allItems(t, t).length; return m ? '<span class="val">' + m + " heute</span>" : ""; }
+      if (id === "t_sw_karten" || id === "t_sw_quiz" || id === "t_sw_lesen") { var w = JSON.parse(localStorage.getItem("sg-wissen-v1") || "null"), m = w && w.sum;
+        if (m) { var v = id === "t_sw_karten" ? m.due : id === "t_sw_quiz" ? m.wrong : 0; if (v) return '<span class="cnt">' + v + "</span>"; if (id === "t_sw_lesen" && m.pct) return '<span class="val">' + m.pct + " %</span>"; } }
       if (id === "b_heute") { var b = bibleState(); if (b && b.streak) return '<span class="val">' + b.streak + (b.streak === 1 ? " Tag" : " Tage") + "</span>"; }
     } catch (x) {}
     return "";
@@ -608,6 +615,7 @@
       if (e.a === "*") { stamp("f:" + id, false); showHome("folder", id); return; }
       setTimeout(function () { var g = sc.querySelector('[data-sec="' + id + '"]'); if (g) sc.scrollTop = g.offsetTop - 64; }, 0); return;
     }
+    if (e.u) { addRecent(id); location.href = PATH + e.u; return; } // eigene Seite der App (Sportwissenschaft)
     if ((e.a !== APP && e.a !== "*") || (e.fn === "notes" && !NT())) { addRecent(id); location.href = APPS[e.a === "*" ? "planer" : e.a].path + "#sg=" + id; return; }
     if (e.fn && !e.r && ["customize", "design", "sync", "install", "week", "stdweek", "notes", "update"].indexOf(e.fn) > -1) { addRecent(id); return runFn(e, id); } // Blätter über der Übersicht, kein Seitenwechsel
     addRecent(id);

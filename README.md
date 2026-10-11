@@ -8,12 +8,15 @@ Eine App für Kalender, Aufgaben, Notizen, Schule, Pause, Training, Mobility, At
   danach kommen sie immer sofort aus dem Speicher. Die Cloud-Sicherung (GitHub Gist) gleicht nur ab, wenn Netz da ist.
 - **Übersicht:** Tabs Start · Planer · Training · Bibel (auch per Wischen). Start zeigt Jetzt, Notizen, Favoriten und Zuletzt.
 - **Notizen:** schnell festhalten, optional mit Zeitpunkt und Erinnerung; Notizen mit Zeit stehen auch im Kalender.
+- **Sportwissenschaft:** das Lehrbuch „Sportwissenschaft für Rennrodler“ in der App (Training › Sportwissenschaft): Lesemodus mit gespeichertem Fortschritt,
+  Karteikarten aus Merksätzen und Mach-das/Lass-das-Tabellen, Quiz mit Auswertung, Suche. Inhalt: `wissen/buch.md` → `wissen/js/buch.js`.
 - **Standardwoche:** die normale Trainingswoche einmal festlegen und jede Woche mit einem Tipp übernehmen (Training › Standardwoche).
 - **Aufbau:**
   - `index.html` – Planer mit der Übersicht (Startseite der App)
   - `schule/`, `pause/` – Bereiche des Planers
   - `training/` – Training, darin `mobility/`, `atmung/`, `bahnplan/`
   - `bibel/` – Elberfelder Bibel 1905 (`elb1905.json`)
+  - `wissen/` – Sportwissenschaft (Lehrbuch, Karteikarten, Quiz, Suche)
   - `sg/` – gemeinsame Teile aller Seiten (Design, Verbund mit Kalender/Aufgaben/Notizen/Sync, Übersicht)
   - `js/` in jedem Ordner – die Skripte der jeweiligen Seite (als Dateien, damit der Browser sie schneller startet)
 - **Neue Version veröffentlichen:** Versionsnummer erhöhen (sie steht in `sw.js` und an jeder Skriptdatei als `?v=`),
