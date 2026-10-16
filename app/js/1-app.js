@@ -525,6 +525,8 @@
 
   /* ---------- Start ---------- */
   navEl.innerHTML = TABS.map(function (t) { return '<button data-tab="' + t[0] + '"><span class="pill">' + ico(t[2]) + "</span>" + t[1] + "</button>"; }).join("");
+  // Offline-Speicher für die ganze App (Service Worker liegt in /planer/, gilt für alle Seiten)
+  if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("../sw.js", { scope: "../" }).catch(function () {});
   function start() {
     if (!C()) return setTimeout(start, 30);
     C().onChange(function () { clearTimeout(refresh.t); refresh.t = setTimeout(refresh, 100); });
