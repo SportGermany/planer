@@ -1,3 +1,16 @@
+/* Eine App, eine Hülle: Jede Seite (Planer, Training, Bibel, Module) läuft in /planer/app/ – dort gibt es eine
+ * Navigation für alles. Wird eine einzelne Seite direkt geöffnet (alte Lesezeichen, Benachrichtigungen, Verknüpfungen),
+ * geht es sofort in die Hülle an die passende Stelle. ?einzeln in der Adresse öffnet die Seite ausnahmsweise allein. */
+(function () {
+  try {
+    var top = window.self === window.top, B = "/" + (location.pathname.split("/")[1] || "") + "/";
+    if (top && !/\/app\/(index\.html)?$/.test(location.pathname) && !/[?&]einzeln/.test(location.search) && location.protocol !== "file:") {
+      var rest = location.pathname.slice(B.length).replace(/index\.html$/, "");
+      location.replace(B + "app/#u=" + encodeURIComponent(rest + location.hash));
+      document.documentElement.style.visibility = "hidden";
+    }
+  } catch (e) {}
+})();
 /* SportGermany-Design: 10 dunkle Farbwelten für alle Apps. Läuft im <head>, damit beim Laden nichts aufblitzt.
  * Die Wahl liegt im gemeinsamen Speicher (gilt sofort für alle Apps) und wird vom Verbund-Sync mit abgeglichen.
  * data-design nennt, welche CSS-Variablen die jeweilige App benutzt. */
@@ -79,6 +92,8 @@
     puls: ".panel",
     bibel: ".quote-card,.passage.show,.settings-section,.stat-box"
   };
+  // Was in der Hülle zusätzlich entfällt (die Hülle hat eine Navigation für alles)
+  var SHELLHIDE = { kalender: ".side,.bar .menu-btn,.bar .back,.sgappb{display:none!important}", panel: "#s-heute>.brand{display:none!important}" };
   var GLASS_NAV = {
     kalender: [".tabbar", ".tabbar button.on"],
     // die Schule zeigt ab 900 px (und im Querformat) eine Leiste am linken Rand – die bleibt unverändert
@@ -98,7 +113,7 @@
     if (cards) css += cards + "{background-color:" + t.s1 + "!important;border:0!important;border-radius:14px!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}";
     var nav = GLASS_NAV[MODE];
     // In der Übersicht-Navigation steuert die Übersicht die Unterseiten der Bereiche – deren eigene Leiste entfällt
-    if (nav && DIRPARENT) return css + nav[0] + "{display:none!important}";
+    if (nav && DIRPARENT) return css + nav[0] + "{display:none!important}" + (SHELLHIDE[MODE] || "");
     if (nav && nav[2]) { var inner = glassNav(t, nav, g); return css + "@media " + nav[2] + "{" + inner + "}"; }
     if (nav) css += glassNav(t, nav, g);
     return css;
@@ -197,7 +212,7 @@
 (function () {
   "use strict";
   if (window.SGFixUrl) return;
-  var VERSION = "2.1.0";
+  var VERSION = "3.0.0";
   window.SGVersion = VERSION;
   var BASE = "/" + (location.pathname.split("/")[1] || "") + "/";
   var MAP = { trainingsblog: "training/", pulsplan: "training/atmung/", rodeln: "training/mobility/", schulplaner: "", kalender: "",
@@ -226,8 +241,16 @@
   if (need) migrate();
   window.addEventListener("sg-cloud-applied", migrate);
   document.addEventListener("click", function (e) {
-    var a = e.target && e.target.closest && e.target.closest("a[href]"); if (!a) return;
+    var path = e.composedPath ? e.composedPath() : [e.target], a = null;
+    for (var i = 0; i < path.length && !a; i++) if (path[i].tagName === "A" && path[i].hasAttribute("href")) a = path[i];
+    if (!a) return;
     var h = a.getAttribute("href"), n = fix(h); if (n !== h) a.setAttribute("href", n);
+    // in der Hülle: ein Link in einen anderen Bereich der App springt dort hin, statt diese Seite zu wechseln
+    var SH = null; try { SH = window.top.SGShell; } catch (x) {}
+    if (!SH || a.target === "_blank" || a.hasAttribute("download")) return;
+    var u = new URL(n, location.href);
+    if (u.origin !== location.origin || u.pathname.indexOf(BASE) !== 0 || u.pathname === location.pathname) return;
+    e.preventDefault(); e.stopPropagation(); SH.openUrl(u.pathname.slice(BASE.length) + u.hash);
   }, true);
 })();
 /* Version und „Version aktualisieren“: fragt sw.js auf dem Server nach der aktuellen Versionsnummer.

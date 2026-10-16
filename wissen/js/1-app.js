@@ -67,7 +67,14 @@
     b.addEventListener("click", function () { var t = b.dataset.t; if (location.hash.slice(1) !== t) go("#" + t, true); });
   });
   addEventListener("hashchange", route);
-  function setBar(title, toolsHTML) { titleEl.textContent = title; tools.innerHTML = toolsHTML || ""; }
+  var SH = null; try { SH = window.top !== window && window.top.SGShell; } catch (e) {}
+  if (SH) document.documentElement.classList.add("inshell");
+  function setBar(title, toolsHTML) {
+    titleEl.textContent = title; tools.innerHTML = toolsHTML || "";
+    // in der Hülle führt deren Navigation zurück – der eigene Pfeil nur in Unterseiten (Kapitel, Lernrunde, Quiz)
+    var h = location.hash.slice(1), root = !h || ["lesen", "karten", "quiz", "suche"].indexOf(h) > -1;
+    document.getElementById("back").style.display = SH && root ? "none" : "";
+  }
   function tab(t) {
     document.querySelectorAll(".tabs button").forEach(function (b) { b.classList.toggle("on", b.dataset.t === t); });
     var due = dueCards(allCards()).length, wr = Object.keys(S.quiz.wrong).length;

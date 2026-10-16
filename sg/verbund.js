@@ -1345,7 +1345,7 @@
         return "<button type='button' data-mon='" + x[0] + "' class='" + (wp.mon === x[0] ? "on" : "") + "'>" + x[1] + "<small>KW " + kw(x[0]) + " · " + shortDate(x[0]) + "–" + shortDate(plusDays(x[0], 6)) + "</small></button>";
       }).join("") + "</div>";
       if (c.planned[wp.mon]) h += "<p class='cl'>Diese Woche ist schon geplant. Neu planen ersetzt die Einträge der letzten Planung – selbst angelegte Termine bleiben.</p>";
-      h += "<div class='stdbox'><div class='sh'><b>Standardwoche</b><a href='#' data-w='stdedit'>" + (c.std ? "Bearbeiten" : "") + "</a></div>" + (c.std
+      h += "<div class='stdbox'><div class='sh'><b>Standardwoche</b>" + (c.std ? "<a href='#' data-w='stdedit'>Bearbeiten</a>" : "") + "</div>" + (c.std
         ? "<p class='txt m'>" + esc(stdSummary(c.std)) + "</p><div class='act2'><button class='b p' data-w='stdapply'>Standardwoche übernehmen</button><button class='b' data-w='stdadjust'>Erst anpassen</button></div>"
         : "<p class='txt m'>Lege einmal fest, wie deine normale Trainingswoche aussieht – danach trägst du jede Woche mit einem Tipp ein und änderst nur noch, was anders ist.</p><div class='act2'><button class='b p' data-w='stdedit'>Standardwoche festlegen</button></div>") + "</div>";
       var topics = [["training", "Training & Laufen"], ["mobility", "Mobility & Atmung"], ["lernen", "Lernen & Prüfungen"]].filter(function (x) { return c.topics[x[0]]; });
@@ -1570,7 +1570,10 @@
   /* ---------- App-Wechsler (oben) und Befehle (⌘) ----------
    * Eine schmale Glasleiste oben: Planer · Training · Bibel und ⌘ für alle Befehle. In eingebetteten Bereichen nicht. */
   var CMD_EXTRA = [], PAL_OVERRIDE = null;
+  // Läuft die App in der gemeinsamen Hülle (/planer/app/), springt sie dort hin statt die Seite zu wechseln
+  function shell() { try { return window.top.SGShell || null; } catch (e) { return null; } }
   function go(appId, hash) {
+    var SH = shell(); if (SH) return SH.openApp(appId, hash || "");
     if (appId === ME.id) { if (location.hash === (hash || "#")) window.dispatchEvent(new HashChangeEvent("hashchange")); else location.hash = hash || ""; return; }
     var a = APPS.find(function (x) { return x.id === appId; }); location.href = appUrl(a) + (hash || "");
   }
@@ -1629,7 +1632,7 @@
       var t = iso(new Date()), seen = {};
       allItems(plusDays(t, -60), plusDays(t, 120)).forEach(function (e) {
         if (seen[e.id] || (e.title + " " + (e.note || "")).toLowerCase().indexOf(ql) < 0) return; seen[e.id] = 1;
-        out.push({ g: "Termine", label: e.title, k: shortDate(e.date) + (e.time ? " " + e.time : ""), run: function () { if (e.linkApp && e.linkApp !== ME.id) location.href = window.SGFixUrl ? window.SGFixUrl(e.link) : e.link; else if (e.linkHash) go(ME.id, e.linkHash); else openPanel(e.date); } });
+        out.push({ g: "Termine", label: e.title, k: shortDate(e.date) + (e.time ? " " + e.time : ""), run: function () { if (e.linkApp && e.linkApp !== ME.id) { var SH = shell(), u = window.SGFixUrl ? window.SGFixUrl(e.link) : e.link; if (SH) SH.openUrl(u); else location.href = u; } else if (e.linkHash) go(ME.id, e.linkHash); else openPanel(e.date); } });
       });
       api.tasks.list().forEach(function (x) { if (!x.done && x.title.toLowerCase().indexOf(ql) > -1) out.push({ g: "Aufgaben", label: x.title, k: x.due ? shortDate(x.due) : "", run: function () { go("planer", "#tasks"); } }); });
     }
@@ -1753,6 +1756,9 @@
   }
   if (!EMBED) { window.addEventListener("hashchange", hashCmd); setTimeout(hashCmd, 300); }
   api.palette = openPalette;
+  // Neuer Termin an einem Tag / bestehenden Termin bearbeiten (für den Kalender der Hülle)
+  api.newEvent = function (date) { openPanel(date); state.edit = { date: date || iso(new Date()), app: APP }; render(); };
+  api.editEvent = function (id, date) { var e = load().events.find(function (x) { return x.id === id && !x.deleted; }); openPanel(date || (e && e.date)); if (e) { state.edit = Object.assign({}, e); render(); } };
   api.openDesign = function () { openPanel(null, "design"); };
   api.openSync = function () { openPanel(null, "sync"); };
   api.wordsMatch = wordsMatch;

@@ -1,26 +1,99 @@
 {
   "name": "Planer",
   "short_name": "Planer",
-  "description": "Eine App für Kalender, Aufgaben, Schule, Pause, Training, Mobility, Atmung, Rodeln und Bibel – läuft vollständig offline.",
+  "description": "Eine App für Kalender, Training, Mobility, Atmung, Schule, Aufgaben, Notizen, Bibel und Sportwissenschaft – läuft vollständig offline.",
   "id": "./",
-  "start_url": "./",
+  "start_url": "./app/",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#131313",
   "theme_color": "#131313",
   "lang": "de",
-  "categories": ["productivity", "health", "education", "books"],
+  "categories": [
+    "productivity",
+    "health",
+    "education",
+    "books"
+  ],
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "Kalender", "short_name": "Kalender", "description": "Tag, Woche, Monat", "url": "./#sg=p_kal", "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }] },
-    { "name": "Aufgaben", "short_name": "Aufgaben", "description": "Heute fällig", "url": "./#sg=p_auf", "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }] },
-    { "name": "Training heute", "short_name": "Training", "description": "Bereitschaft und Einheiten", "url": "./training/#sg=t_heute", "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }] },
-    { "name": "Bibel weiterlesen", "short_name": "Bibel", "description": "Abschnitt von heute", "url": "./bibel/#sg=b_lesen", "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }] }
+    {
+      "name": "Kalender",
+      "short_name": "Kalender",
+      "description": "Heute und die Woche",
+      "url": "./app/#kalender",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Training heute",
+      "short_name": "Training",
+      "description": "Bereitschaft und Einheiten",
+      "url": "./app/#training/heute",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Mobility",
+      "short_name": "Mobility",
+      "description": "Tagesblock starten",
+      "url": "./app/#mobility/mobility/heute",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Notizen",
+      "short_name": "Notizen",
+      "description": "Schnell etwas festhalten",
+      "url": "./app/#notizen",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
   ]
 }

@@ -61,6 +61,9 @@
   var frames = {}, openId = null;
   function openMod(id, sub) {
     if (!MODS[id]) return;
+    // in der gemeinsamen Hülle: Mobility/Atmung/Bahnplan dort öffnen (eigenes Ziel unten) statt als Fenster im Training
+    var SH = null; try { SH = window.top !== window && window.top.SGShell; } catch (e) {}
+    if (SH) { SH.openModule(id, sub || ""); if (MODS[location.hash.replace("#", "").split("/")[0]]) history.replaceState(null, "", location.pathname); return; }
     openId = id; wrap.hidden = false; wrap.querySelector("b").textContent = MODS[id].title;
     Object.keys(frames).forEach(function (k) { frames[k].hidden = k !== id; });
     if (!frames[id]) { var f = document.createElement("iframe"); f.src = MODS[id].src; f.title = MODS[id].title; frames[id] = f; wrap.appendChild(f); }
@@ -326,7 +329,8 @@
   try { A.renderAll(); } catch (e) {} // Bereitschaft jetzt mit HRV neu berechnen
   fromHash();
   // Schneller öffnen: Mobility und Atmung im Leerlauf schon im Hintergrund laden
-  (window.requestIdleCallback || function (f) { return setTimeout(f, 2500); })(function () {
+  var inShell = false; try { inShell = window.top !== window && !!window.top.SGShell; } catch (e) {}
+  if (!inShell) (window.requestIdleCallback || function (f) { return setTimeout(f, 2500); })(function () {
     // erst nach dem Start vorladen, nacheinander – so bleibt die App beim Öffnen flüssig
     var ids = Object.keys(MODS);
     (function next(i) {

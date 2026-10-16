@@ -1656,7 +1656,7 @@ function switchTab(name){
     t.classList.toggle("on", t.dataset.t === name);
   });
   var fab = $("fabAdd");
-  if (fab) fab.style.display = (name === "lauf" && S.uiPrefs.showFab !== false) ? "flex" : "none";
+  if (fab) fab.style.display = (name === "lauf" && (S.uiPrefs || {}).showFab !== false) ? "flex" : "none";
   window.scrollTo(0,0);
   renderAll();
 }
