@@ -33,6 +33,8 @@ async function fillAll(frame, all) {
     return { n, bad };
   }, all);
 }
+const navBad = [];
+const navOk = p => p.evaluate(() => { const n = document.getElementById('nav').getBoundingClientRect(); return n.height >= 50 && n.top >= 0 && n.bottom <= innerHeight + 1 && !document.scrollingElement.scrollTop; });
 (async () => {
   server(true);
   const b = await chromium.launch({ executablePath: process.env.SG_CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
@@ -67,12 +69,14 @@ async function fillAll(frame, all) {
           const txt = f ? await f.evaluate(() => document.body.innerText.length).catch(() => 0) : 0;
           const fl = f ? await fillAll(f, false).catch(() => ({ n: 0, bad: ['?'] })) : { n: 0, bad: ['keine Seite'] };
           total += fl.n;
+          if (!await navOk(p)) navBad.push(t + '/' + s + (k ? '/' + k : ''));
           log(txt > 20 && !errs.length && !fl.bad.length, 'Offline: ' + t + ' › ' + s + (k ? ' › ' + k : '') + ' (' + fl.n + ' Felder)' + (errs.length ? ' Fehler: ' + errs.join('|') : '') + (fl.bad.length ? ' nicht: ' + fl.bad.join(',') : '') + (txt > 20 ? '' : ' leer'));
         }
       }
     }
     // alle Felder jeder eingebetteten Seite (auch in geschlossenen Dialogen)
     for (const f of p.frames()) { if (f === p.mainFrame()) continue; const fl = await fillAll(f, true).catch(() => ({ n: 0, bad: [] })); total += fl.n; if (fl.bad.length) log(false, 'nicht bedienbar in ' + f.url() + ': ' + fl.bad.join(',')); }
+    log(!navBad.length, 'Offline: untere Leiste in jedem Bereich sichtbar' + (navBad.length ? ' – fehlt: ' + navBad.join(', ') : ''));
     log(total > 80, 'Insgesamt ' + total + ' Eingabefelder offline bedient');
     // Mehr: jede Unterseite offline
     for (const m of ['aufgaben', 'notizen', 'bibel', 'pause', 'tset']) {

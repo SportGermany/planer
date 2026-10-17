@@ -2,211 +2,216 @@
  [
   true,
   "A Hülle lädt ohne Fehler (Handy)",
-  2512
+  2520
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Handy): /planer/",
-  1711
+  1803
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Handy): /planer/schule/",
-  1768
+  1983
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Handy): /planer/pause/",
-  1764
+  1809
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Handy): /planer/training/",
-  1924
+  2014
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Handy): /planer/training/mobility/",
-  1726
+  1761
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Handy): /planer/training/atmung/",
-  1693
+  1700
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Handy): /planer/training/bahnplan/",
-  1687
- ],
- [
-  true,
-  "A Seite einzeln ohne Fehler (Handy): /planer/bibel/",
   1697
  ],
  [
   true,
+  "A Seite einzeln ohne Fehler (Handy): /planer/bibel/",
+  1696
+ ],
+ [
+  true,
   "A Seite einzeln ohne Fehler (Handy): /planer/wissen/",
-  1660
+  1684
  ],
  [
   true,
   "A Hülle lädt ohne Fehler (Tablet)",
-  2436
+  2413
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Tablet): /planer/",
-  1886
+  1815
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Tablet): /planer/schule/",
-  1865
+  1853
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Tablet): /planer/pause/",
-  1668
+  1772
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Tablet): /planer/training/",
-  1893
+  1940
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Tablet): /planer/training/mobility/",
-  1723
+  1730
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Tablet): /planer/training/atmung/",
-  1683
+  1687
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Tablet): /planer/training/bahnplan/",
-  1646
+  1682
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Tablet): /planer/bibel/",
-  1681
+  1699
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Tablet): /planer/wissen/",
-  1626
+  1639
  ],
  [
   true,
   "A Alte Adressen landen in der Hülle an der richtigen Stelle",
-  23012
+  23394
  ],
  [
   true,
   "A Offline-Speicher: frisches Gerät öffnet nur die Hülle → Service Worker aktiv, alles gespeichert",
-  423
+  507
  ],
  [
   true,
   "S Alle Ziele und jeder Unterpunkt öffnen die richtige Seite",
-  48295
+  48518
  ],
  [
   true,
   "S Eingebettete Seiten ohne eigene Leisten, Hülle ohne Überlauf",
-  15931
+  16035
  ],
  [
   true,
   "S Kalender: Woche, Monat, Tag wählen, Wischen, Danach",
-  3466
+  3468
  ],
  [
   true,
   "S Kalender verknüpft: Starten führt in Training und Atmung, Zurück-Geste zum Kalender",
-  8240
+  8278
  ],
  [
   true,
   "S Bereiche verknüpft: „Dazu heute“ im Training öffnet Mobility in der Hülle",
-  7775
+  7801
  ],
  [
   true,
   "S Plus: Aufgabe, Notiz und Termin für den gewählten Tag",
-  13181
+  13321
  ],
  [
   true,
   "S Notizen: anlegen, bearbeiten, erledigen, löschen",
-  7754
+  7900
  ],
  [
   true,
   "S Mehr: Aufgaben, Bibel, Pause, Sportwissenschaft, Training einstellen, Design, Cloud",
-  16639
+  16577
  ],
  [
   true,
   "S Zurück: Kalender → Ziel → Zurück = Kalender; zwischen Zielen wird ersetzt",
-  6962
+  6782
  ],
  [
   true,
   "S Tablet: Seitenleiste links, Inhalt rechts",
-  2572
+  2417
  ],
  [
   true,
   "S Design: Pillen mittig, Schnellkarten im Bildschirm, eine Akzentfarbe in allen Bereichen",
-  7063
+  6954
+ ],
+ [
+  true,
+  "S Leiste: immer sichtbar – alle Bereiche, Tastatur, Drehen, Hinweise, Rückkehr",
+  26459
  ],
  [
   true,
   "E Version in Mehr, Aktualisieren lädt neue Fassung",
-  3786
+  3669
  ],
  [
   true,
   "F Alte Adressen in gespeicherten Daten zeigen in die App",
-  2513
+  2403
  ],
  [
   true,
   "G Standardwoche festlegen und mit einem Tipp aus dem Kalender übernehmen",
-  5474
+  5235
  ],
  [
   true,
   "J Manifest startet in der Hülle, alles im Bereich der App",
-  294
+  213
  ],
  [
   true,
   "L Lesen: 8 Kapitel, Fortschritt und Leseposition bleiben gespeichert",
-  5463
+  5275
  ],
  [
   true,
   "L Inhalt und Schriftgröße im Lesemodus",
-  1876
+  1652
  ],
  [
   true,
   "L Karteikarten: Merksätze und Mach/Lass, Nochmal kommt wieder, Gewusst wird fällig später",
-  1999
+  1873
  ],
  [
   true,
   "L Quiz: Auswertung, falsche Antworten kommen wieder und verschwinden bei richtiger Antwort",
-  3045
+  2862
  ],
  [
   true,
   "L Suche über das ganze Buch (Eisbad, Dehnen, Umlaute) und Sprung zur Stelle",
-  1995
+  1854
  ]
 ]

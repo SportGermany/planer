@@ -19,7 +19,14 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; }
 body { background: var(--bg); color: var(--ink); font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; overflow: hidden;
-  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr auto; grid-template-areas: "top" "chips" "stage" "nav"; height: 100dvh; }
+  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr auto; grid-template-areas: "top" "chips" "stage" "nav";
+  /* fest am Bildschirm statt height:100dvh – Chrome auf Android liefert dvh nach Tastatur, Drehen oder App-Wechsel manchmal zu groß,
+     dann rutscht die untere Leiste aus dem Bild */
+  position: fixed; inset: 0; height: auto; overscroll-behavior: none; }
+/* Behälter des Verbunds (Shadow-DOM, Inhalte schweben) darf keine Rasterzeile belegen */
+body > #sg-shared-calendar { position: fixed; top: 0; left: 0; width: 0; height: 0; z-index: 2147483000; } /* fest = eigene Ebene: muss über allem liegen wie vorher */
+/* Hinweise des Verbunds (Erinnerung, Woche planen, Sync) über der Leiste statt darauf */
+@media (max-width: 899px) { body > #sg-shared-calendar { --sg-toast-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); } }
 button, input, textarea, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 /* ---------- Kopf ---------- */
@@ -63,6 +70,8 @@ button { cursor: pointer; }
   body { grid-template-columns: 92px minmax(0, 1fr); grid-template-rows: auto auto 1fr; grid-template-areas: "nav top" "nav chips" "nav stage"; }
   .nav { flex-direction: column; justify-content: flex-start; gap: 10px; height: auto; padding: calc(16px + var(--top)) 0 16px; border-top: 0; border-right: 1px solid var(--line); }
   .nav button { flex: none; height: 64px; }
+  .nav { overflow-y: auto; scrollbar-width: none; }
+  @media (max-height: 440px) { .nav { gap: 2px; padding-top: calc(8px + var(--top)); } .nav button { height: 56px; } }
   .native { padding: 8px 32px 40px; }
   .native > .wrap { max-width: 860px; margin: 0 auto; }
 }
@@ -171,7 +180,7 @@ button { cursor: pointer; }
 .snack button { border: 0; background: none; color: var(--acc); font-weight: 700; padding: 8px 10px; }
 </style>
 <!-- verbund-design:start -->
-<script data-design="bahn" data-sync="" data-dir="1" src="../sg/design.js?v=3.1.0"></script>
+<script data-design="bahn" data-sync="" data-dir="1" src="../sg/design.js?v=3.1.1"></script>
 <!-- verbund-design:end -->
 </head>
 <body>
@@ -187,9 +196,9 @@ button { cursor: pointer; }
 <nav class="nav" id="nav" aria-label="Bereiche"></nav>
 <div class="sheet" id="sheet"><div class="pn"></div></div>
 <div class="snack" id="snack"></div>
-<script src="js/1-app.js?v=3.1.0"></script>
+<script src="js/1-app.js?v=3.1.1"></script>
 <!-- gemeinsamer-kalender:start -->
-<script data-app="planer" data-fab="off" src="../sg/verbund.js?v=3.1.0"></script>
+<script data-app="planer" data-fab="off" src="../sg/verbund.js?v=3.1.1"></script>
 <!-- gemeinsamer-kalender:end -->
 </body>
 </html>

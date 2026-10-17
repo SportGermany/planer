@@ -4,7 +4,7 @@ const fs = require('fs');
 const U = 'http://localhost:8765/planer/', APP = U + 'app/';
 const SEED = fs.readFileSync(__dirname + '/seed.js', 'utf8');
 const ONLY = process.argv[2] || '';
-const VER = '3.1.0';
+const VER = '3.1.1';
 const results = [];
 const PAGES = ['', 'schule/', 'pause/', 'training/', 'training/mobility/', 'training/atmung/', 'training/bahnplan/', 'bibel/', 'wissen/'];
 const PHONE = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 };
@@ -261,6 +261,37 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
       const fs = await f.evaluate(() => [...document.querySelectorAll('h1')].filter(x => x.offsetParent).map(x => parseFloat(getComputedStyle(x).fontSize)));
       assert(fs.every(x => x === 22), sel + ' Titelgröße ' + fs);
     }
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+
+  await test('S Leiste: immer sichtbar – alle Bereiche, Tastatur, Drehen, Hinweise, Rückkehr', async () => {
+    const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
+    const navOk = () => p.evaluate(() => { const n = document.getElementById('nav').getBoundingClientRect(), se = document.scrollingElement;
+      return n.height >= 50 && n.width >= 50 && n.top >= 0 && n.bottom <= innerHeight + 1 && !se.scrollTop && getComputedStyle(document.getElementById('nav')).visibility === 'visible'; });
+    await open(p, '#kalender');
+    const bad = [];
+    for (const h of ['kalender', 'training/heute', 'training/lauf', 'training/rodeln/plan', 'training/auswertung', 'training/wissen/lesen', 'mobility/mobility/heute', 'mobility/atmung/hrv', 'schule', 'schule/plan', 'mehr', 'notizen', 'aufgaben', 'bibel', 'pause', 'tset']) {
+      await p.evaluate(h => { location.hash = h; }, h); await wait(p, 900);
+      if (!await navOk()) bad.push(h);
+      // Eingabefeld der Seite antippen (Tastatur) und Inhalt ganz nach unten holen
+      for (const f of p.frames()) { if (f === p.mainFrame()) continue;
+        await f.evaluate(() => { if (!frameElement.classList.contains('on')) return; const i = [...document.querySelectorAll('input,textarea')].filter(x => x.offsetParent).pop(); if (i) i.focus(); const a = [...document.querySelectorAll('body *')].filter(x => x.offsetParent).pop(); if (a) a.scrollIntoView(); }).catch(() => {}); }
+      await p.setViewportSize({ width: 412, height: 520 }); await wait(p, 250);
+      if (!await navOk()) bad.push(h + ' Tastatur');
+      await p.setViewportSize({ width: 412, height: 915 }); await wait(p, 250);
+      if (!await navOk()) bad.push(h + ' nach Tastatur');
+    }
+    await p.setViewportSize({ width: 915, height: 412 }); await wait(p, 400);
+    const rail = await p.evaluate(() => { const b = [...document.querySelectorAll('#nav button')].map(x => x.getBoundingClientRect()); return b.every(r => r.bottom <= innerHeight + 1 && r.top >= 0); });
+    if (!rail) bad.push('quer: Knöpfe abgeschnitten');
+    await p.setViewportSize({ width: 412, height: 915 }); await wait(p, 400);
+    if (!await navOk()) bad.push('nach Drehen');
+    // Hinweis des Verbunds (Erinnerung, Woche planen …) darf die Leiste nicht verdecken
+    const over = await p.evaluate(() => { const r = document.getElementById('sg-shared-calendar').shadowRoot, v = r.querySelector('.v'), t = document.createElement('div');
+      t.className = 'toast'; t.textContent = 'Test'; v.appendChild(t); const a = t.getBoundingClientRect(), n = document.getElementById('nav').getBoundingClientRect(); t.remove(); return a.bottom > n.top + 1; });
+    if (over) bad.push('Hinweis liegt auf der Leiste');
+    assert(!bad.length, bad.join(', '));
+    assert(!(await p.evaluate(() => window.SGShellDiag())).some(d => /Leiste/.test(d.t)), 'Fehlerprotokoll meldet Leiste');
     assert(!e.length, e.join(' | ')); await c.close();
   });
 

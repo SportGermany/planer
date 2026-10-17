@@ -521,6 +521,24 @@
   /* ---------- Aktualisieren, wenn sich Daten ändern ---------- */
   function refresh() { var v = V[cur.v]; if (!v || !v.native) return; if (v.native === "kalender") renderCal(); else if (v.native === "notizen") renderNotes(); else renderMehr(); }
   addEventListener("storage", function () { clearTimeout(refresh.t); refresh.t = setTimeout(refresh, 150); });
+  /* Untere Leiste absichern: Seite darf nie verschoben sein, Leiste muss im Bild stehen. Auffälligkeiten landen im
+     Fehlerprotokoll (sg-diag-v1, abrufbar mit SGShellDiag()), damit man später sieht, wann und wobei es passiert ist. */
+  function keepNav(why) {
+    var se = document.scrollingElement || document.documentElement, moved = se.scrollTop || se.scrollLeft || document.body.scrollTop || stage.scrollTop;
+    if (moved) { se.scrollTop = se.scrollLeft = 0; document.body.scrollTop = 0; stage.scrollTop = 0; }
+    var r = navEl.getBoundingClientRect(), h = window.innerHeight, w = window.innerWidth, out = r.height < 40 || r.width < 40 || r.bottom > h + 2 || r.top < -2 || getComputedStyle(navEl).display === "none";
+    if (moved || out) diag(why + (moved ? " verschoben" : "") + (out ? " Leiste " + Math.round(r.top) + "-" + Math.round(r.bottom) + "/" + h + "x" + w : ""));
+    if (out) { navEl.style.display = "none"; void navEl.offsetHeight; navEl.style.display = ""; }
+  }
+  function diag(t) {
+    try { var k = "sg-diag-v1", l = JSON.parse(localStorage.getItem(k) || "[]"); l.push({ at: Date.now(), t: t, v: cur.v, on: navigator.onLine }); localStorage.setItem(k, JSON.stringify(l.slice(-30))); } catch (e) {}
+  }
+  window.SGShellDiag = function () { try { return JSON.parse(localStorage.getItem("sg-diag-v1") || "[]"); } catch (e) { return []; } };
+  ["resize", "orientationchange", "pageshow", "focus"].forEach(function (ev) { window.addEventListener(ev, function () { setTimeout(function () { keepNav(ev); }, 120); }); });
+  if (window.visualViewport) visualViewport.addEventListener("resize", function () { setTimeout(function () { keepNav("viewport"); }, 120); });
+  document.addEventListener("focusout", function () { setTimeout(function () { keepNav("focusout"); }, 300); }, true);
+  var scT = 0; window.addEventListener("scroll", function () { if (!scT) scT = requestAnimationFrame(function () { scT = 0; keepNav("scroll"); }); }, true);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) setTimeout(function () { keepNav("zurueck"); }, 150); });
   document.addEventListener("visibilitychange", function () { if (!document.hidden) { if (calSel < today() && cur.v === "kalender") calSel = today(); refresh(); } });
 
   /* ---------- Start ---------- */

@@ -5,6 +5,20 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## 3.1.1 – untere Leiste bleibt immer sichtbar
+
+**Wunsch:** „Die Bar (Kalender, Training, Mobility, Schule, Mehr) verschwindet manchmal“ – online und offline prüfen, immer Chrome.
+
+| Fehler | Ursache | Lösung |
+| --- | --- | --- |
+| Hinweise des Verbunds (Erinnerung, Woche planen, Sync, Installieren) lagen auf der Leiste und verdeckten sie | `.toast` unten bei 14 px mit höchstem z-index, für Seiten ohne Leiste gedacht | Variable `--sg-toast-bottom`, in der Hülle 80 px über dem Rand (Handy) |
+| Leiste konnte aus dem Bild rutschen (Android Chrome: `100dvh` nach Tastatur/Drehen/App-Wechsel zeitweise falsch) | Hülle hing an `height:100dvh` | Hülle `position:fixed; inset:0` – folgt immer dem echten Fenster |
+| Behälter `#sg-shared-calendar` lag als zusätzliche Rasterzeile im Grid der Hülle | jedes Kind von `body` wird im Grid platziert | Behälter `position:fixed`, Größe 0, z-index ganz oben (sonst lägen seine Fenster unter der Leiste – im Test gefunden) |
+| Quer auf kleinen Handys Knöpfe der Seitenleiste abgeschnitten | 5 × 64 px + Abstände > Höhe | ab Höhe ≤ 440 px kleinere Knöpfe, Leiste scrollbar |
+| (Schutz) | – | `keepNav()`: setzt verschobene Seite zurück, zeichnet Leiste neu, schreibt Fehlerprotokoll `sg-diag-v1` (`SGShellDiag()`) |
+
+Tests: neuer Test „Leiste immer sichtbar“ (alle Bereiche, Tastatur simuliert, Drehen, Hinweis), Offline-Test prüft die Leiste in jedem Bereich. suite3 43/43, offline3 43/43.
+
 ## 3.1.0 – einheitliches Design in allen Bereichen
 
 **Wunsch:** Handy-Prüfung: „Starten“/„Üben“ im Kalender nicht mittig, ragen über den Knopf; „jedes Ding hat sein eigenes Design“.

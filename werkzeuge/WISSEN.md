@@ -110,7 +110,7 @@ Neu exportieren (Docs-Export als Markdown) → `wissen/buch.md` ersetzen → Bui
 ```
 cd werkzeuge/tests && npm install          # Playwright (Browser: SG_CHROME, Standard /opt/pw-browsers/…)
 cd <Ordner über planer> && python3 -m http.server 8765 &      # App unter http://localhost:8765/planer/
-node werkzeuge/tests/suite3.js [Filter]   # Gesamt-Suite (Stand 3.1.0: 42 Tests)
+node werkzeuge/tests/suite3.js [Filter]   # Gesamt-Suite (Stand 3.1.1: 43 Tests)
 node werkzeuge/tests/offline3.js          # Offline wie installiert: einmal online, Server aus, alles prüfen (42 Prüfungen)
 node werkzeuge/tests/bahnplan-1.js / bahnplan-2.js   # Bahnplan (ERR_FAILED-Meldungen = absichtlich gesperrte Wikipedia)
 node werkzeuge/tests/upd.js               # echter Update-Weg (baut kurz Version 9.9.8, danach wieder zurück)
@@ -128,6 +128,9 @@ node werkzeuge/tests/upd.js               # echter Update-Weg (baut kurz Version
 - Debounce beim Speichern kann Daten verlieren, wenn Android die App beendet → wichtige Aktionen sofort speichern.
 - GitHub: Repos anlegen/löschen kann Claude nicht (403) – der Nutzer macht das.
 - Design der Bereiche nicht pro Seite ändern, sondern in `unifyCSS` (design.js) – gilt in der Hülle für alle gleich.
+- Hülle: kein `100dvh`, sondern `position:fixed;inset:0`. Alles, was der Verbund unten einblendet, nutzt `--sg-toast-bottom` (über der Leiste).
+- Fest positionierte Behälter bilden eine eigene Ebene – `#sg-shared-calendar` braucht deshalb den höchsten z-index.
+- Fehlerprotokoll der Hülle: `SGShellDiag()` in der Konsole bzw. `localStorage['sg-diag-v1']`.
 - Pillen/Knöpfe aus `<span>`: immer `display:inline-flex;align-items:center`, sonst sitzt der Text oben.
 - Inhalte von Seiten mit CSP `worker-src 'self'`: Worker nur aus Dateien, nicht aus `blob:`.
 
