@@ -4,7 +4,7 @@ const fs = require('fs');
 const U = 'http://localhost:8765/planer/', APP = U + 'app/';
 const SEED = fs.readFileSync(__dirname + '/seed.js', 'utf8');
 const ONLY = process.argv[2] || '';
-const VER = '3.1.1';
+const VER = '3.2.0';
 const results = [];
 const PAGES = ['', 'schule/', 'pause/', 'training/', 'training/mobility/', 'training/atmung/', 'training/bahnplan/', 'bibel/', 'wissen/'];
 const PHONE = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 };
@@ -330,6 +330,78 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     await p.click('#fab'); await p.click('#sheet [data-s=std]'); await wait(p, 400);
     assert(/ist geplant/.test(await p.locator('.wpw .txt').first().textContent()), 'übernommen');
     assert(await p.evaluate(() => SharedCalendar.list().filter(e => e.wp).length) > 0, 'Einträge');
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+
+  /* ---------- H: Handykalender (Kalenderdateien, Teilen) ---------- */
+  const SAMSUNG = ['BEGIN:VCALENDAR', 'VERSION:1.0', 'BEGIN:VEVENT', 'UID:samsung-123',
+    'SUMMARY;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:Geburtstag M=C3=BCller', 'DTSTART:20261020T160000Z', 'DTEND:20261020T170000Z',
+    'DESCRIPTION;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:Kuchen mitbringen und =', 'Geschenk', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  const ICAL = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT', 'UID:abc@google.com', 'DTSTART;TZID=Europe/Berlin:20261021T073000', 'DTEND;TZID=Europe/Berlin:20261021T080000',
+    'RRULE:FREQ=WEEKLY;UNTIL=20261231T000000Z', 'SUMMARY:Lauftreff\\, Stadtpark', 'LOCATION:Stadtpark', 'BEGIN:VALARM', 'TRIGGER:-PT30M', 'END:VALARM', 'END:VEVENT',
+    'BEGIN:VEVENT', 'UID:ferien@x', 'DTSTART;VALUE=DATE:20261102', 'DTEND;VALUE=DATE:20261107', 'SUMMARY:Herbstferien mit einem sehr langen Titel der gefaltet wer', ' den muss', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  const PHONE_DE = Object.assign({}, PHONE, { timezoneId: 'Europe/Berlin', locale: 'de-DE' });
+  await test('H Handykalender: Export nur Neues/Geändertes, Schule wählbar, gültige .ics', async () => {
+    const c = await ctxFor(PHONE_DE), p = await c.newPage(), e = watch(p);
+    await open(p, '#kalender');
+    const r = await p.evaluate(() => { const ph = SharedCalendar.phone, a = ph.pending('neu'), ics = ph.ics(a);
+      ph.markSent(a); const after = ph.pending('neu').length;
+      const ev = SharedCalendar.list().find(x => x.title === 'Zahnarzt'); SharedCalendar.update(ev.id, { time: '15:00', changed: Date.now() });
+      const ch = ph.pending('neu').map(x => x.title);
+      ph.setOpt('schule', false); const noSchool = ph.pending('alle').filter(x => x.app === 'Lernplan').length;
+      return { titles: a.map(x => x.title), n: (ics.match(/BEGIN:VEVENT/g) || []).length, ok: /^BEGIN:VCALENDAR\r\n/.test(ics) && /END:VCALENDAR\r\n$/.test(ics) && ics.split('\r\n').every(l => l.length <= 75), after, ch, noSchool }; });
+    assert(r.titles.includes('Rodeltraining') && r.titles.includes('Zahnarzt') && r.titles.some(t => /Mathematik|Schulaufgabe/.test(t)), 'Export ' + r.titles);
+    assert(r.n === r.titles.length && r.ok, 'ics-Format');
+    assert(r.after === 0, 'nach Übertragung nichts Neues');
+    assert(r.ch.length === 1 && r.ch[0] === 'Zahnarzt', 'nur geändert: ' + r.ch);
+    assert(r.noSchool === 0, 'Schule abwählbar');
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('H Handykalender: Samsung-Datei (vCalendar, Umlaute), iCal mit Zeitzone/Wiederholung/ganztägig, keine Doppelten', async () => {
+    const c = await ctxFor(PHONE_DE), p = await c.newPage(), e = watch(p);
+    await open(p, '#kalender');
+    const r = await p.evaluate(([S, I]) => { const ph = SharedCalendar.phone, a = ph.parse(S), b = ph.parse(I);
+      const r1 = ph.apply(a.concat(b)), r2 = ph.apply(ph.parse(S).concat(ph.parse(I)));
+      const own = ph.parse(ph.ics(ph.pending('alle'))), r3 = ph.apply(own);
+      return { a, b, r1, r2, r3, n: SharedCalendar.list().filter(x => x.app === 'Handy').length }; }, [SAMSUNG, ICAL]);
+    const g = r.a[0];
+    assert(g.title === 'Geburtstag Müller' && g.date === '2026-10-20' && g.time === '18:00' && g.end === '19:00' && /Kuchen mitbringen und Geschenk/.test(g.note), 'Samsung ' + JSON.stringify(g));
+    const l = r.b[0], f = r.b[1];
+    assert(l.title === 'Lauftreff, Stadtpark' && l.time === '07:30' && l.end === '08:00' && l.rep && l.rep.f === 'w' && l.rep.until === '2026-12-31' && l.remind === 30 && /Ort: Stadtpark/.test(l.note), 'iCal ' + JSON.stringify(l));
+    assert(f.time === '' && f.date === '2026-11-02' && /bis 6\.11\.2026/.test(f.note) && /gefaltet werden muss/.test(f.title), 'ganztägig ' + JSON.stringify(f));
+    assert(r.r1.added === 3 && r.r2.added === 0 && r.r2.same === 3 && r.r3.added === 0, 'Doppelte ' + JSON.stringify([r.r1, r.r2, r.r3]));
+    assert(r.n === 3, 'Handy-Termine ' + r.n);
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('H Handykalender: geteilter Text wird erkannt', async () => {
+    const c = await ctxFor(PHONE_DE), p = await c.newPage();
+    await open(p, '#kalender');
+    const r = await p.evaluate(() => [SharedCalendar.phone.parse('Zahnarzt Dr. Weber\nDi., 20. Okt. 2026 14:30 – 15:15\nPraxis am Markt'),
+      SharedCalendar.phone.parse('Training 21.10.2026 17:00'), SharedCalendar.phone.parse('ohne Datum')]);
+    assert(r[0][0].title === 'Zahnarzt Dr. Weber' && r[0][0].date === '2026-10-20' && r[0][0].time === '14:30' && r[0][0].end === '15:15' && r[0][0].note === 'Praxis am Markt', JSON.stringify(r[0]));
+    assert(r[1][0].date === '2026-10-21' && r[1][0].time === '17:00', JSON.stringify(r[1]));
+    assert(r[2].length === 0, 'ohne Datum');
+    await c.close();
+  });
+  await test('H Handykalender: Teilen › Planer (Share Target) und Mehr › Handykalender', async () => {
+    const c = await ctxFor(PHONE_DE), p = await c.newPage(), e = watch(p);
+    await p.goto(APP); await p.waitForFunction(() => navigator.serviceWorker.controller, null, { timeout: 20000 });
+    const m = await (await p.request.get(U + 'manifest.json')).json();
+    assert(m.share_target && m.share_target.method === 'POST' && m.share_target.params.files[0].accept.includes('.vcs'), 'Manifest share_target');
+    const st = await p.evaluate(async (S) => { const fd = new FormData(); fd.append('title', ''); fd.append('datei', new File([S], 'termin.vcs', { type: 'text/x-vcalendar' }));
+      const r = await fetch(new URL(navigator.serviceWorker.controller ? '../app/?teilen' : '', location.href), { method: 'POST', body: fd }); return [r.status, r.url, !!(await (await caches.open('sg-teilen')).match('geteilt.json'))]; }, SAMSUNG);
+    assert(st[0] === 200 && /planer\/app\/$/.test(st[1]) && st[2], 'Weiterleitung/Ablage ' + st);
+    await p.goto(APP + '#teilen'); await wait(p, 1200);
+    assert(/1 Termin übernehmen/.test(await p.textContent('#sheet')), 'Vorschau');
+    await p.click('#sheet [data-s=yes]'); await wait(p, 500);
+    assert(await p.evaluate(() => SharedCalendar.list().some(x => x.title === 'Geburtstag Müller' && x.app === 'Handy')), 'übernommen');
+    assert(await p.evaluate(async () => !(await (await caches.open('sg-teilen')).match('geteilt.json'))), 'Ablage geleert');
+    await p.goto(APP + '#mehr'); await wait(p, 1200);
+    await p.click('#n-mehr [data-m=handy]'); await wait(p, 300);
+    assert(/Handykalender/.test(await p.textContent('#sheet')), 'Blatt');
+    const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#sheet [data-s=outall]')]);
+    const txt = fs.readFileSync(await dl.path(), 'utf8');
+    assert(/BEGIN:VCALENDAR/.test(txt) && /SUMMARY:Rodeltraining/.test(txt) && !/samsung-123/.test(txt), 'Datei (ohne gerade aus dem Handy übernommene Termine)');
     assert(!e.length, e.join(' | ')); await c.close();
   });
 

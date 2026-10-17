@@ -231,7 +231,7 @@
 (function () {
   "use strict";
   if (window.SGFixUrl) return;
-  var VERSION = "3.1.1";
+  var VERSION = "3.2.0";
   window.SGVersion = VERSION;
   var BASE = "/" + (location.pathname.split("/")[1] || "") + "/";
   var MAP = { trainingsblog: "training/", pulsplan: "training/atmung/", rodeln: "training/mobility/", schulplaner: "", kalender: "",

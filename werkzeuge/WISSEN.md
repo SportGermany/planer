@@ -86,6 +86,9 @@ planer/
 | `pulsplan.v1` | Atmung & HRV |
 | `bahnplan.v1` | Bahnplan |
 | `zweiminutenbibel_v2` | Bibel |
+| `sg-handykalender-v1` | Handykalender: was schon ins Handy übertragen wurde, Optionen (nur dieses Gerät, nicht in der Cloud) |
+| `sg-diag-v1` | Fehlerprotokoll der Hülle (Leiste) |
+| Cache `sg-teilen` | kurzzeitig: Geteiltes aus dem Handy (Share Target) |
 | `sg-dir-v1` | frühere Übersicht (Version 2.x, nicht mehr benutzt) |
 
 Cloud-Abgleich: Gruppen in `verbund.js` (`DATA`, `EXTRA`), je Gruppe eine Datei `app-<id>.json` im Gist; Termine/Aufgaben/
@@ -100,6 +103,10 @@ Notizen eintragsweise zusammengeführt (neuere Änderung gewinnt).
    `wissen/js/buch.js`, den CSV-Worker und die Dateiliste in `sw.js`.
 4. Tests (Abschnitt 5), dann committen und pushen. Nutzer aktualisiert über Mehr › „Version aktualisieren“.
 
+### Handykalender
+Gerätekalender ist für Web-Apps gesperrt → Abgleich über .ics/.vcs: `SharedCalendar.phone` (verbund.js: `pending`, `ics`, `markSent`, `parse`, `apply`),
+Oberfläche in `app/js/1-app.js` (`phoneSheet`, `importSheet`, `takeShared`), Teilen-Ziel: `manifest.json` `share_target` + POST-Zweig in `sw.js`.
+
 ### Sportwissenschaft aktualisieren
 Das Buch ist ein Claude-Doc („Sportwissenschaft für Rennrodler“, https://claude.ai/artifact/5nhNSLmBbqpxQD1ndpYutj).
 Neu exportieren (Docs-Export als Markdown) → `wissen/buch.md` ersetzen → Build. Quizfragen und Merksatz-Fragen:
@@ -110,10 +117,10 @@ Neu exportieren (Docs-Export als Markdown) → `wissen/buch.md` ersetzen → Bui
 ```
 cd werkzeuge/tests && npm install          # Playwright (Browser: SG_CHROME, Standard /opt/pw-browsers/…)
 cd <Ordner über planer> && python3 -m http.server 8765 &      # App unter http://localhost:8765/planer/
-node werkzeuge/tests/suite3.js [Filter]   # Gesamt-Suite (Stand 3.1.1: 43 Tests)
+node werkzeuge/tests/suite3.js [Filter]   # Gesamt-Suite (Stand 3.2.0: 47 Tests)
 node werkzeuge/tests/offline3.js          # Offline wie installiert: einmal online, Server aus, alles prüfen (42 Prüfungen)
 node werkzeuge/tests/bahnplan-1.js / bahnplan-2.js   # Bahnplan (ERR_FAILED-Meldungen = absichtlich gesperrte Wikipedia)
-node werkzeuge/tests/upd.js               # echter Update-Weg (baut kurz Version 9.9.8, danach wieder zurück)
+node werkzeuge/tests/upd.js               # echter Update-Weg in der Hülle (baut kurz 9.9.8, danach wieder zurück)
 ```
 `seed.js` füllt Testdaten (Schule, Mobility, Atmung, Training, Termine).
 

@@ -5,6 +5,33 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## 3.2.0 – Handykalender
+
+**Wunsch:** „Meinen lokalen Handykalender mit der App synchronisieren, dass beides auf dem gleichen Stand ist.“ Antwort auf Rückfrage:
+Termine liegen **nur auf dem Handy** (Samsung, ohne Google-Konto), Lösung soll **nur das Handy** brauchen, **keine Google-Verknüpfung**.
+
+**Grenze (ehrlich):** Web-Apps (auch installiert in Chrome) dürfen den Gerätekalender nicht lesen oder schreiben. Ein vollautomatischer
+Abgleich ginge nur über Google-Kalender (abgelehnt) oder eine eigene Android-App. Deshalb Abgleich über Kalenderdateien – offline, ohne Konto:
+- App → Handy: Mehr › Handykalender › „n neue Termine ins Handy“ → Teilen an den Samsung-Kalender (Web Share mit .ics) oder Datei speichern.
+  Gemerkt wird pro Gerät, was schon übertragen ist (`sg-handykalender-v1`, nicht in der Cloud) → nur Neues/Geändertes. Wählbar: Schule, Atemübungen.
+- Handy → App: im Samsung-Kalender Termin › Teilen › „Planer“ (Share Target im Manifest, `sw.js` legt das Geteilte im Cache `sg-teilen` ab und
+  öffnet `app/#teilen`) oder „Kalenderdatei öffnen“ (.ics/.vcs). Vorschau, dann Übernehmen; gleiche Termine (UID bzw. Titel+Datum+Zeit) werden aktualisiert.
+- Erkennt iCalendar 2.0 (Zeitzonen, UTC, ganztägig, Wiederholung, Erinnerung, gefaltete Zeilen) und Samsungs vCalendar 1.0 (Quoted-Printable, UTF-8),
+  außerdem geteilten Text („Di., 20. Okt. 2026 14:30 – 15:15“).
+- Löschen geht nicht über Dateien → auf beiden Seiten löschen (steht im Blatt).
+- Termine aus dem Handy bekommen `app:"Handy"`, `ext:"handy:<UID>"`; sie gehen nur zurück ins Handy, wenn sie in der App geändert wurden.
+
+| Fehler | Ursache | Lösung |
+| --- | --- | --- |
+| Geteiltes kam in der App nicht an (Test) | Cache-Schlüssel relativ: SW legte unter `/planer/geteilt.json` ab, die Hülle suchte `/planer/app/geteilt.json` | SW speichert unter `app/geteilt.json` relativ zum Scope |
+| Update löschte möglicherweise Geteiltes | `activate` löscht alle fremden Caches | `sg-teilen` ausgenommen |
+| `upd.js` lief nicht mehr | Test stammte aus 2.x (Übersicht `.sgd`) | neu für die Hülle: Mehr › Version, alle Bereiche auf neuer Version, Daten erhalten |
+
+Hinweis für den Nutzer: Chrome übernimmt das neue „Teilen-Ziel“ erst, wenn es die installierte App aktualisiert (kann bis zu einem Tag dauern);
+sofort: App vom Startbildschirm entfernen und in Chrome neu installieren (Daten bleiben, sie liegen bei der Adresse).
+
+Tests: suite3 47/47 (4 neue H-Tests), offline3 44/44 (Teilen und Datei offline), upd.js grün.
+
 ## 3.1.1 – untere Leiste bleibt immer sichtbar
 
 **Wunsch:** „Die Bar (Kalender, Training, Mobility, Schule, Mehr) verschwindet manchmal“ – online und offline prüfen, immer Chrome.

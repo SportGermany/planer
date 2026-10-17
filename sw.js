@@ -3,17 +3,17 @@
  * und werden im Hintergrund aufgefrischt; eine neue Version lädt „Version aktualisieren“ sofort.
  * Die Cloud-Sicherung ist nur ein Zusatz –
  * ohne Netz läuft alles mit den Daten auf dem Gerät weiter. */
-const VERSION = 'planer-3.1.1';
+const VERSION = 'planer-3.2.0';
 const SHELL = [
   './app/', './', './index.html', './schule/', './pause/', './training/',
   './training/mobility/', './training/atmung/', './training/bahnplan/', './bibel/', './bibel/elb1905.json', './wissen/',
   './manifest.json', './inter.woff2', './icon-192.png', './icon-512.png', './icon-maskable-192.png', './icon-maskable-512.png',
-  './apple-touch-icon.png', './favicon.png', './app/js/1-app.js?v=3.1.1', './bibel/js/1-app.js?v=3.1.1', './js/1-app.js?v=3.1.1', './pause/js/1-app.js?v=3.1.1',
-  './schule/js/1-app.js?v=3.1.1', './sg/design.js?v=3.1.1', './sg/install.js?v=3.1.1', './sg/training-suite.js?v=3.1.1', './sg/verbund.js?v=3.1.1', './training/atmung/js/1-app.js?v=3.1.1',
-  './training/bahnplan/js/1-app.js?v=3.1.1', './training/js/1-core.js?v=3.1.1', './training/js/10-app.js?v=3.1.1', './training/js/11-app.js?v=3.1.1', './training/js/12-app.js?v=3.1.1', './training/js/13-app.js?v=3.1.1',
-  './training/js/14-app.js?v=3.1.1', './training/js/2-pools.js?v=3.1.1', './training/js/3-sports.js?v=3.1.1', './training/js/4-stretch.js?v=3.1.1', './training/js/5-rodeln.js?v=3.1.1', './training/js/6-gym.js?v=3.1.1',
-  './training/js/7-weather.js?v=3.1.1', './training/js/8-github.js?v=3.1.1', './training/js/9-analysis.js?v=3.1.1', './training/js/csv-worker.js?v=3.1.1', './training/mobility/js/1-app.js?v=3.1.1', './wissen/js/1-app.js?v=3.1.1',
-  './wissen/js/buch.js?v=3.1.1'
+  './apple-touch-icon.png', './favicon.png', './app/js/1-app.js?v=3.2.0', './bibel/js/1-app.js?v=3.2.0', './js/1-app.js?v=3.2.0', './pause/js/1-app.js?v=3.2.0',
+  './schule/js/1-app.js?v=3.2.0', './sg/design.js?v=3.2.0', './sg/install.js?v=3.2.0', './sg/training-suite.js?v=3.2.0', './sg/verbund.js?v=3.2.0', './training/atmung/js/1-app.js?v=3.2.0',
+  './training/bahnplan/js/1-app.js?v=3.2.0', './training/js/1-core.js?v=3.2.0', './training/js/10-app.js?v=3.2.0', './training/js/11-app.js?v=3.2.0', './training/js/12-app.js?v=3.2.0', './training/js/13-app.js?v=3.2.0',
+  './training/js/14-app.js?v=3.2.0', './training/js/2-pools.js?v=3.2.0', './training/js/3-sports.js?v=3.2.0', './training/js/4-stretch.js?v=3.2.0', './training/js/5-rodeln.js?v=3.2.0', './training/js/6-gym.js?v=3.2.0',
+  './training/js/7-weather.js?v=3.2.0', './training/js/8-github.js?v=3.2.0', './training/js/9-analysis.js?v=3.2.0', './training/js/csv-worker.js?v=3.2.0', './training/mobility/js/1-app.js?v=3.2.0', './wissen/js/1-app.js?v=3.2.0',
+  './wissen/js/buch.js?v=3.2.0'
 ];
 
 self.addEventListener('install', e => {
@@ -22,7 +22,7 @@ self.addEventListener('install', e => {
     .then(r => r.ok ? c.put(u, r) : null).catch(() => {})))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k))))
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION && k !== 'sg-teilen').map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 // ohne Netz: passende Seite aus dem Speicher, sonst die Startseite des jeweiligen Teils
@@ -36,6 +36,20 @@ function refresh(c, req, key) {
 }
 self.addEventListener('fetch', e => {
   const req = e.request;
+  // Teilen › Planer (Share Target im Manifest): Termine aus dem Handykalender – ablegen, dann die Hülle mit #teilen öffnen
+  if (req.method === 'POST' && new URL(req.url).searchParams.has('teilen')) {
+    e.respondWith((async () => {
+      const app = new URL('./app/#teilen', self.registration.scope).href;
+      try {
+        const fd = await req.formData(), files = [];
+        for (const f of fd.getAll('datei')) if (f && typeof f.text === 'function') files.push({ name: f.name || '', text: await f.text() });
+        const data = { at: Date.now(), title: fd.get('title') || '', text: fd.get('text') || '', url: fd.get('url') || '', files };
+        await (await caches.open('sg-teilen')).put(new URL('app/geteilt.json', self.registration.scope).href, new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } }));
+      } catch (x) {}
+      return Response.redirect(app, 303);
+    })());
+    return;
+  }
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   if (req.mode === 'navigate') {
     // Seiten sofort aus dem Speicher (schnell, auch ohne Netz) – im Hintergrund wird die Kopie aufgefrischt

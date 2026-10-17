@@ -1782,6 +1782,165 @@
   }
   setTimeout(stdAuto, 3000);
   api.weekPlanSave = function (c) { wpSave(c); renderWpToast(); };
+
+  /* ---------- Handykalender: Abgleich mit dem Kalender auf dem Handy über Kalenderdateien ----------
+   * Eine Web-App darf den Gerätekalender nicht direkt lesen. Darum: App → Handy als .ics (Teilen an den Samsung-Kalender
+   * oder Datei speichern), Handy → App über „Teilen › Planer“ (Datei .ics/.vcs oder Text) bzw. Datei öffnen.
+   * PKEY merkt pro Gerät, was schon übertragen wurde (wird nicht in die Cloud geladen), damit nur Neues/Geändertes rausgeht. */
+  var PKEY = "sg-handykalender-v1";
+  function pState() { var s = jkey(PKEY) || {}; s.sent = s.sent || {}; s.opt = Object.assign({ schule: true, atmung: false }, s.opt || {}); return s; }
+  function pSave(s) { try { localStorage.setItem(PKEY, JSON.stringify(s)); } catch (e) {} }
+  function pSig(e) { return [e.title, e.date, e.time || "", e.end || "", e.rep ? e.rep.f + (e.rep.until || "") : "", e.remind == null ? "" : e.remind, e.note || ""].join("|"); }
+  // Was ins Handy gehört: eigene Termine (auch Wochenplanung) und – wählbar – Schultermine/Prüfungen und Atemübungen
+  function pItems(opt) {
+    var from = iso(new Date(Date.now() - 30 * 864e5)), to = iso(new Date(Date.now() + 400 * 864e5));
+    var out = live().filter(function (e) { return e.date >= from || (e.rep && e.rep.f && (!e.rep.until || e.rep.until >= from)); })
+      .filter(function (e) { return e.app !== "Handy" || (e.changed || 0) > (e.imported || 0) + 1000; });
+    var ext = [];
+    try { ext = externalItems(from, to); } catch (x) {}
+    ext.forEach(function (x) {
+      if ((x.app === "Lernplan" && opt.schule) || (x.app === "Atmung" && opt.atmung)) out.push({ id: x.id, title: x.title, date: x.date, time: x.time || "", end: x.end || "", note: x.note || "", app: x.app });
+    });
+    return out;
+  }
+  function icsOf(list) {
+    function f(s) { return String(s).replace(/\\/g, "\\\\").replace(/\r?\n/g, "\\n").replace(/[,;]/g, "\\$&"); }
+    function stamp(date, time) { return date.replace(/-/g, "") + "T" + time.replace(":", "") + "00"; }
+    function fold(l) { var o = ""; while (l.length > 74) { o += l.slice(0, 74) + "\r\n "; l = l.slice(74); } return o + l; }
+    var now = new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
+    var out = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SportGermany//Planer//DE", "CALSCALE:GREGORIAN", "METHOD:PUBLISH"];
+    list.forEach(function (e) {
+      out.push("BEGIN:VEVENT", "UID:" + (e.ext ? e.ext.replace(/^handy:/, "") : e.id + "@planer"), "DTSTAMP:" + now, "SEQUENCE:" + Math.floor((e.changed || Date.now()) / 1000 % 2147483647));
+      if (e.time) {
+        out.push("DTSTART:" + stamp(e.date, e.time), "DTEND:" + stamp(e.date, e.end && e.end > e.time ? e.end : addMin(e.time, 60)));
+      } else {
+        var n = parse(e.date); n.setDate(n.getDate() + 1);
+        out.push("DTSTART;VALUE=DATE:" + e.date.replace(/-/g, ""), "DTEND;VALUE=DATE:" + iso(n).replace(/-/g, ""));
+      }
+      out.push("SUMMARY:" + f(e.title));
+      if (e.note) out.push("DESCRIPTION:" + f(e.note));
+      if (e.rep && e.rep.f) out.push("RRULE:FREQ=" + { d: "DAILY", w: "WEEKLY", "2w": "WEEKLY;INTERVAL=2", m: "MONTHLY", y: "YEARLY" }[e.rep.f] + (e.rep.until ? ";UNTIL=" + e.rep.until.replace(/-/g, "") : ""));
+      if (e.remind != null && e.remind !== "") out.push("BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + f(e.title), "TRIGGER:-PT" + (+e.remind) + "M", "END:VALARM");
+      out.push("END:VEVENT");
+    });
+    out.push("END:VCALENDAR");
+    return out.map(fold).join("\r\n") + "\r\n";
+  }
+  // Quoted-Printable (Samsung teilt Termine als vCalendar 1.0 mit QP und UTF-8)
+  function qp(s) {
+    var b = [], i, t = s.replace(/=\r?\n/g, "");
+    for (i = 0; i < t.length; i++) {
+      if (t[i] === "=" && /^[0-9A-Fa-f]{2}$/.test(t.substr(i + 1, 2))) { b.push(parseInt(t.substr(i + 1, 2), 16)); i += 2; }
+      else { var u = unescape(encodeURIComponent(t[i])); for (var j = 0; j < u.length; j++) b.push(u.charCodeAt(j)); }
+    }
+    try { return new TextDecoder("utf-8").decode(new Uint8Array(b)); } catch (e) { return t; }
+  }
+  function icsDate(v, params) {
+    var m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?$/.exec(String(v).trim());
+    if (!m) return null;
+    if (!m[4] || /VALUE=DATE(;|$)/i.test(params || "") && !m[4]) return { date: m[1] + "-" + m[2] + "-" + m[3], time: "" };
+    if (m[7]) { var d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0))); return { date: iso(d), time: pad(d.getHours()) + ":" + pad(d.getMinutes()) }; }
+    return { date: m[1] + "-" + m[2] + "-" + m[3], time: m[4] + ":" + m[5] };
+  }
+  function parseIcs(text) {
+    var t = String(text);
+    var lines = t.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    // QP-Zeilenfortsetzung (Zeile endet auf =) vor dem normalen Entfalten zusammenziehen
+    if (/QUOTED-PRINTABLE/i.test(lines)) lines = lines.replace(/=\n/g, "");
+    lines = lines.replace(/\n[ \t]/g, "").split("\n");
+    var out = [], ev = null, inAlarm = false;
+    lines.forEach(function (l) {
+      var c = l.indexOf(":"); if (c < 0) return;
+      var head = l.slice(0, c), val = l.slice(c + 1), name = head.split(";")[0].toUpperCase(), params = head.slice(name.length);
+      if (/ENCODING=QUOTED-PRINTABLE/i.test(params)) val = qp(val);
+      if (name === "BEGIN" && /^VEVENT$/i.test(val)) { ev = {}; return; }
+      if (name === "BEGIN" && /^VALARM$/i.test(val)) { inAlarm = true; return; }
+      if (name === "END" && /^VALARM$/i.test(val)) { inAlarm = false; return; }
+      if (name === "END" && /^VEVENT$/i.test(val)) { if (ev && ev.date) out.push(ev); ev = null; return; }
+      if (!ev) return;
+      var txt = val.replace(/\\n/gi, "\n").replace(/\\([,;\\])/g, "$1").trim();
+      if (inAlarm) { var tr = /^-P(?:T)?(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?/.exec(val); if (name === "TRIGGER" && tr) ev.remind = (+(tr[1] || 0)) * 1440 + (+(tr[2] || 0)) * 60 + (+(tr[3] || 0)); return; }
+      if (name === "SUMMARY") ev.title = txt;
+      else if (name === "DESCRIPTION") ev.note = (ev.note ? ev.note + "\n" : "") + txt;
+      else if (name === "LOCATION" && txt) ev.note = (ev.note ? ev.note + "\n" : "") + "Ort: " + txt;
+      else if (name === "UID") ev.uid = txt;
+      else if (name === "DTSTART") { var s = icsDate(val, params); if (s) { ev.date = s.date; ev.time = s.time; } }
+      else if (name === "DTEND") { var e2 = icsDate(val, params); if (e2) ev._end = e2; }
+      else if (name === "DURATION") { var du = /PT(?:(\d+)H)?(?:(\d+)M)?/.exec(val); if (du) ev._dur = (+(du[1] || 0)) * 60 + (+(du[2] || 0)); }
+      else if (name === "RRULE") {
+        var fq = (/FREQ=(\w+)/.exec(val) || [])[1], iv = +((/INTERVAL=(\d+)/.exec(val) || [])[1] || 1), un = (/UNTIL=(\d{8})/.exec(val) || [])[1];
+        var f = { DAILY: "d", WEEKLY: iv === 2 ? "2w" : "w", MONTHLY: "m", YEARLY: "y" }[fq];
+        if (f && (iv === 1 || f === "2w")) ev.rep = { f: f, until: un ? un.slice(0, 4) + "-" + un.slice(4, 6) + "-" + un.slice(6, 8) : "" };
+      }
+      else if (name === "STATUS" && /CANCELLED/i.test(val)) ev.cancelled = true;
+    });
+    return out.filter(function (e) { return !e.cancelled; }).map(function (e) {
+      var r = { title: e.title || "Termin", date: e.date, time: e.time || "", end: "", note: e.note || "", uid: e.uid || "", rep: e.rep || null, remind: e.remind == null ? null : e.remind };
+      if (r.time && e._end && e._end.date === r.date && e._end.time > r.time) r.end = e._end.time;
+      else if (r.time && e._dur) r.end = addMin(r.time, e._dur);
+      if (!r.time && e._end && e._end.date) { var last = parse(e._end.date); last.setDate(last.getDate() - 1); if (iso(last) > r.date) r.note = (r.note ? r.note + "\n" : "") + "bis " + last.getDate() + "." + (last.getMonth() + 1) + "." + last.getFullYear(); }
+      return r;
+    });
+  }
+  // Geteilter Text (z. B. „Training\nSa., 18. Okt. 2026 14:30 – 15:15“): Datum, Uhrzeiten, erste Zeile als Titel
+  var MONS = ["jan", "feb", "mär", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez"];
+  function parseShareText(text, title) {
+    var t = String(text || "").replace(/\r/g, ""), y0 = new Date().getFullYear(), date = null, m;
+    if ((m = /(\d{4})-(\d{2})-(\d{2})/.exec(t))) date = m[1] + "-" + m[2] + "-" + m[3];
+    else if ((m = /(\d{1,2})\.\s*(\d{1,2})\.(\d{2,4})?/.exec(t)) && +m[2] >= 1 && +m[2] <= 12) date = (m[3] ? (m[3].length === 2 ? "20" + m[3] : m[3]) : y0) + "-" + pad(+m[2]) + "-" + pad(+m[1]);
+    else if ((m = /(\d{1,2})\.?\s+(jan|feb|mär|maer|mrz|apr|mai|jun|jul|aug|sep|okt|nov|dez)[a-zä]*\.?\s*(\d{4})?/i.exec(t))) {
+      var mi = MONS.indexOf(m[2].toLowerCase().replace("maer", "mär").replace("mrz", "mär"));
+      date = (m[3] || y0) + "-" + pad(mi + 1) + "-" + pad(+m[1]);
+    }
+    if (!date) return [];
+    var times = t.match(/\b([01]?\d|2[0-3])[:.]([0-5]\d)\b(?!\.\d)/g) || [];
+    times = times.map(function (x) { var p = x.split(/[:.]/); return pad(+p[0]) + ":" + p[1]; });
+    var lines = t.split("\n").map(function (l) { return l.trim(); }).filter(Boolean);
+    var name = (title || "").trim() || lines.find(function (l) { return !/\d{1,2}[:.]\d{2}|\d{1,2}\.\s*\d{1,2}\.|\d{4}-\d{2}/.test(l); }) || "Termin";
+    var rest = lines.filter(function (l) { return l !== name && !/\d{1,2}[:.]\d{2}|\d{1,2}\.\s*\d{1,2}\.|\d{4}-\d{2}-\d{2}|\d{1,2}\.?\s+[A-Za-zä]{3}/.test(l); });
+    return [{ title: name.slice(0, 120), date: date, time: times[0] || "", end: times[1] && times[1] > times[0] ? times[1] : "", note: rest.join("\n"), uid: "", rep: null, remind: null }];
+  }
+  function phoneKey(e) { return "handy:" + (e.uid || [e.title, e.date, e.time].join("|")); }
+  api.phone = {
+    state: pState,
+    setOpt: function (k, v) { var s = pState(); s.opt[k] = !!v; pSave(s); },
+    // Termine fürs Handy: mode "neu" = nur Neues/Geändertes seit der letzten Übertragung, "alle" = alles ab vor 30 Tagen
+    pending: function (mode) {
+      var s = pState(), all = pItems(s.opt);
+      return mode === "alle" ? all : all.filter(function (e) { return s.sent[e.id] !== pSig(e); });
+    },
+    ics: function (list) { return icsOf(list); },
+    markSent: function (list) { var s = pState(); list.forEach(function (e) { s.sent[e.id] = pSig(e); }); s.last = Date.now(); s.lastN = list.length; pSave(s); },
+    parse: function (text, title) {
+      if (/BEGIN:VCALENDAR|BEGIN:VEVENT/i.test(text || "")) return parseIcs(text);
+      return parseShareText(text, title);
+    },
+    // Übernehmen: gleiche Termine (UID bzw. Titel+Datum+Zeit) werden aktualisiert statt doppelt angelegt.
+    // Termine, die aus der App selbst stammen (UID …@planer), werden nur aktualisiert.
+    apply: function (list) {
+      var res = { added: 0, updated: 0, same: 0 };
+      mutate(function (d) {
+        list.forEach(function (x) {
+          var own = /@planer$/.test(x.uid || "") ? x.uid.replace(/@planer$/, "") : null;
+          var key = phoneKey(x), e = d.events.find(function (y) { return !y.deleted && (own ? y.id === own : y.ext === key); });
+          if (!e && !own) e = d.events.find(function (y) { return !y.deleted && y.title === x.title && y.date === x.date && (y.time || "") === (x.time || ""); });
+          var patch = { title: x.title, date: x.date, time: x.time || "", end: x.end || "", note: x.note || "" };
+          if (x.rep) patch.rep = x.rep;
+          if (x.remind != null) patch.remind = x.remind;
+          if (e) {
+            var diff = Object.keys(patch).some(function (k) { return JSON.stringify(e[k] == null ? "" : e[k]) !== JSON.stringify(patch[k] == null ? "" : patch[k]); });
+            if (diff) { Object.assign(e, patch); e.changed = Date.now(); if (e.app === "Handy") e.imported = e.changed; res.updated++; } else res.same++;
+          } else if (!own) {
+            var now = Date.now();
+            d.events.push(Object.assign({ id: uid(), app: "Handy", ext: key, color: "", remind: null, created: now, changed: now, imported: now }, patch));
+            res.added++;
+          }
+        });
+      });
+      var s = pState(); s.lastIn = Date.now(); pSave(s);
+      return res;
+    }
+  };
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && wp) closeWeekPlan(); else if (e.key === "Escape" && state.open) close(); });
   window.addEventListener("sg-theme", function () { if (root) render(true); });
   window.addEventListener("sg-theme-set", function () { schedulePush(); });

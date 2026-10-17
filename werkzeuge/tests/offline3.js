@@ -98,6 +98,18 @@ const navOk = p => p.evaluate(() => { const n = document.getElementById('nav').g
     // Kalender → Starten offline
     await p.locator('.ev', { hasText: 'Langsames Atmen' }).locator('[data-start]').click(); await p.waitForTimeout(2500);
     log(p.url().indexOf('#mobility/atmung/hrv') > 0, 'Offline: Kalender → Atemübung starten');
+    // Handykalender offline: Termin aus dem Handy teilen (Share Target im Service Worker) und Termine ins Handy übertragen
+    errs.length = 0;
+    await p.goto(APP + '#kalender'); await p.waitForTimeout(1500);
+    const vcs = 'BEGIN:VCALENDAR\r\nVERSION:1.0\r\nBEGIN:VEVENT\r\nUID:off-1\r\nSUMMARY:Offline geteilt\r\nDTSTART:20261024T090000\r\nDTEND:20261024T100000\r\nEND:VEVENT\r\nEND:VCALENDAR';
+    const shared = await p.evaluate(async v => { const fd = new FormData(); fd.append('datei', new File([v], 't.vcs', { type: 'text/x-vcalendar' })); const r = await fetch('../app/?teilen', { method: 'POST', body: fd }); return r.status; }, vcs).catch(e => String(e));
+    await p.goto(APP + '#teilen'); await p.waitForTimeout(1500);
+    await p.click('#sheet [data-s=yes]').catch(() => {}); await p.waitForTimeout(500);
+    const got = await p.evaluate(() => SharedCalendar.list().some(x => x.title === 'Offline geteilt'));
+    await p.goto(APP + '#mehr'); await p.waitForTimeout(1500);
+    await p.click('#n-mehr [data-m=handy]'); await p.waitForTimeout(300);
+    const dl = await Promise.all([p.waitForEvent('download', { timeout: 5000 }), p.click('#sheet [data-s=outall]')]).then(x => x[0]).catch(() => null);
+    log(shared === 200 && got && dl && !errs.length, 'Offline: Handykalender – Termin teilen › Planer übernommen, Termine als Datei ins Handy' + (errs.length ? ' ' + errs.join('|') : ''));
     // Version aktualisieren offline: Hinweis, App läuft weiter
     await p.goto(APP + '#mehr'); await p.waitForTimeout(1500); await p.click('#n-mehr [data-m=update]'); await p.waitForTimeout(800);
     log(/Ohne Internet|nicht erreichbar/.test(await p.textContent('#snack')), 'Version aktualisieren offline: ' + (await p.textContent('#snack')).slice(0, 60));

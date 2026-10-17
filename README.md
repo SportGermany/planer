@@ -13,6 +13,7 @@ Eine App für Kalender, Aufgaben, Notizen, Schule, Pause, Training, Mobility, At
   - **Schule:** Schultag · Stundenplan · Aufgaben & Prüfungen · Lernplan · Ferien.
   - **Mehr:** Aufgaben, Notizen, Woche planen, Bibel, Sportwissenschaft, Pause, Einstellungen, Version.
   - Die Bereiche sind die bisherigen Seiten, eingebettet ohne eigene Leisten. Direkt geöffnete Seiten und alte Adressen leiten in die Hülle um (`?einzeln` öffnet eine Seite ausnahmsweise allein).
+- **Handykalender:** Mehr › Handykalender – Termine per Teilen/Datei ins Handy, Termine aus dem Samsung-Kalender über Teilen › Planer in die App (ohne Konto, offline).
 - **Notizen:** schnell festhalten, optional mit Zeitpunkt und Erinnerung; Notizen mit Zeit stehen auch im Kalender.
 - **Sportwissenschaft:** das Lehrbuch „Sportwissenschaft für Rennrodler“ in der App (Training › Sportwissenschaft): Lesemodus mit gespeichertem Fortschritt,
   Karteikarten aus Merksätzen und Mach-das/Lass-das-Tabellen, Quiz mit Auswertung, Suche. Inhalt: `wissen/buch.md` → `wissen/js/buch.js`.

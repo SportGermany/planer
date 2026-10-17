@@ -1,25 +1,34 @@
+// Echter Update-Weg in der Hülle: App läuft mit Version X, Build mit 9.9.8, Mehr › Version › Aktualisieren lädt die neue Fassung.
+// Danach wird wieder die normale Version gebaut. node werkzeuge/tests/upd.js
 const { chromium } = require('playwright');
 const { execSync } = require('child_process');
 const B = 'python3 ' + JSON.stringify(require('path').resolve(__dirname, '../build.py'));
-(async () => { const b = await chromium.launch({ executablePath: process.env.SG_CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
-  const c = await b.newContext({ viewport: { width: 412, height: 915 }, isMobile: true });
+const APP = 'http://localhost:8765/planer/app/';
+(async () => {
+  const b = await chromium.launch({ executablePath: process.env.SG_CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+  const c = await b.newContext({ viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true });
   await c.addInitScript(require('fs').readFileSync(__dirname + '/seed.js', 'utf8'));
-  const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => /status|controller|state/.test(m.text()) && console.log('console:', m.text())); p.on('framenavigated', f => f === p.mainFrame() && console.log('nav', f.url()));
+  const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
+  let ok = true; const check = (cond, m) => { console.log(cond ? '✓' : '✗', m); if (!cond) ok = false; };
   try {
-    await p.goto('http://localhost:8765/planer/'); await p.evaluate(() => navigator.serviceWorker.ready); await p.waitForTimeout(2500);
-    console.log('vorher', await p.evaluate(async () => [SGVersion, await caches.keys()]));
-    await p.fill('.sgd [data-nin]', 'Vor dem Update'); await p.press('.sgd [data-nin]', 'Enter');
+    await p.goto(APP + '#mehr'); await p.waitForFunction(() => navigator.serviceWorker.controller, null, { timeout: 20000 }); await p.waitForTimeout(1500);
+    const v0 = await p.evaluate(() => SGVersion);
+    await p.evaluate(() => SharedCalendar.notes.add({ text: 'Vor dem Update' }));
     execSync('SGV=9.9.8 ' + B);
-    await p.click('.sgd [data-sgtab=start]');
-    await p.evaluate(() => { navigator.serviceWorker.addEventListener('controllerchange', () => console.log('controllerchange')); navigator.serviceWorker.getRegistration('/planer/').then(r => { console.log('reg ' + !!r + ' waiting ' + !!(r && r.waiting) + ' installing ' + !!(r && r.installing)); r.addEventListener('updatefound', () => { console.log('updatefound'); const w = r.installing; w.addEventListener('statechange', () => console.log('state ' + w.state)); }); }); });
-    const nav = p.waitForEvent('load', { timeout: 30000 }).catch(() => 'kein Neuladen');
-    await p.click('.sgd-ver button');
-    for (let i = 0; i < 6; i++) { await p.waitForTimeout(1000); console.log('snack', await p.evaluate(() => (document.querySelector('.sgd-snack') || {}).textContent).catch(() => 'nav')); }
-    console.log('neu geladen:', typeof (await nav) === 'object'); await p.waitForTimeout(2500);
-    console.log('nachher', await p.evaluate(async () => [SGVersion, await caches.keys(), navigator.serviceWorker.controller && navigator.serviceWorker.controller.scriptURL]));
-    for (const pg of ['training/', 'bibel/', 'training/atmung/']) { await p.goto('http://localhost:8765/planer/' + pg); await p.waitForTimeout(1500); console.log(pg, await p.evaluate(() => SGVersion)); }
-    await p.goto('http://localhost:8765/planer/'); await p.waitForTimeout(1500);
-    console.log('Notiz erhalten', /Vor dem Update/.test(await p.textContent('.sgd-notes')));
-    console.log('Fehler', JSON.stringify(errs));
-  } finally { execSync(B); }
-  await b.close(); })();
+    // Mehr › Version: findet 9.9.8 und lädt sie gleich (Hinweis „gefunden – wird geladen“)
+    const load = p.waitForEvent('load', { timeout: 40000 }).then(() => true).catch(() => false);
+    await p.click('#n-mehr [data-m=update]');
+    check(await load, 'Neue Version gefunden, App lädt neu');
+    await p.waitForTimeout(2500);
+    const after = await p.evaluate(async () => [SGVersion, await caches.keys()]);
+    check(after[0] === '9.9.8' && after[1].includes('planer-9.9.8') && true, 'Version nach dem Update: ' + JSON.stringify(after));
+    const fr = [];
+    for (const h of ['training/heute', 'mobility/atmung', 'schule', 'bibel', 'training/wissen']) { await p.evaluate(h => { location.hash = h; }, h); await p.waitForTimeout(1500); fr.push(await p.evaluate(() => document.querySelector('#stage iframe.on').contentWindow.SGVersion)); }
+    check(fr.length && fr.every(v => v === '9.9.8'), 'Alle Bereiche auf der neuen Version: ' + fr.join(','));
+    check(await p.evaluate(() => SharedCalendar.notes.list().some(n => n.text === 'Vor dem Update')), 'Daten bleiben erhalten');
+    check(!errs.length, 'Keine Fehler ' + errs.join('|'));
+    console.log('vorher ' + v0);
+  } catch (e) { check(false, String(e).slice(0, 200)); }
+  finally { execSync(B); }
+  await b.close(); console.log(ok ? 'Update-Weg grün' : 'Update-Weg FEHLER'); process.exit(ok ? 0 : 1);
+})();

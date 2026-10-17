@@ -26,7 +26,7 @@
     cloud: '<path d="M7 18.5h10.5a4 4 0 0 0 .4-8A6 6 0 0 0 6.3 9.6 4.5 4.5 0 0 0 7 18.5z"/>', download: '<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/>',
     sled: '<path d="M3 17h15a3 3 0 0 0 3-3M6 17l-2 3M15 17l-2 3"/><circle cx="9" cy="8" r="2"/><path d="M7 13.5l3-3 4 1"/>', bell: '<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
     clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>', trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13"/>', edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
-    pulse: '<path d="M3 12h4l2.5-6 4 12 2.5-6H21"/>', star: '<path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/>'
+    pulse: '<path d="M3 12h4l2.5-6 4 12 2.5-6H21"/>', phone: '<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>', star: '<path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/>'
   };
   function ico(k) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (P[k] || "") + "</svg>"; }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -169,6 +169,7 @@
   function fromHash() {
     var h = decodeURIComponent(location.hash.slice(1));
     if (h.indexOf("u=") === 0) { history.replaceState({ app: 1 }, "", "#kalender"); cur = { v: "kalender" }; render(); return openUrl(h.slice(2)); }
+    if (h === "teilen") { history.replaceState({ app: 1 }, "", "#kalender"); cur = { v: "kalender" }; render(); return setTimeout(takeShared, 300); }
     var p = h.split("/");
     cur = { v: V[p[0]] ? p[0] : "kalender", s: p[1] || null, k: p[2] || null };
     render();
@@ -457,6 +458,83 @@
     if (!n) setTimeout(function () { $("nt").focus(); }, 80);
   }
 
+  /* ---------- Handykalender ----------
+     Der Gerätekalender ist für Web-Apps gesperrt – abgeglichen wird über Kalenderdateien (offline, ohne Konto):
+     App → Handy per Teilen/Datei (.ics), Handy → App per „Teilen › Planer“ (Share Target, siehe sw.js) oder Datei öffnen. */
+  function fmtDay(k) { var d = parse(k); return ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][d.getDay()] + " " + d.getDate() + "." + (d.getMonth() + 1) + "."; }
+  function ago(t) { if (!t) return "noch nie"; var d = new Date(t); return (iso(d) === today() ? "heute" : fmtDay(iso(d))) + " " + pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+  function phoneSheet() {
+    var c = C(), ph = c.phone, st = ph.state(), neu = ph.pending("neu"), alle = ph.pending("alle");
+    sheet('<h3>Handykalender</h3><p class="s">Abgleich mit dem Kalender auf deinem Handy – ohne Konto, auch offline. Zuletzt ins Handy: ' + ago(st.last) + ' · aus dem Handy: ' + ago(st.lastIn) + '</p>' +
+      '<div class="grp"><header><span>App → Handy</span></header><div class="cells">' +
+      '<button class="row" data-s="out" style="--c:var(--c-termin)"><span class="ic">' + ico("phone") + '</span><span class="tx"><b>' + (neu.length ? neu.length + (neu.length === 1 ? " neuer Termin" : " neue Termine") + " ins Handy" : "Alles übertragen") + '</b><small>' + (neu.length ? "Teilen › Samsung-Kalender (oder als Datei speichern)" : "Keine neuen oder geänderten Termine") + '</small></span></button>' +
+      '<button class="row" data-s="outall" style="--c:var(--muted)"><span class="ic">' + ico("download") + '</span><span class="tx"><b>Alle ' + alle.length + ' Termine übertragen</b><small>Zum ersten Mal oder nach einem neuen Handy</small></span></button>' +
+      '</div></div>' +
+      '<div class="grp"><header><span>Handy → App</span></header><div class="cells">' +
+      '<div class="row" style="--c:var(--c-schule);cursor:default"><span class="ic">' + ico("phone") + '</span><span class="tx"><b>Termin teilen</b><small>Im Samsung-Kalender Termin öffnen › Teilen › „Planer“ wählen – auch mehrere oder als Datei (.vcs/.ics)</small></span></div>' +
+      '<button class="row" data-s="in" style="--c:var(--c-schule)"><span class="ic">' + ico("download") + '</span><span class="tx"><b>Kalenderdatei öffnen</b><small>.ics oder .vcs, z. B. exportierter Kalender</small></span></button>' +
+      '</div></div>' +
+      '<div class="grp"><header><span>Mit übertragen</span></header><div class="cells">' +
+      '<label class="row" style="cursor:pointer"><span class="tx"><b>Schule</b><small>Prüfungen, Schultermine, Lehrgänge</small></span><input type="checkbox" data-o="schule"' + (st.opt.schule ? " checked" : "") + ' style="width:22px;height:22px"></label>' +
+      '<label class="row" style="cursor:pointer"><span class="tx"><b>Atemübungen</b><small>geplante Übungen aus Atmung & HRV</small></span><input type="checkbox" data-o="atmung"' + (st.opt.atmung ? " checked" : "") + ' style="width:22px;height:22px"></label>' +
+      '</div></div><p class="s">Gelöschte Termine bitte auf beiden Seiten löschen – Kalenderdateien können nur hinzufügen und ändern.</p>', function (act) {
+      if (act === "out" && neu.length) sendPhone(neu);
+      else if (act === "outall") sendPhone(alle);
+      else if (act === "in") pickFile();
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("#sheet [data-o]"), function (x) { x.onchange = function () { ph.setOpt(x.dataset.o, x.checked); phoneSheet(); }; });
+  }
+  function sendPhone(list) {
+    var c = C(), text = c.phone.ics(list), name = "planer-termine-" + today() + ".ics";
+    var file = null; try { file = new File([text], name, { type: "text/calendar" }); } catch (e) {}
+    function done(how) { c.phone.markSent(list); closeSheet(); snack(list.length + (list.length === 1 ? " Termin " : " Termine ") + how); }
+    function save() {
+      var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "text/calendar" })); a.download = name;
+      document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+      done("gespeichert – Datei antippen und mit Kalender öffnen");
+    }
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: "Termine aus Planer" }).then(function () { done("geteilt"); }).catch(function (e) { if (e && e.name !== "AbortError") save(); });
+    } else save();
+  }
+  function pickFile() {
+    var inp = document.createElement("input"); inp.type = "file"; inp.accept = ".ics,.vcs,text/calendar,text/x-vcalendar";
+    inp.onchange = function () { var f = inp.files && inp.files[0]; if (f) f.text().then(function (t) { importSheet(C().phone.parse(t), f.name); }); };
+    inp.click();
+  }
+  function importSheet(list, from) {
+    var c = C();
+    if (!list.length) { sheet('<h3>Nichts gefunden</h3><p class="s">In ' + esc(from || "den geteilten Daten") + ' war kein Termin mit Datum. Am besten im Kalender den Termin teilen und „Als Datei“ (.vcs/.ics) wählen.</p><div class="btns"><button class="btn p" data-s="x">OK</button></div>', function () { closeSheet(); }); return; }
+    sheet('<h3>' + list.length + (list.length === 1 ? " Termin" : " Termine") + ' übernehmen?</h3><p class="s">Aus ' + esc(from || "dem Handykalender") + '. Schon vorhandene werden aktualisiert, nicht doppelt angelegt.</p>' +
+      '<div class="grp"><div class="cells">' + list.slice(0, 40).map(function (e) {
+        return '<div class="ev" style="--c:var(--c-termin)"><span class="tm">' + (e.time ? e.time : "ganzt.") + (e.end ? "<small>" + e.end + "</small>" : "") + '</span><span class="bar"></span><span class="tx"><b>' + esc(e.title) + "</b><small>" + fmtDay(e.date) + (e.rep ? " · wiederholt" : "") + "</small></span></div>"; }).join("") +
+      (list.length > 40 ? '<p class="s">… und ' + (list.length - 40) + " weitere</p>" : "") + '</div></div>' +
+      '<div class="btns"><button class="btn" data-s="no">Abbrechen</button><button class="btn p" data-s="yes">Übernehmen</button></div>', function (act) {
+      if (act === "no") return closeSheet();
+      if (act !== "yes") return;
+      var r = c.phone.apply(list); closeSheet();
+      if (list.length === 1 && list[0].date) { calSel = list[0].date; if (cur.v !== "kalender") go("kalender"); }
+      refresh();
+      snack((r.added ? r.added + " neu" : "") + (r.added && r.updated ? ", " : "") + (r.updated ? r.updated + " aktualisiert" : "") + (!r.added && !r.updated ? "Schon alles im Kalender" : " im Kalender"));
+    });
+  }
+  // Geteiltes aus dem Handy (Share Target): sw.js legt es im Cache „sg-teilen“ ab und öffnet #teilen
+  function takeShared() {
+    if (!("caches" in window)) return;
+    caches.open("sg-teilen").then(function (cache) {
+      return cache.match("geteilt.json").then(function (r) {
+        if (!r) return;
+        return r.json().then(function (d) {
+          cache.delete("geteilt.json");
+          var list = [];
+          (d.files || []).forEach(function (f) { list = list.concat(C().phone.parse(f.text)); });
+          if (!list.length) list = C().phone.parse([d.text, d.url].filter(Boolean).join("\n"), d.title);
+          importSheet(list, (d.files && d.files[0] && d.files[0].name) || "dem Handykalender");
+        });
+      });
+    }).catch(function () {});
+  }
+
   /* ---------- Mehr ---------- */
   function renderMehr() {
     var c = C(), notes = c && c.notes ? c.notes.list().filter(function (n) { return !n.done; }).length : 0;
@@ -467,7 +545,8 @@
       '<div class="grp"><header><span>Planen</span></header><div class="cells">' +
       r("aufgaben", "check", "var(--c-aufgabe)", "Aufgaben", "Heute, Geplant, Wichtig, Erledigt", open || "") +
       r("notizen", "note", "var(--c-notiz)", "Notizen", "Ideen, optional mit Erinnerung", notes || "") +
-      r("week", "wand", "var(--c-training)", "Woche planen", "Training, Mobility, Atmung, Lernen eintragen", "") + "</div></div>" +
+      r("week", "wand", "var(--c-training)", "Woche planen", "Training, Mobility, Atmung, Lernen eintragen", "") +
+      r("handy", "phone", "var(--c-termin)", "Handykalender", "Termine mit dem Kalender auf dem Handy abgleichen", c && c.phone ? (c.phone.pending("neu").length || "") : "") + "</div></div>" +
       '<div class="grp"><header><span>Lesen & Lernen</span></header><div class="cells">' +
       r("bibel", "book", "var(--c-bibel)", "Bibel", "Abschnitt von heute, Bibliothek, Favoriten", "") +
       r("wissen", "star", "#5ac8fa", "Sportwissenschaft", "Lehrbuch, Karteikarten, Quiz", w && w.sum && w.sum.pct ? w.sum.pct + " %" : "") +
@@ -483,6 +562,7 @@
     var b = e.target.closest("[data-m]"); if (!b) return;
     var m = b.dataset.m, c = C();
     if (m === "week") c.weekPlan();
+    else if (m === "handy") phoneSheet();
     else if (m === "wissen") go("training", "wissen");
     else if (m === "design") c.openDesign();
     else if (m === "sync") c.openSync();
