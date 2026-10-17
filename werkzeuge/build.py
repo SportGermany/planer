@@ -5,7 +5,7 @@
 import re, os
 # Versionsnummer der ganzen App: steht in sw.js (Cache-Name), in jeder Seite (window.SGVersion) und an jeder Skriptdatei.
 # Bei jeder Veröffentlichung erhöhen – dann holt „Version aktualisieren“ die neue Fassung.
-VERSION=os.environ.get('SGV','3.0.0')
+VERSION=os.environ.get('SGV','3.1.0')
 HERE=os.path.dirname(os.path.abspath(__file__))
 SP=os.path.join(HERE,'quellen')+'/'  # Quellen der gemeinsamen Skripte und des Sportwissenschafts-Generators
 R=os.path.dirname(HERE)+'/'  # Wurzel des Repositorys

@@ -5,6 +5,26 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## 3.1.0 – einheitliches Design in allen Bereichen
+
+**Wunsch:** Handy-Prüfung: „Starten“/„Üben“ im Kalender nicht mittig, ragen über den Knopf; „jedes Ding hat sein eigenes Design“.
+
+**Umsetzung:** In der Hülle legt `design.js` (`unifyCSS`) über alle eingebetteten Seiten eine gemeinsame Schicht:
+eine Akzentfarbe (Farbwelt) statt Orange im Training und Türkis in der Pause, Titel überall 22 px, Zwischentitel 17 px,
+Inter statt Mono-Schrift (Atmung, Training) und statt Serifen in den Bedienelementen der Bibel (Bibeltext bleibt Serif),
+Bibel-Hauptknopf gefüllt wie überall. Kalender-Schnellkarten als 2er-Raster. Aufgaben ohne doppelte Kopfzeile.
+
+| Fehler | Ursache | Lösung |
+| --- | --- | --- |
+| „Starten“/„Üben“-Pille nicht mittig, ragt nach oben | `.go` ist ein `<span>` ohne Flex-Zentrierung | `display:inline-flex;align-items:center;line-height:1;align-self:center` |
+| Schnellkarten im Kalender am Rand abgeschnitten | waagrechte Scrollreihe mit 132-px-Karten (bis zu 5 Karten) | 2er-Raster, ungerade letzte Karte über volle Breite |
+| Training orange, Pause türkis trotz Farbwelt | eigene Variablen `--work`/`--zitate`, Training setzt sie per Skript inline | in der Hülle mit `!important` auf `acc` legen |
+| Atmung zeigt Zahlen in Mono-Schrift | `--font-data` = JetBrains Mono | `font-data` in `FONTVARS` (Inter) |
+| Aufgaben: doppelter Titel, 86 px Leerraum unten | Planer-Kopfzeile und Platz für die (ausgeblendete) eigene Leiste | `#bar[data-tab=tasks]` und Polster in der Hülle aus |
+| Titelgrößen 21–40 px je Seite | jede Seite eigenes CSS | `h1` 22 px, `h2` 17 px in der Hülle; Mobility-Block 28 px, Schule-Datum 26 px |
+
+Tests: `suite3.js` 42/42 (neu: Design-Test für Pillen, Schnellkarten, Akzentfarbe, Titelgröße), `offline3.js` 42/42.
+
 ## 3.0.x – eine Hülle (Kalender als Start)
 
 **Wunsch:** App zu groß, Funktionen zu getrennt, zu viel Navigieren. „Mach einen Kalender und in dem Kalender kann ich auf die

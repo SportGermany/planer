@@ -182,6 +182,7 @@ function setView(v, quiet) { S.view = v; P.view = v; savePrefs(); S.tab = "cal";
 var ICON_CAL = "<svg viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round'><rect x='3.5' y='5' width='17' height='15.5' rx='2.5'/><path d='M3.5 9.5h17M8 3v4M16 3v4'/></svg>";
 function renderBar() {
   var r = range(), title, sub = "";
+  $("bar").setAttribute("data-tab", S.tab);
   if (MODS[S.tab]) {
     $("bar").innerHTML = (window.SGDir ? SGDir.backHTML() : "") + "<button class='ib back' data-tab='" + (S.prevTab || "brief") + "' aria-label='Zurück'>‹</button><button class='ib menu-btn' data-a='menu' aria-label='Menü'>☰</button><h1>" + ((window.SGDir && SGDir.pageTitle(S.tab)) || MODS[S.tab].title) +
       "</h1><span class='sp'></span><button class='ib' data-a='reloadmod' title='Neu laden' aria-label='Neu laden'>↻</button>";

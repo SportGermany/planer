@@ -4,7 +4,7 @@ const fs = require('fs');
 const U = 'http://localhost:8765/planer/', APP = U + 'app/';
 const SEED = fs.readFileSync(__dirname + '/seed.js', 'utf8');
 const ONLY = process.argv[2] || '';
-const VER = '3.0.0';
+const VER = '3.1.0';
 const results = [];
 const PAGES = ['', 'schule/', 'pause/', 'training/', 'training/mobility/', 'training/atmung/', 'training/bahnplan/', 'bibel/', 'wissen/'];
 const PHONE = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 };
@@ -240,6 +240,27 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     await open(p, '#mobility/atmung');
     const r = await p.evaluate(() => { const n = document.getElementById('nav').getBoundingClientRect(), s = document.getElementById('stage').getBoundingClientRect(); return [n.width, n.height, s.left, s.width]; });
     assert(r[0] === 92 && r[1] > 700 && r[2] >= 92 && r[3] > 1100, 'Aufteilung ' + r);
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+
+  await test('S Design: Pillen mittig, Schnellkarten im Bildschirm, eine Akzentfarbe in allen Bereichen', async () => {
+    const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
+    await open(p, '#kalender');
+    const go = await p.evaluate(() => [...document.querySelectorAll('#n-kalender .go')].map(g => { const r = g.getBoundingClientRect(), x = document.createRange(); x.selectNodeContents(g); const t = x.getBoundingClientRect(), row = g.closest('.ev').getBoundingClientRect();
+      return [Math.abs((t.top + t.bottom) / 2 - (r.top + r.bottom) / 2), Math.abs((r.top + r.bottom) / 2 - (row.top + row.bottom) / 2)]; }));
+    assert(go.length && go.every(d => d[0] < 2 && d[1] < 3), 'Pille nicht mittig ' + JSON.stringify(go));
+    const gl = await p.evaluate(() => [...document.querySelectorAll('.gl')].every(g => { const r = g.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }));
+    assert(gl, 'Schnellkarte ragt aus dem Bildschirm');
+    const acc = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--acc').trim().toLowerCase());
+    for (const [h, sel, v] of [['#training/lauf', 'training/', '--work'], ['#pause', 'pause/', '--zitate'], ['#mobility/atmung', 'training/atmung/', '--breath']]) {
+      await p.evaluate(h => { location.hash = h; }, h); await wait(p, 1500);
+      const f = p.frames().find(f => f.url().split(/[?#]/)[0].endsWith('/planer/' + sel));
+      assert(f, 'Seite ' + sel);
+      const got = await f.evaluate(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim().toLowerCase(), v);
+      assert(got === acc, sel + ' ' + v + '=' + got + ' statt ' + acc);
+      const fs = await f.evaluate(() => [...document.querySelectorAll('h1')].filter(x => x.offsetParent).map(x => parseFloat(getComputedStyle(x).fontSize)));
+      assert(fs.every(x => x === 22), sel + ' Titelgröße ' + fs);
+    }
     assert(!e.length, e.join(' | ')); await c.close();
   });
 

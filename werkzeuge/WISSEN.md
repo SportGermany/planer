@@ -110,7 +110,7 @@ Neu exportieren (Docs-Export als Markdown) → `wissen/buch.md` ersetzen → Bui
 ```
 cd werkzeuge/tests && npm install          # Playwright (Browser: SG_CHROME, Standard /opt/pw-browsers/…)
 cd <Ordner über planer> && python3 -m http.server 8765 &      # App unter http://localhost:8765/planer/
-node werkzeuge/tests/suite3.js [Filter]   # Gesamt-Suite (Stand 3.0.0: 41 Tests)
+node werkzeuge/tests/suite3.js [Filter]   # Gesamt-Suite (Stand 3.1.0: 42 Tests)
 node werkzeuge/tests/offline3.js          # Offline wie installiert: einmal online, Server aus, alles prüfen (42 Prüfungen)
 node werkzeuge/tests/bahnplan-1.js / bahnplan-2.js   # Bahnplan (ERR_FAILED-Meldungen = absichtlich gesperrte Wikipedia)
 node werkzeuge/tests/upd.js               # echter Update-Weg (baut kurz Version 9.9.8, danach wieder zurück)
@@ -127,6 +127,8 @@ node werkzeuge/tests/upd.js               # echter Update-Weg (baut kurz Version
 - Unsichtbare, verschobene Elemente fangen Tipps ab → im Ruhezustand `pointer-events:none`.
 - Debounce beim Speichern kann Daten verlieren, wenn Android die App beendet → wichtige Aktionen sofort speichern.
 - GitHub: Repos anlegen/löschen kann Claude nicht (403) – der Nutzer macht das.
+- Design der Bereiche nicht pro Seite ändern, sondern in `unifyCSS` (design.js) – gilt in der Hülle für alle gleich.
+- Pillen/Knöpfe aus `<span>`: immer `display:inline-flex;align-items:center`, sonst sitzt der Text oben.
 - Inhalte von Seiten mit CSP `worker-src 'self'`: Worker nur aus Dateien, nicht aus `blob:`.
 
 ## 6. Wo die Geschichte steht

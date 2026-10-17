@@ -84,6 +84,25 @@
     "button,.btn,.chip{box-shadow:none!important;background-image:none!important}" +
     // Ausdrucke ohne App-Knopf und Menüs des Verbunds
     "@media print{#sg-shared-calendar{display:none!important}}";
+  // In der Hülle: alle Bereiche mit derselben Schrift, denselben Überschriftgrößen und derselben Akzentfarbe
+  // (vorher brachte jede Seite eigene Farben, Mono-/Serifenschriften und Titelgrößen mit)
+  function unifyCSS(t, roles) {
+    var r = "html:root:not(#sg)", e = "html.sg-dir-embed ";
+    var css = e + "h1{font-family:" + FONT + "!important;font-size:22px!important;line-height:1.2!important;font-weight:700!important;letter-spacing:-.01em!important}" +
+      e + "h2{font-family:" + FONT + "!important;font-size:17px!important;line-height:1.3!important;font-weight:650!important}";
+    var per = {
+      // Training und Pause: eigene Akzentfarben (Orange, Türkis) – auch die vom Skript gesetzten – auf die Farbwelt legen
+      panel: r + "{--work:" + t.acc + "!important;--work-dim:" + roles.accsoft + "!important;--zitate:" + t.acc + "!important;--zitate-dim:" + roles.accsoft + "!important}" +
+        e + ".mono{font-family:inherit!important;font-variant-numeric:tabular-nums}",
+      rodeln: e + ".blk{font-size:28px!important;line-height:1.1!important}",
+      lernplan: e + ".hero .big{font-size:26px!important}",
+      // Bibel: Serifenschrift nur für den Bibeltext selbst, Bedienelemente wie überall
+      bibel: e + "header h1," + e + ".passage h2," + e + ".book-group h3," + e + ".stat .num," + e + ".book-h .bn{font-family:" + FONT + "!important;font-weight:650!important}" +
+        e + ".go-button{background:" + t.acc + "!important;color:" + roles.accfg + "!important;border-color:transparent!important;border-radius:14px!important;font-weight:700!important}" +
+        e + ".go-button.done{background:" + t.s2 + "!important;color:" + t.ink + "!important}" + e + ".mode-row button{border-radius:12px!important}"
+    };
+    return css + (per[MODE] || "");
+  }
   var GLASS_CARDS = {
     kalender: ".card,.tl-tile,.wpstrip,.nudge",
     lernplan: ".card,.wkall",
@@ -93,7 +112,7 @@
     bibel: ".quote-card,.passage.show,.settings-section,.stat-box"
   };
   // Was in der Hülle zusätzlich entfällt (die Hülle hat eine Navigation für alles)
-  var SHELLHIDE = { kalender: ".side,.bar .menu-btn,.bar .back,.sgappb{display:none!important}", panel: "#s-heute>.brand{display:none!important}" };
+  var SHELLHIDE = { kalender: ".side,.bar .menu-btn,.bar .back,.sgappb,#bar[data-tab=tasks]{display:none!important}#view{padding-bottom:0!important}", panel: "#s-heute>.brand{display:none!important}" };
   var GLASS_NAV = {
     kalender: [".tabbar", ".tabbar button.on"],
     // die Schule zeigt ab 900 px (und im Querformat) eine Leiste am linken Rand – die bleibt unverändert
@@ -132,7 +151,7 @@
     }
     return css;
   }
-  var FONTVARS = { rodeln: ["fd", "fb"], puls: ["font-display", "font-body"], bibel: ["sans"] };
+  var FONTVARS = { rodeln: ["fd", "fb"], puls: ["font-display", "font-body", "font-data"], bibel: ["sans"] };
   var script = document.currentScript;
   var MODE = (script && script.getAttribute("data-design")) || "panel";
   // Als Modul in einer anderen App eingebettet? Dann übernimmt die äußere App Offline-Speicher und Installation.
@@ -180,7 +199,7 @@
     // In der Bibel bleiben Sepia- und Nachtmodus als Lesemodi erhalten.
     var sel = MODE === "bibel" ? "html:root:not(#sg):not([data-theme=\"sepia\"]):not([data-theme=\"night\"])" : "html:root:not(#sg)";
     return "@font-face{font-family:'Inter SG';src:url(" + FONTURL + ") format('woff2');font-weight:100 900;font-display:swap}" +
-      sel + "{" + vars + "}html:not(#sg) body{background-color:var(--bg)}body,button,input,select,textarea{font-family:" + FONT + ";font-feature-settings:'cv11','ss01'}" + PLAIN + glassCSS(t) + (LAYOUT[MODE] || "");
+      sel + "{" + vars + "}html:not(#sg) body{background-color:var(--bg)}body,button,input,select,textarea{font-family:" + FONT + ";font-feature-settings:'cv11','ss01'}" + PLAIN + glassCSS(t) + (LAYOUT[MODE] || "") + (DIRPARENT ? unifyCSS(t, roles) : "");
   }
   function apply(id) {
     var t = get(id || currentId());
