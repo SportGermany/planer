@@ -29,3 +29,4 @@ Eine App für Kalender, Aufgaben, Notizen, Schule, Pause, Training, Mobility, At
 - **Neue Version veröffentlichen:** Versionsnummer erhöhen (sie steht in `sw.js` und an jeder Skriptdatei als `?v=`),
   dann holt sich jedes Gerät die neue Fassung.
 - **Installieren:** In Chrome auf Android ⋮ → „App installieren“.
+- **Weiterarbeiten:** alles Wissen, der Build, die Tests und der Fehlerverlauf liegen in `werkzeuge/` (zuerst `werkzeuge/WISSEN.md` lesen).

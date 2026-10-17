@@ -1,0 +1,135 @@
+# Werkzeugkoffer und Wissen zur App „Planer“
+
+Dieses Dokument ist das Gedächtnis des Projekts. Wer an der App weiterarbeitet (auch Claude in einem neuen Chat),
+liest zuerst diese Datei, dann `werkzeuge/VERLAUF.md`. Alles Nötige liegt im Repository – nichts nur im Kopf oder in
+einem temporären Ordner.
+
+## 1. Was die App ist
+
+- Eine einzige Web-App (PWA) unter **https://sportgermany.github.io/planer/**, Repository `SportGermany/planer`, Branch `main`
+  (GitHub Pages: Settings → Pages → `main` / root).
+- Nutzer: U18-Kaderathlet im Rennrodeln, Schüler (Realschule Bayern). Benutzt die App installiert in Chrome auf Android
+  (Samsung-Handy und -Tablet). Sprache überall Deutsch.
+- Sicherung aller früheren Einzel-Repositorys: `SportGermany/sicherung` (Ordner je Repo, Branches `alt/<Repo>/main|claude`, Mirror-ZIP).
+
+## 2. Feste Vorgaben (immer einhalten)
+
+1. **100 % offline.** Jede Funktion, jedes Textfeld muss ohne Netz laufen. Inhalte (Bibeltext, Buch, Bilder) stecken in der App.
+   Netz nur für Zusätze (Cloud-Sicherung über GitHub-Gist, Wetter, Wikipedia-Bilder im Bahnplan).
+2. **Eine App, nichts springt heraus.** Alles bleibt unter `/planer/` (Scope der PWA). Keine Links in andere Repos.
+3. **Bestehende Funktionen nicht entfernen**, nur umordnen/verbessern – außer der Nutzer sagt es ausdrücklich.
+4. **Bahnplan:** keine eigenen Zeichnungen von Bahnen, nur Wikipedia-Bilder (als PNG) oder gar kein Bild.
+5. **Einheitliches Design** (eine Navigation, gleiche Karten, Knöpfe, Abstände), Android-gerecht, dunkel.
+6. Vor größeren Umbauen: Plan machen, dann abarbeiten; danach Test-Suiten bis alles grün ist, dann Offline-Test.
+7. Fragen stellen, wenn etwas unklar ist. Versionsnummer bei jeder Veröffentlichung erhöhen.
+8. Kein Modellname in Commits/Code. Commits enden mit den Co-Authored-By-/Session-Zeilen, die der Chat vorgibt.
+
+## 3. Aufbau
+
+```
+planer/
+  app/            Hülle: Navigation (Kalender · Training · Mobility · Schule · Mehr), Kalender, Notizen, Mehr  ← Startseite (manifest start_url)
+  index.html      Planer (Aufgaben; früherer Kalender, Heute-Briefing) – in der Hülle als „Aufgaben“ eingebettet
+  schule/         Lernplan (Stundenplan, Hausaufgaben, Prüfungen, Lernplan, Ferien)
+  pause/          Denkpause (Ablenken, Wissen, Quiz)
+  training/       Training (Heute, Laufen & Kraft, Fitness, Analyse, Einstellungen); darin:
+    mobility/     Rodel-Mobility (Tagesblock A/B/C, Wettkampf, Übungen, Fortschritt)
+    atmung/       Pulsplan: Atmung & HRV (Heute, Üben/HRV-Messung mit Polar H10, Woche, Verlauf, 12-Wochen-Plan)
+    bahnplan/     Kurvenbuch für Rodelbahnen (Bahnen, Plan, Läufe, Druck)
+  bibel/          Elberfelder 1905 (elb1905.json), Leseplan, Favoriten, Notizen
+  wissen/         Sportwissenschaft (Lehrbuch aus buch.md, Karteikarten, Quiz, Suche)
+  sg/             gemeinsame Skripte, ERZEUGT von werkzeuge/build.py (nicht von Hand ändern!)
+  */js/           Skripte der einzelnen Seiten (Quelle; von Hand änderbar)
+  sw.js           Service Worker (Version + Dateiliste werden vom Build gesetzt)
+  manifest.json   PWA (id "./", scope "./", start_url "./app/")
+  werkzeuge/      dieser Werkzeugkoffer
+```
+
+### Die Hülle (`app/`)
+- `app/index.html` (Aussehen) und `app/js/1-app.js` (Logik). Fünf Ziele unten (Tablet ≥ 900 px: Leiste links).
+- Bereiche = die bisherigen Seiten als `<iframe>` (bleiben geladen → sofortiger Wechsel). Tabelle `V` in `1-app.js`:
+  je Ziel `secs` (Chips) mit `p` (Seite), `h` (Sprungadresse der Seite), `s`+`sel` (Knopf in der ausgeblendeten Leiste der Seite)
+  und `kids` (zweite Chip-Reihe).
+- Adressen der Hülle: `#kalender`, `#training/rodeln/plan`, `#mobility/atmung/hrv`, `#schule/plan`, `#mehr`, `#bibel/lesen`,
+  `#notizen`, `#aufgaben`, `#pause`, `#tset`, `#u=<alte Adresse>`.
+- `window.SGShell = { openUrl, openApp, openModule, go }` – die eingebetteten Seiten springen darüber (statt Seitenwechsel).
+- Eingebettete Seiten erkennen die Hülle an `html.sg-dir` im Elternfenster (`DIRPARENT` in design.js) und blenden ihre eigene
+  Leiste aus (`GLASS_NAV`) plus `SHELLHIDE`.
+- Die Hülle registriert den Service Worker (`../sw.js`, Scope `/planer/`) – sonst wäre ein neues Gerät nicht offline-fähig.
+
+### Gemeinsame Skripte (Quellen in `werkzeuge/quellen/`, Build kopiert nach `sg/`)
+- `design.js` (im `<head>` jeder Seite): Weiterleitung in die Hülle (`?einzeln` verhindert sie), 10 Farbwelten (`sg-design`),
+  Schrift Inter, Ausblenden doppelter Leisten, Korrektur alter Adressen (`SGFixUrl`), Linkabfang in der Hülle,
+  `SGVersion`, „Version aktualisieren“ (`SGUpdate.check/install`).
+- `verbund.js` (`window.SharedCalendar`): gemeinsamer Kalender, Aufgaben, Notizen, Erinnerungen, Wochenplanung + Standardwoche,
+  Befehlsmenü (Suche), Design- und Sync-Fenster, Cloud-Sicherung (GitHub-Gist). In eingebetteten Seiten ohne Sync/Knopf.
+  API u. a.: `allItems(from,to)`, `add/update/remove`, `tasks.*`, `notes.*`, `open(date)`, `newEvent(date)`, `editEvent(id,date)`,
+  `weekPlan()`, `weekPlanStd()`, `weekPlanConfig()`, `palette()`, `openDesign()`, `openSync()`, `askNotify()`.
+- `training-suite.js`: Integration im Training (Heute-Karten „Dazu heute“, Module; in der Hülle öffnet `openMod` das Ziel Mobility/Rodeln).
+- `install.js`: Installieren-Hinweis der Bibel.
+
+### Daten (alles `localStorage`, gleiche Herkunft sportgermany.github.io)
+| Schlüssel | Inhalt |
+| --- | --- |
+| `sg-shared-calendar-v1` | gemeinsame Termine `{v,events:[{id,title,date,time,end,app,rep,remind,wp,link…}]}` |
+| `sg-shared-tasks-v1` | Aufgaben |
+| `sg-notizen-v1` | Notizen `{text,at,remind,done}` |
+| `sg-wochenplan-v1` | Wochenplanung: Einstellungen, `last`, `std` (Standardwoche), `planned` |
+| `sg-shared-calendar-sync` | Cloud-Zugang (Token, Gist-ID) – gerätebezogen, wird nicht hochgeladen |
+| `sg-design`, `sg-glass` | Design |
+| `sg-app-v1` | Hülle: zuletzt gewählte Unterpunkte |
+| `sg-wissen-v1` | Sportwissenschaft: Lesefortschritt, Karten (Box/Fälligkeit), Quizfehler, Verlauf |
+| `schulkalender-bayern-v1` | Schule |
+| `denkpause.v1` | Pause |
+| `wk_*` | Training (Log, Aktivitäten, Einstellungen …) |
+| `rodelmobility.v1` | Mobility |
+| `pulsplan.v1` | Atmung & HRV |
+| `bahnplan.v1` | Bahnplan |
+| `zweiminutenbibel_v2` | Bibel |
+| `sg-dir-v1` | frühere Übersicht (Version 2.x, nicht mehr benutzt) |
+
+Cloud-Abgleich: Gruppen in `verbund.js` (`DATA`, `EXTRA`), je Gruppe eine Datei `app-<id>.json` im Gist; Termine/Aufgaben/
+Notizen eintragsweise zusammengeführt (neuere Änderung gewinnt).
+
+## 4. Arbeiten an der App
+
+### Ablauf einer Änderung
+1. Seite ändern: direkt in `<seite>/js/*.js` bzw. `index.html`. Gemeinsames: in `werkzeuge/quellen/` (nie in `sg/`).
+2. Version in `werkzeuge/build.py` erhöhen (`VERSION=…`).
+3. `python3 werkzeuge/build.py` – baut gemeinsame Skripte in alle Seiten ein, setzt `?v=` an alle Skripte, erzeugt
+   `wissen/js/buch.js`, den CSV-Worker und die Dateiliste in `sw.js`.
+4. Tests (Abschnitt 5), dann committen und pushen. Nutzer aktualisiert über Mehr › „Version aktualisieren“.
+
+### Sportwissenschaft aktualisieren
+Das Buch ist ein Claude-Doc („Sportwissenschaft für Rennrodler“, https://claude.ai/artifact/5nhNSLmBbqpxQD1ndpYutj).
+Neu exportieren (Docs-Export als Markdown) → `wissen/buch.md` ersetzen → Build. Quizfragen und Merksatz-Fragen:
+`werkzeuge/quellen/wissen_quiz.py` (Anzahl Merksatz-Fragen muss zu den Merksätzen passen, sonst bricht der Generator ab).
+
+## 5. Tests
+
+```
+cd werkzeuge/tests && npm install          # Playwright (Browser: SG_CHROME, Standard /opt/pw-browsers/…)
+cd <Ordner über planer> && python3 -m http.server 8765 &      # App unter http://localhost:8765/planer/
+node werkzeuge/tests/suite3.js [Filter]   # Gesamt-Suite (Stand 3.0.0: 41 Tests)
+node werkzeuge/tests/offline3.js          # Offline wie installiert: einmal online, Server aus, alles prüfen (42 Prüfungen)
+node werkzeuge/tests/bahnplan-1.js / bahnplan-2.js   # Bahnplan (ERR_FAILED-Meldungen = absichtlich gesperrte Wikipedia)
+node werkzeuge/tests/upd.js               # echter Update-Weg (baut kurz Version 9.9.8, danach wieder zurück)
+```
+`seed.js` füllt Testdaten (Schule, Mobility, Atmung, Training, Termine).
+
+### Stolperfallen (aus Erfahrung)
+- Server für den Offline-Test **per PID beenden** (`pgrep -f "^python3 -m http.server 8765"`), nie `pkill -f` – das trifft die eigene Shell.
+- Playwright `setOffline` stört Service-Worker-Navigationen → für echte Offline-Tests den Server abschalten.
+- `page.goto` auf dieselbe Adresse mit anderem `#` liefert `null` (keine Antwort) – `reload()` benutzen.
+- Lange Testläufe mit `| grep` puffern die Ausgabe; in eine Datei schreiben.
+- `scrollIntoView` in der Hülle verschiebt die ganze Seite → nur Container scrollen.
+- Grid-Spalten in der Hülle immer `minmax(0,1fr)`, sonst machen Chip-Reihen das Layout breiter als den Bildschirm.
+- Unsichtbare, verschobene Elemente fangen Tipps ab → im Ruhezustand `pointer-events:none`.
+- Debounce beim Speichern kann Daten verlieren, wenn Android die App beendet → wichtige Aktionen sofort speichern.
+- GitHub: Repos anlegen/löschen kann Claude nicht (403) – der Nutzer macht das.
+- Inhalte von Seiten mit CSP `worker-src 'self'`: Worker nur aus Dateien, nicht aus `blob:`.
+
+## 6. Wo die Geschichte steht
+- `werkzeuge/VERLAUF.md`: Versionen, Wünsche des Nutzers, gefundene Fehler und ihre Ursachen.
+- `git log`: jede Änderung mit Begründung.
+- `werkzeuge/archiv/`: abgelöste Teile (z. B. Übersicht aus 2.x).

@@ -1,0 +1,8 @@
+{
+  "name": "planer-tests",
+  "private": true,
+  "description": "Playwright-Tests für die App Planer (siehe werkzeuge/WISSEN.md, Abschnitt 5)",
+  "dependencies": {
+    "playwright": "^1.53.0"
+  }
+}
