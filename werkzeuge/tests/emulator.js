@@ -20,7 +20,17 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   const wv = await dev.webView({ pkg: PKG }, { timeout: 60000 });
   const page = await wv.page();
   const errs = []; page.on('pageerror', e => errs.push(e.message)); page.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
-  await page.waitForSelector('#nav button', { timeout: 30000 });
+  const diag = async (why) => {
+    console.log('DIAGNOSE (' + why + ')');
+    await dev.screenshot({ path: OUT + '/0-diagnose.png' }).catch(() => {});
+    const d = await page.evaluate(() => ({ url: location.href, title: document.title, ready: document.readyState, html: document.documentElement.outerHTML.slice(0, 1500),
+      frames: [...document.querySelectorAll('iframe')].map(f => f.src) })).catch(e => ({ err: String(e) }));
+    console.log(JSON.stringify(d, null, 1));
+    const lc = execSync('adb logcat -d -t 400', { encoding: 'utf8', maxBuffer: 1 << 24 }).split('\n').filter(l => /Capacitor|chromium|Console|WebView|AndroidRuntime|planer|FATAL/i.test(l)).slice(-120).join('\n');
+    console.log(lc); fs.writeFileSync(OUT + '/logcat.txt', lc);
+  };
+  console.log('Seiten im WebView:', page.url());
+  try { await page.waitForSelector('#nav button', { timeout: 30000 }); } catch (e) { await diag('Leiste fehlt'); throw e; }
   await wait(2500);
   await dev.screenshot({ path: OUT + '/1-start.png' });
   const info = await page.evaluate(() => ({ url: location.href, native: !!window.SGNative, ver: window.SGVersion, sheet: document.getElementById('sheet').textContent.slice(0, 80),
