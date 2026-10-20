@@ -86,6 +86,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     setTimeout(() => { if (dx || dy) tgt.dispatchEvent(new TouchEvent('touchmove', { touches: [t(x0 + dx, y0 + dy)], changedTouches: [t(x0 + dx, y0 + dy)], bubbles: true }));
       tgt.dispatchEvent(new TouchEvent('touchend', { touches: [], changedTouches: [t(x0 + dx, y0 + dy)], bubbles: true })); res(); }, ms || 30);
   }), [sel, dx, dy, ms]);
+  const trFrame = p => p.frames().find(f => /\/planer\/training\/(#|$)/.test(f.url()));
   // Ist in der sichtbaren Seite der Unterbereich aus V aktiv? (Sprungadresse h oder Knopf sel)
   const activeOk = p => p.evaluate(() => {
     const m = location.hash.slice(1).split('/'), v = SGShell.V[m[0]], s = v.secs.find(x => x.id === m[1]) || v.secs[0], k = s.kids ? (s.kids.find(x => x.id === m[2]) || s.kids[0]) : null;
@@ -186,6 +187,43 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(ex.join() === 'auswertung', 'nur einer ' + ex);
     assert(!e.length, e.join(' | ')); await c.close();
   });
+  await test('S Prüfbefunde Phase 2: Doppeltipp, Tastatur bleibt im Menü, Zurück zu Mehr, Tablet-Aufklappen, Ausschnitt aus der Seite', async () => {
+    const c = await ctxFor({ viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true }), p = await c.newPage(), e = watch(p), bad = [];
+    await open(p, '#kalender'); await p.click('#nav [data-tab=training]'); await wait(p, 1200);
+    // zwei schnelle Tipps: das sich schließende Menü nimmt keinen zweiten an, kein falscher Verlaufseintrag
+    await p.click('#menu'); await wait(p, 400);
+    await p.click('#dwpn .dw-r [data-sec=lauf]'); await wait(p, 100); await p.mouse.click(60, 250); await wait(p, 900);
+    if ((await state(p)).hash !== '#training/lauf') bad.push('Doppeltipp ' + (await state(p)).hash);
+    await p.goBack(); await wait(p, 600); if ((await state(p)).tab !== 'kalender') bad.push('Verlauf nach Doppeltipp ' + (await state(p)).hash);
+    // Tab bleibt im Menü (Rest ist gesperrt), Escape schließt
+    await p.goto(APP + '#schule'); await wait(p, 1500); await p.click('#menu'); await wait(p, 400);
+    for (let n = 0; n < 15; n++) { await p.keyboard.press('Tab'); const w = await p.evaluate(() => { const a = document.activeElement; return a === document.body ? 'body' : a.closest('#dwpn') ? 'menu' : a.tagName + '#' + a.id; }); if (w !== 'menu' && w !== 'body') { bad.push('Fokus verlässt Menü: ' + w); break; } }
+    await p.keyboard.press('Escape'); await wait(p, 400); if (await dwOpen(p)) bad.push('Escape nach Tab');
+    if (await p.evaluate(() => document.getElementById('stage').hasAttribute('inert'))) bad.push('bleibt gesperrt');
+    // „Zurück zu Mehr“ führt nach Mehr, auch wenn Bibel aus dem Kalender kam
+    await p.goto(APP + '#kalender'); await wait(p, 1200); await p.evaluate(() => SGShell.openUrl('bibel/#lesen')); await wait(p, 1500);
+    await p.click('#menu'); await wait(p, 400); await p.click('#dwpn [data-dgo=mehr]'); await wait(p, 900);
+    if ((await state(p)).hash !== '#mehr') bad.push('Zurück zu Mehr ' + (await state(p)).hash);
+    // Sprung aus der Seite (Alternative „Nur Dehnen“) landet auf Kraft mit passender Pfadzeile
+    await p.goto(APP + '#training/heute'); await wait(p, 2200);
+    await trFrame(p).evaluate(() => document.getElementById('btnAdaptiveStretch').click()); await wait(p, 1500);
+    const st = await state(p);
+    if (st.hash !== '#training/kraft' || !/^Kraft/.test(st.path) || await activeOk(p)) bad.push('Nur Dehnen → ' + st.hash + ' ' + st.path + ' ' + await activeOk(p));
+    await c.close();
+    // Tablet: nach Zuklappen und Wechsel ist der neue aktive Eintrag aufgeklappt
+    const t = await ctxFor(TAB), q = await t.newPage(); e.push(...watch(q));
+    await open(q, '#training/rodeln/plan'); await q.click('#dwpn [data-exp=rodeln]'); await wait(q, 150);
+    await q.click('#dwpn [data-sec=auswertung][data-kid=fitness]', { force: true }).catch(async () => { await q.click('#dwpn [data-exp=auswertung]'); await q.click('#dwpn [data-sec=auswertung][data-kid=fitness]'); }); await wait(q, 1200);
+    const ex = await q.$$eval('#dwpn .dw-g.ex .dw-r [data-sec]', l => l.map(x => x.dataset.sec).join());
+    if (ex !== 'auswertung') bad.push('Tablet aufgeklappt: ' + ex);
+    if (await q.evaluate(() => document.getElementById('path').tabIndex) !== -1) bad.push('Pfadzeile auf Tablet fokussierbar');
+    await t.close();
+    // Querformat-Handy (915 × 412): Menü zum Aufziehen statt fester Spalte
+    const l = await ctxFor({ viewport: { width: 915, height: 412 }, isMobile: true, hasTouch: true }), r = await l.newPage();
+    await open(r, '#schule'); if (!await r.isVisible('#menu')) bad.push('Querformat ohne Menü-Symbol'); await l.close();
+    assert(!bad.length, bad.join('; '));
+    assert(!e.length, e.join(' | '));
+  });
   for (const [lab, opt, zoom] of [['360×640', { viewport: { width: 360, height: 640 }, isMobile: true, hasTouch: true }, 1], ['360×800 Schrift 130 %', { viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true }, 1.3],
     ['800×1280', { viewport: { width: 800, height: 1280 }, hasTouch: true }, 1], ['1280×800', TAB, 1], ['1280×800 Schrift 130 %', TAB, 1.3]]) {
     await test(`S Seitenmenü passt: ${lab}`, async () => {
@@ -222,6 +260,101 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
       assert(!shown, 'eigene Leiste sichtbar in ' + path);
       assert(await p.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 1, 'Überlauf bei ' + h);
     }
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  /* ---------- T: Training aufgeräumt (Phase 3) ---------- */
+  const SMALL = { viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true };
+  await test('T Training: jede Seite zeigt ihre Hauptaktion ohne Scrollen (360×800), Laufen und Kraft getrennt', async () => {
+    const c = await ctxFor(SMALL), p = await c.newPage(), e = watch(p), bad = [];
+    for (const [h, sel] of [['heute', '#btnStartToday'], ['lauf', '#btnRunTrackStart'], ['kraft', '#btnGymStart'], ['auswertung/fitness', '[data-sec=fitscore]'], ['auswertung/analyse', '[data-sec=dkpis]'], ['auswertung/rueckblick', '[data-sec=calgrid]']]) {
+      await open(p, '#training/' + h);
+      const r = await trFrame(p).evaluate(sel => { const el = document.querySelector(sel), b = el && el.getBoundingClientRect(); return el && el.offsetParent ? [Math.round(b.top), Math.round(b.bottom), innerHeight, scrollY] : null; }, sel);
+      if (!r || r[3] > 0 || r[0] < 0 || r[1] > r[2]) bad.push(h + ' ' + JSON.stringify(r));
+    }
+    // Laufen ohne Gym/Dehnen, Kraft ohne Lauf; in Kraft steht Dehnen (120 Übungen) gleich nach Gym
+    await open(p, '#training/lauf');
+    let v = await trFrame(p).evaluate(() => ['runtrack', 'distance', 'gym', 'tsmob', 'tsbreath', 'tsbahn', 'gymhistory'].map(k => { const x = document.querySelector('#s-lauf [data-sec=' + k + ']'); return k + ':' + !!(x && x.offsetParent); }).join()
+      + ([...document.querySelectorAll('#s-lauf .sec-label')].some(x => x.offsetParent && /Programme/.test(x.textContent)) ? ' Programme-Überschrift' : ''));
+    if (v !== 'runtrack:true,distance:true,gym:false,tsmob:false,tsbreath:false,tsbahn:false,gymhistory:false') bad.push('Laufen ' + v);
+    await open(p, '#training/kraft');
+    v = await trFrame(p).evaluate(() => { const vis = [...document.querySelectorAll('#s-lauf > [data-sec]')].filter(x => x.offsetParent).sort((a, b) => getComputedStyle(a).order - getComputedStyle(b).order).map(x => x.dataset.sec); return vis.join(); });
+    if (!/^gym,tsmob,/.test(v) || /runtrack|distance/.test(v)) bad.push('Kraft ' + v);
+    assert(!bad.length, bad.join('; '));
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('T Heute: Startknopf klar beschriftet, Kennzahlenreihe, höchstens drei Bildschirmhöhen Scrollen auch ganz aufgeklappt', async () => {
+    const c = await ctxFor(SMALL), p = await c.newPage(), e = watch(p);
+    await c.addInitScript(() => { if (!sessionStorage.akk) { const o = {}; ['exercises', 'readiness', 'weathertoday', 'weekbar', 'sickcheckin', 'injurycheckin', 'adaptive', 'whatsnew', 'importcard', 'tip'].forEach(k => o[k] = 1); localStorage.setItem('sg-training-akk-v1', JSON.stringify(o)); sessionStorage.akk = 1; } });
+    await open(p, '#training/heute');
+    const r = await trFrame(p).evaluate(() => ({ btn: document.getElementById('btnStartToday').textContent, dots: document.querySelectorAll('#kpiWeek .dots i').length, today: document.querySelectorAll('#kpiWeek .dots i.today').length,
+      kpiTop: document.querySelector('[data-sec=kpis]').getBoundingClientRect().top, heroTop: document.querySelector('[data-sec=hero]').getBoundingClientRect().top,
+      closed: document.querySelectorAll('#s-heute .acc.closed').length, sh: document.documentElement.scrollHeight, ih: innerHeight }));
+    assert(/starten · \d+ min|Zum Lauf|Nochmal/.test(r.btn), 'Startknopf ' + r.btn);
+    assert(r.dots === 7 && r.today === 1, 'Wochenpunkte ' + r.dots);
+    assert(r.heroTop < r.kpiTop, 'Kennzahlen unter der Heldenkarte');
+    assert(r.closed === 0, 'nicht alles offen');
+    // „höchstens drei Bildschirmhöhen Scrollen“: Scrollweg ≤ 3 × sichtbare Höhe
+    assert(r.sh - r.ih <= 3 * r.ih, 'Scrollweg ' + (r.sh - r.ih) + ' > ' + 3 * r.ih);
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('T Akkordeons: zu zeigt die Kernzahl, Tipp/Enter klappt, Zustand bleibt nach Neustart, Kennzahl öffnet Details', async () => {
+    const c = await ctxFor(SMALL), p = await c.newPage(), e = watch(p);
+    await open(p, '#training/heute');
+    let f = trFrame(p);
+    const s0 = await f.evaluate(() => { const c = document.querySelector('.acc[data-acc=exercises]'); return [c.classList.contains('closed'), c.querySelector('.card-h').getAttribute('aria-expanded'), c.querySelector('.card-h > span:not(.acc-sum)').textContent, c.getBoundingClientRect().height]; });
+    assert(s0[0] && s0[1] === 'false' && /Übungen|Lauftag|Minuten/.test(s0[2]) && s0[3] < 80, 'zu ' + s0);
+    await f.click('.acc[data-acc=exercises] > .card-h'); await wait(p, 200);
+    assert(await f.evaluate(() => document.querySelector('.acc[data-acc=exercises]').classList.contains('open') && document.getElementById('todayList').offsetParent !== null), 'aufklappen');
+    await f.focus('.acc[data-acc=tip] > .card-h'); await f.press('.acc[data-acc=tip] > .card-h', 'Enter'); await wait(p, 150);
+    assert(await f.evaluate(() => document.querySelector('.acc[data-acc=tip]').classList.contains('open')), 'Enter');
+    await p.reload(); await wait(p, 2500); f = trFrame(p);
+    assert(await f.evaluate(() => document.querySelector('.acc[data-acc=exercises]').classList.contains('open') && document.querySelector('.acc[data-acc=tip]').classList.contains('open')), 'Zustand nach Neustart');
+    if (await f.evaluate(() => !document.getElementById('kpiReady').hidden)) {
+      await f.click('#kpiReady'); await wait(p, 700);
+      assert(await f.evaluate(() => document.getElementById('readinessCard').classList.contains('open')), 'Bereitschaft öffnet Details');
+    }
+    // zugeklappte Karte in einer zweiten Seite (Verläufe in Kraft)
+    await open(p, '#training/kraft'); f = trFrame(p);
+    assert(await f.evaluate(() => ['gymhistory', 'stretchhistory'].every(k => document.querySelector('[data-acc=' + k + ']').classList.contains('closed'))
+      && document.querySelector('#s-lauf .sec-label[data-grp=verlauf]').classList.contains('on')), 'Verläufe zu, Überschrift Verlauf');
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('T Starts: Training, Gym, Dehnen, Rodeln vorbereiten, Laufen mit GPS und Herzfrequenz (Testdaten)', async () => {
+    const c = await ctxFor(Object.assign({ permissions: ['geolocation'], geolocation: { latitude: 47.60, longitude: 12.90, accuracy: 6 } }, SMALL)), e = [];
+    // Brustgurt nachgebaut: Web Bluetooth mit Pulswerten 128, 131, …
+    await c.addInitScript(() => {
+      const ch = new EventTarget(); let bpm = 128; ch.startNotifications = () => Promise.resolve(ch);
+      setInterval(() => { const dv = new DataView(new ArrayBuffer(2)); dv.setUint8(0, 0); dv.setUint8(1, bpm++); ch.value = dv; ch.dispatchEvent(new Event('characteristicvaluechanged')); }, 400);
+      const srv = { getPrimaryService: id => id === 0x180D ? Promise.resolve({ getCharacteristic: () => Promise.resolve(ch) }) : Promise.reject(new Error('kein Akku')) };
+      const dev = { name: 'Test-Gurt', addEventListener() {}, gatt: { connected: true, connect: () => Promise.resolve(srv), disconnect() {} } };
+      Object.defineProperty(navigator, 'bluetooth', { value: { requestDevice: () => Promise.resolve(dev) } });
+    });
+    const bad = [];
+    for (const [h, sel, want] of [['heute', '#btnStartToday', '#player.open'], ['kraft', '#btnGymStart', '#gymOverlay.open'], ['kraft', '[data-tsclick=btnStretchStart]', '#dlgStretch[open]'], ['kraft', '[data-tsclick=btnRodelnStart]', '#player.open'], ['lauf', '#btnRunTrackStart', '#runOverlay.open']]) {
+      const p = await c.newPage(); e.push(...watch(p));
+      await open(p, '#training/' + h); const f = trFrame(p);
+      await f.click(sel); await wait(p, 700);
+      if (!await f.$(want)) bad.push(h + ' ' + sel + ' öffnet nicht');
+      if (h === 'lauf') {
+        await f.evaluate(() => window.APP.connectHr()); await wait(p, 600);
+        await f.click('#btnRunGo'); await wait(p, 2500);
+        await c.setGeolocation({ latitude: 47.6015, longitude: 12.9015, accuracy: 5 }); await wait(p, 2500);
+        const r = await f.evaluate(() => [document.getElementById('runGpsStatus').textContent, document.getElementById('runTime').textContent, document.getElementById('runHr').textContent]);
+        if (!/GPS aktiv/.test(r[0]) || r[1] === '0:00' || !/^\d{3}$/.test(r[2])) bad.push('Lauf live ' + r.join(' | '));
+      }
+      await p.close();
+    }
+    assert(!bad.length, bad.join('; '));
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('T Neue Reihenfolge einmalig übernommen, ausgeblendete Bereiche bleiben aus', async () => {
+    const c = await ctxFor(SMALL), p = await c.newPage(), e = watch(p);
+    await c.addInitScript(() => { if (!sessionStorage.mig) { localStorage.setItem('wk_sections', JSON.stringify({ heute: ['tip', 'stats', 'exercises', 'hero', 'weekbar'] })); localStorage.removeItem('wk_sections_v4'); sessionStorage.mig = 1; } });
+    await open(p, '#training/heute');
+    const r = await trFrame(p).evaluate(() => [JSON.parse(localStorage.getItem('wk_sections')).heute.join(), !!document.querySelector('[data-sec=readiness].sec-hidden'), localStorage.getItem('wk_sections_v4')]);
+    assert(/^hero,/.test(r[0]) && r[0].indexOf('readiness') < 0 && r[1] && r[2] === '1', 'Übernahme ' + r);
+    await p.reload(); await wait(p, 2500);
+    assert(await trFrame(p).evaluate(() => !!document.querySelector('[data-sec=readiness].sec-hidden')), 'ausgeblendet nach Neustart wieder da');
     assert(!e.length, e.join(' | ')); await c.close();
   });
   await test('K Kalender: Reihenfolge Wochenleiste · Tagesplan · Monat, auf 360×800 ohne Scrollen sichtbar', async () => {

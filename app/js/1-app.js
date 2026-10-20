@@ -52,7 +52,7 @@
       { id: "lauf", t: "Laufen", p: "training/", h: "lauf" },
       { id: "kraft", t: "Kraft", p: "training/", h: "kraft" },
       { id: "rodeln", t: "Rodeln", p: "training/bahnplan/", sel: MODNAV, kids: [{ id: "plan", t: "Kurvenbuch", s: "plan" }, { id: "bahnen", t: "Bahnen", s: "bahnen" }, { id: "laeufe", t: "Läufe & Zeiten", s: "laeufe" }, { id: "buch", t: "Drucken", s: "buch" }] },
-      { id: "auswertung", t: "Auswertung", p: "training/", kids: [{ id: "fitness", t: "Fitness", h: "fitness" }, { id: "analyse", t: "Analyse", h: "daten" }] },
+      { id: "auswertung", t: "Auswertung", p: "training/", kids: [{ id: "fitness", t: "Fitness", h: "fitness" }, { id: "analyse", t: "Analyse", h: "daten" }, { id: "rueckblick", t: "Kalender & Rückblick", h: "kalender" }] },
       { id: "wissen", t: "Sportwissenschaft", p: "wissen/", kids: [{ id: "lesen", t: "Lesen", h: "lesen" }, { id: "karten", t: "Karteikarten", h: "karten" }, { id: "quiz", t: "Quiz", h: "quiz" }, { id: "suche", t: "Suche", h: "suche" }] }
     ] },
     mobility: { t: "Mobility", tab: "mobility", nav: "chips", secs: [
@@ -143,8 +143,11 @@
     document.title = v.t + " · Planer";
     backEl.hidden = !v.up; backEl.innerHTML = ico("back");
     var dw = hasDw(v);
+    var lostFocus = document.activeElement === menuEl && !dw;
     menuEl.hidden = !dw; pathEl.hidden = !dw; topEl.classList.toggle("hasmenu", dw); document.body.classList.toggle("hasdw", dw);
+    pathEl.tabIndex = wideMQ.matches ? -1 : 0;
     if (!dw && drawerOpen) closeDrawer();
+    if (lostFocus) (v.up ? backEl : titleEl).focus({ preventScroll: true });
     // Navigation
     Array.prototype.forEach.call(navEl.children, function (b) { b.classList.toggle("on", b.dataset.tab === v.tab); });
     // Kopf-Aktionen
@@ -186,11 +189,13 @@
   function hashOf(v, s, k) { return "#" + v + (s ? "/" + s + (k ? "/" + k : "") : ""); }
   function go(v, s, k, opt) {
     opt = opt || {};
+    if (drawerOpen) return closeDrawer(function () { go(v, s, k, opt); });
     if (!V[v]) v = "kalender";
     var push = opt.push != null ? opt.push : (cur.v === "kalender" && v !== "kalender") || (V[v].up === cur.v);
-    var hsh = hashOf(v, s, k);
+    var hsh = hashOf(v, s, k), prev = cur.v;
     cur = { v: v, s: s || null, k: k || null, sub: opt.sub || null };
-    if (location.hash !== hsh) { if (push) history.pushState({ app: 1 }, "", hsh); else history.replaceState({ app: 1 }, "", hsh); }
+    // from = Ziel davor: „Zurück zu Mehr“ darf nur dann zurückgehen, wenn davor wirklich Mehr war
+    if (location.hash !== hsh) { if (push) history.pushState({ app: 1, from: prev }, "", hsh); else history.replaceState({ app: 1, from: history.state && history.state.from }, "", hsh); }
     render();
   }
   function fromHash() {
@@ -228,9 +233,13 @@
    * Öffnet nur über das Symbol, die Pfadzeile oder einen zweiten Tipp auf den aktiven Tab (kein Wischen vom Rand – das ist
    * die Zurück-Geste von Android). Beim Öffnen entsteht ein Verlaufseintrag, Zurück schließt es also zuerst.
    * Ab 900 px steht es fest als Spalte neben der Navigation. */
-  var drawerOpen = false, drawerAt = 0, dwAfter = null, dwExp = null, wideMQ = matchMedia("(min-width: 900px)");
+  // feste Spalte nur auf großen Bildschirmen – Querformat-Handys (915 × 412) bekommen das Menü zum Aufziehen
+  var drawerOpen = false, drawerAt = 0, dwAfter = null, dwExp = null, dwLast = "", wideMQ = matchMedia("(min-width: 900px) and (min-height: 600px)");
   function hasDw(v) { return !!(v && v.nav === "drawer" && v.secs && v.secs.length > 1); }
   function renderDrawer(v, s, k) {
+    // aufgeklappte Gruppe gilt nur bis zum nächsten Wechsel – danach ist wieder der aktive Eintrag offen
+    if (dwLast !== cur.v + "/" + s.id) { dwExp = null; dwLast = cur.v + "/" + s.id; }
+    var hadFocus = dwPn.contains(document.activeElement);
     var h = '<div class="dw-h">' + esc(v.t) + "</div>";
     h += v.secs.map(function (x) {
       var on = x.id === s.id, ex = !!x.kids && (dwExp == null ? on : dwExp === x.id);
@@ -242,8 +251,11 @@
     if (ft.length) h += '<div class="dw-ft">' + ft.map(function (f) { return '<button class="dw-it" data-dgo="' + f[0] + '">' + ico(f[2]) + esc(f[1]) + "</button>"; }).join("") + "</div>";
     dwPn.innerHTML = h; dwPn.style.setProperty("--c", v.c || "var(--acc)");
     if (wideMQ.matches) { dwPn.setAttribute("role", "navigation"); dwPn.removeAttribute("aria-modal"); } else { dwPn.setAttribute("role", "dialog"); dwPn.setAttribute("aria-modal", "true"); }
+    if (hadFocus) dwFocus();
   }
-  function dwFocus() { var a = dwPn.querySelector(".dw-it.sub.on") || dwPn.querySelector(".dw-it.on") || dwPn.querySelector(".dw-it"); if (a) a.focus({ preventScroll: true }); }
+  // offenes Menü (Handy): alles dahinter ist für Tastatur und Vorlesen gesperrt
+  function dwInert(on) { [topEl, chipsEl, stage, navEl].forEach(function (x) { if (on) x.setAttribute("inert", ""); else x.removeAttribute("inert"); }); }
+  function dwFocus() { var a = [dwPn.querySelector(".dw-it.sub.on"), dwPn.querySelector(".dw-it.on"), dwPn.querySelector(".dw-it")].filter(function (x) { return x && x.offsetParent; })[0]; if (a) a.focus({ preventScroll: true }); }
   function openDrawer() {
     var v = V[cur.v]; if (!hasDw(v)) return;
     if (wideMQ.matches) return dwFocus();
@@ -251,13 +263,13 @@
     dwExp = null; renderDrawer(v, secOf(v, cur.s), kidOf(secOf(v, cur.s), cur.k));
     drawerOpen = true; drawerAt = Date.now(); dwAfter = null;
     history.pushState({ app: 1, drawer: 1 }, "", location.hash);
-    drawerEl.classList.add("on"); menuEl.setAttribute("aria-expanded", "true");
+    drawerEl.classList.add("on"); menuEl.setAttribute("aria-expanded", "true"); dwInert(true);
     setTimeout(dwFocus, 30);
   }
   // after = Navigation nach dem Schließen (erst wenn der Verlaufseintrag des Menüs weg ist, sonst landet sie im falschen Eintrag)
   function closeDrawer(after, fromPop) {
     if (!drawerOpen) { if (after) after(); return; }
-    drawerOpen = false; drawerEl.classList.remove("on"); menuEl.setAttribute("aria-expanded", "false");
+    drawerOpen = false; drawerEl.classList.remove("on"); menuEl.setAttribute("aria-expanded", "false"); dwInert(false);
     if (!menuEl.hidden) menuEl.focus({ preventScroll: true });
     if (!fromPop && history.state && history.state.drawer) { dwAfter = after || function () {}; history.back(); }
     else if (after) after();
@@ -277,7 +289,7 @@
     if (!b) return;
     var v0 = cur.v, sec = b.dataset.sec, kid = b.dataset.kid || null, to = b.dataset.dgo;
     closeDrawer(function () {
-      if (to && to === V[v0].up) { if (history.state && history.state.app && history.length > 1) history.back(); else go(to); }
+      if (to && to === V[v0].up) { if (history.state && history.state.from === to) history.back(); else go(to, null, null, { push: false }); }
       else if (to) go(to, null, null, { push: true });
       else go(v0, sec, kid, { push: false });
     });
@@ -1041,6 +1053,7 @@
   var sheetAt = 0;
   function sheet(html, cb) {
     sheetEl.querySelector(".pn").innerHTML = '<div class="hd"></div>' + html; sheetCb = cb;
+    if (drawerOpen) { drawerOpen = false; drawerEl.classList.remove("on"); menuEl.setAttribute("aria-expanded", "false"); dwInert(false); history.replaceState({ app: 1, sheet: 1 }, "", location.hash); sheetOpen = true; sheetAt = Date.now(); }
     if (!sheetOpen) { history.pushState({ app: 1, sheet: 1 }, "", location.hash); sheetOpen = true; sheetAt = Date.now(); }
     sheetEl.classList.add("on");
   }

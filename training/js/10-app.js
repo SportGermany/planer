@@ -846,7 +846,9 @@ function renderHeute(){
   (p.rest && p.injured ? ["Verletzungspause","Atmung","Schonung"] : p.rest ? ["Entspannung","Atmung","Regeneration"] : p.trainedElsewhere ? ["Extern trainiert","Cool-down","Regeneration"] : p.run ? ["Ausdauer","Beine","Kopf frei"] : p.exercises.map(function(e){ return e.groupLabel; }))
     .forEach(function(c){ chips.appendChild(el("span","chip",esc(c))); });
 
-  $("btnStartToday").textContent = p.rest ? "Atemübung starten" : p.trainedElsewhere ? "Cool-down starten" : p.run ? "Zum Lauf" : (done ? "Nochmal trainieren" : "Training starten");
+  // klare Beschriftung der Hauptaktion: was und wie lange
+  $("btnStartToday").textContent = p.rest ? "Atemübung starten · 2 min" : p.trainedElsewhere ? "Cool-down starten · 2 min" : p.run ? "Zum Lauf" :
+    (done ? "Nochmal trainieren" : $("heroTitle").textContent.replace(/-Zirkel$/, "") + " starten") + " · " + Math.round(todayDuration()/60) + " min";
   $("btnRest").classList.toggle("on", !!p.rest);
   $("btnRest").textContent = p.rest ? "Ruhetag aufheben" : "Heute als Ruhetag";
   $("btnToggleDone").textContent = done ? "✓" : "✓";
@@ -1489,7 +1491,7 @@ function startToday(){
   var p = planToday();
   if (p.rest && p.sick){ openPlayer(buildSickRoutine()); return; }
   if (p.rest){ openPlayer(buildBreath()); return; }
-  if (p.run){ switchTab("lauf"); return; }
+  if (p.run){ showPart("lauf"); return; }
   openPlayer(W.buildSequence(p, S.settings));
 }
 function openPlayer(seq){
@@ -1647,6 +1649,11 @@ function finishWorkout(){
 /* ============================================================
    NAVIGATION & EVENTS
    ============================================================ */
+// Ausschnitt „Laufen“ oder „Kraft“ zeigen – in der Hülle über deren Navigation, damit Pfad und Menü stimmen
+function showPart(part){
+  try { var sh = window.parent !== window && window.parent.SGShell; if (sh) { sh.go("training", part, null, { push: false }); return; } } catch(e){}
+  switchTab("lauf"); $("s-lauf").setAttribute("data-part", part);
+}
 function switchTab(name){
   S.screen = name;
   $("s-lauf").removeAttribute("data-part");
@@ -1718,7 +1725,7 @@ function bind(){
     openPlayer(buildBreath());
   });
   var btnAS = $("btnAdaptiveStretch");
-  if (btnAS) btnAS.addEventListener("click", function(){ switchTab("lauf"); });
+  if (btnAS) btnAS.addEventListener("click", function(){ showPart("kraft"); });
   var btnAF = $("btnAdaptiveFewer");
   if (btnAF) btnAF.addEventListener("click", function(){
     if (S.settings.rounds > 1){

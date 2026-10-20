@@ -49,7 +49,7 @@ Offen/notiert: H5 „Starten“ ist ein `span` im Zeilenknopf (für Screenreader
 Tests: suite3 53/53, offline3 44/44, apk, upd, bahnplan-1/-2, schnell 68/68 grün.
 
 
-### Phase 2 – Seitenmenü statt Chips (in Arbeit)
+### Phase 2 – Seitenmenü statt Chips (erledigt)
 Plan: Baustein in `app/js/1-app.js` + `app/index.html`, gespeist aus `V` (neues Feld `nav`: "drawer" für Training, Schule,
 Bibel, Pause; "chips" für Mobility). Adressen, `apply()`, `sg-app-v1` bleiben. Training: „Laufen & Kraft“ wird zu
 zwei Einträgen „Laufen“ (#lauf) und „Kraft“ (#kraft) – Ausschnitte derselben Seite über `data-part` an `#s-lauf`
@@ -70,11 +70,50 @@ Fehler und Ursachen:
 |---|---|---|
 | Kraft zeigte alles | `training-suite.js` behandelt Sprungadressen selbst, löscht die Adresse und klickt den Tab (vor `10-app.js`) | #kraft auch dort, setzt `data-part` |
 | Menü bei Schrift 130 % breiter als Bildschirm (Test mit CSS-Zoom) | `86vw` wird mitgezoomt | `86%` vom festen Behälter |
-| Emulator-Lauf 3.6.0 abgebrochen | Android-Speicherverwaltung (lmkd) beendete erst Google-Dienste, dann die App, nach dem 10. Bereich – kein Fehler der App im Protokoll | Lauf einmal neu gestartet (Ergebnis unten) |
+| Emulator-Lauf 3.6.0 abgebrochen | Android-Speicherverwaltung (lmkd) beendete erst Google-Dienste, dann die App, nach dem 10. Bereich – kein Fehler der App im Protokoll | Lauf einmal neu gestartet: grün, Release v3.6.0 veröffentlicht. Beobachten: tritt es wieder auf, ist es echt (Speicher) |
 
 Tests: suite3 59/59 (neu: jeder Pfad aus V über das Menü inkl. aktivem Unterbereich, Öffnen/Schließen/Zurück-Reihenfolge,
 Größen 360×640, 360×800 @130 %, 800×1280, 1280×800, 1280×800 @130 %), offline3 55/55 (Menüweg durch Training, Mobility,
 Schule, Bibel, Pause), apk.js, upd.js, schnell 68/68.
+
+Prüfung Phase 2 (unabhängiger Prüf-Agent, 15 Befunde):
+| # | Befund | Lösung |
+|---|---|---|
+| F1 | Laufen zeigte Mobility, Atmung, Bahnplan (Karten aus training-suite ohne data-sec) | data-sec tsmob/tsbreath/tsbahn/tsheute/tssources/tsweekall, CSS, Test erweitert |
+| F2 | Zwei Tipps während das Menü ausblendet: erster gewinnt, falscher Verlaufseintrag | `.drawer:not(.on){pointer-events:none}` (nur Handy, Tablet-Spalte bleibt bedienbar) |
+| F3 | Keine Fokusfalle: Tab lief ins iframe, Escape ging dann nicht | Kopf, Chips, Inhalt, Leiste bekommen `inert`, solange das Menü offen ist |
+| F4 | „Zurück zu Mehr“ führte zum Kalender, wenn Bibel/Pause von dort kam | Verlaufseintrag merkt `from`; nur bei from = Mehr zurück, sonst Mehr ersetzt den Eintrag |
+| S5 | Tablet: aufgeklappte Gruppe blieb über Wechsel hinweg | `dwExp` gilt nur bis zum nächsten Ziel/Eintrag |
+| S6 | Fokus ging nach Auswahl verloren | Menü fokussiert nach Neuaufbau wieder; verschwindet das Symbol, Fokus auf Zurück bzw. Titel |
+| S7 | „Zum Lauf“/„Nur Dehnen“ zeigten die ganze alte Seite | `showPart()` geht über `SGShell.go` (Pfad stimmt) |
+| S8 | Titel bei CSS-Zoom 200 % abgeschnitten | nicht geändert: Android-Schriftgröße vergrößert nur Text, Symbole bleiben 44 px; bei 200 % passt „Training“, „Bibel“, „Pause“ – lange Titel („Training einstellen“) werden mit … gekürzt. Für Phase 8 (Querschnitt) vorgemerkt |
+| S9/S10 | Kopf ohne Rand links/rechts im Querformat, Spalte unten ohne --bot | Ränder ergänzt |
+| H11 | Querformat-Handy ≥ 900 px bekam feste Spalte | Spalte erst ab 900 × 600 |
+| H12 | Blatt über offenem Menü: Zurück-Reihenfolge falsch | Blatt übernimmt den Verlaufseintrag des Menüs, Menü geht zu |
+| H13 | `go()` von außen bei offenem Menü | `go()` schließt zuerst das Menü |
+| H14 | Pfadzeile auf dem Tablet fokussierbar | tabIndex −1 |
+| H15 | „Seite bearbeiten“ in Laufen/Kraft listete alle Bereiche | Liste nach Ausschnitt gefiltert, Pfeile überspringen unsichtbare Nachbarn |
+Test „S Prüfbefunde Phase 2“ deckt F2, F3, F4, S5, S7, H11, H14 ab.
+
+### Phase 3 – Training aufräumen (in Arbeit)
+Plan: vorhandenes System der Seitenbereiche (data-sec, Reihenfolge per CSS order, „Seite bearbeiten“) weiter nutzen, nichts löschen.
+Umgesetzt:
+- Einklappbare Karten (`.acc`, Zustand `sg-training-akk-v1`): zu zeigt Titel + Kernzahl, Tipp/Enter klappt.
+- Heute: Heldenkarte oben, Startknopf „Ganzkörper starten · 13 min“, darunter Kennzahlenreihe (Bereitschaft mit Ampel,
+  Wetter, Woche als 7 Punkte; Tipp öffnet die Details). Krank/Verletzt/Alternative als zugeklappte Hinweisstreifen,
+  Neu-in-Version, Import, Tipp unten und zu.
+- Laufen: Lauf live tracken oben, Distanz, nächster Lauftag; Verläufe zu unter „Verlauf & Statistik“.
+- Kraft: Gym-Training oben, „Mobility & Dehnen“ (120 Übungen) als zweite Kachel, Verläufe zu.
+- Auswertung: Fitness-Wert oben, Rest zu; Analyse: Kennzahlen-Kacheln oben, Rest zu; neuer Untereintrag
+  „Kalender & Rückblick“ (bisherige Kalender-Karten der Training-Seite, zugeklappt).
+- Neue Grundreihenfolge einmalig übernommen (`wk_sections_v4`).
+Fehler und Ursachen:
+| Fehler | Ursache | Lösung |
+|---|---|---|
+| Eingeblendete Karten aus training-suite standen über der Hauptaktion | ohne data-sec → CSS order 0 | data-sec, in Reihenfolge eingeplant |
+| Wetter-Kennzahl sichtbar trotz hidden | `.kpi{display:flex}` überschreibt [hidden] | `.kpi[hidden]{display:none}` |
+| Ausgeblendete Bereiche kamen nach jedem Neustart wieder (alter Fehler) | Beim Laden wurde jede fehlende Kennung als „neu“ angehängt | `wk_sections_seen` merkt, was die App schon kannte |
+| Heute ganz aufgeklappt 2353 px | lange Übungsliste | Vorgabe „höchstens drei Bildschirmhöhen Scrollen“: Scrollweg 1680 px = 2,5 Höhen – erfüllt |
 
 ## 3.5.0 – erste veröffentlichte Android-App
 

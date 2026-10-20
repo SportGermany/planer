@@ -53,7 +53,7 @@
   /* Laufen und Kraft: zwei Ausschnitte von „Laufen & Kraft“ (Adresse #lauf / #kraft) */
   #s-lauf[data-part="lauf"] [data-sec="stretch"], #s-lauf[data-part="lauf"] [data-sec="rodeln"], #s-lauf[data-part="lauf"] [data-sec="gym"],
   #s-lauf[data-part="lauf"] [data-sec="rodelnhistory"], #s-lauf[data-part="lauf"] [data-sec="gymhistory"], #s-lauf[data-part="lauf"] [data-sec="stretchhistory"],
-  #s-lauf[data-part="lauf"] [data-sec="cooldownstatus"],
+  #s-lauf[data-part="lauf"] [data-sec="cooldownstatus"], #s-lauf[data-part="lauf"] [data-sec="tsmob"], #s-lauf[data-part="lauf"] [data-sec="tsbreath"], #s-lauf[data-part="lauf"] [data-sec="tsbahn"],
   #s-lauf[data-part="kraft"] [data-sec="runtrack"], #s-lauf[data-part="kraft"] [data-sec="distance"], #s-lauf[data-part="kraft"] [data-sec="sportlog"],
   #s-lauf[data-part="kraft"] [data-sec="runstats"], #s-lauf[data-part="kraft"] [data-sec="nextrunday"], #s-lauf[data-part="kraft"] [data-sec="favoritesport"],
   #s-lauf[data-part="kraft"] .sec-label.manual{ display:none !important; }
@@ -383,6 +383,31 @@
   }
   .wmove:disabled{ opacity:.25; cursor:default; }
   .sec-hidden{ display:none !important; }
+  /* Aufgeräumt (4.0): Karten klappen zu – zu zeigt nur die Kopfzeile mit Kernzahl, Zustand gemerkt (sg-training-akk-v1) */
+  .acc > .card-h{ cursor:pointer; margin-bottom:12px; min-height:28px; }
+  .acc > .card-h::after{ content:""; flex:none; width:8px; height:8px; margin:0 4px 0 2px; border-right:2px solid var(--text-faint); border-bottom:2px solid var(--text-faint); transform:rotate(-135deg) translate(-2px,-2px); transition:transform .2s; }
+  .acc.closed > .card-h{ margin-bottom:0; }
+  .acc.closed > .card-h::after{ transform:rotate(45deg); }
+  .acc.closed > :not(.card-h){ display:none !important; }
+  .acc > .card-h h2{ flex:none; }
+  .acc > .card-h .acc-sum, .acc > .card-h > span{ flex:1; min-width:0; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .acc.open > .card-h .acc-sum{ display:none; }
+  .acc > .card-h:focus-visible{ outline:2px solid var(--accent, #529cca); outline-offset:4px; border-radius:6px; }
+  .acc.closed{ padding-top:13px; padding-bottom:13px; }
+  .sick-checkin.acc.closed, .adaptive-card.acc.closed{ border-left:3px solid var(--accent, #529cca); }
+  .kpi-row{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; margin:0 0 12px; }
+  .kpi{ min-width:0; min-height:62px; border:0; border-radius:14px; background:var(--panel); color:var(--text); display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:3px; padding:9px 11px; text-align:left; font:inherit; cursor:pointer; }
+  .kpi[hidden]{ display:none; }
+  .kpi b{ font-size:16px; font-weight:700; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .kpi span{ font-size:11.5px; color:var(--text-dim); }
+  .kpi[data-amp="gut"] b{ color:var(--work, #57c98d); } .kpi[data-amp="mittel"] b{ color:#e0b34e; } .kpi[data-amp="schlecht"] b{ color:#ef7f7f; }
+  .kpi .dots{ display:flex; gap:4px; height:19px; align-items:center; }
+  .kpi .dots i{ width:9px; height:9px; border-radius:50%; border:1.5px solid var(--text-faint); flex:none; }
+  .kpi .dots i.on{ background:var(--work, #57c98d); border-color:transparent; }
+  .kpi .dots i.today{ border-color:var(--text); }
+  .sec-label.grp{ display:none; }
+  .widget-area, .widget-edit-btn{ order:999; }
+  .sec-label.grp.on{ display:block; }
   .widget-area, .widget-edit-btn{ order:999; }
   .widgets-tab{ display:flex; gap:8px; margin:14px 0 4px; }
   .widgets-tab button{
@@ -1166,6 +1191,7 @@
   </div>
 
   <div class="card weathercard" id="weatherToday" data-sec="weathertoday" style="display:none">
+    <div class="card-h"><h2>Wetter heute</h2></div>
     <div class="wtop">
       <div class="wicon-big" id="wTodayIcon"></div>
       <div class="wmain">
@@ -1230,6 +1256,12 @@
     <button class="btn ghost block sm" id="btnTrainedElsewhere" style="margin-top:8px">Heute schon trainiert</button>
   </div>
 
+  <div class="kpi-row" data-sec="kpis">
+    <button class="kpi" id="kpiReady" data-acc-open="readiness"><b>–</b><span>Bereitschaft</span></button>
+    <button class="kpi" id="kpiWeather" data-acc-open="weathertoday"><b>–</b><span>Wetter</span></button>
+    <button class="kpi" id="kpiWeek" data-acc-open="weekbar"><i class="dots"></i><span>Woche</span></button>
+  </div>
+
   <div class="stat-row" data-sec="stats">
     <div class="stat"><b id="stFit">0</b><span>Fitness</span></div>
     <div class="stat"><b id="stWeek">0/7</b><span>Diese Woche</span></div>
@@ -1252,6 +1284,7 @@
   </div>
 
   <div class="card tight" data-sec="tip">
+    <div class="card-h"><h2>Tipp des Tages</h2></div>
     <p class="muted" id="tipText"></p>
   </div>
 
@@ -1344,7 +1377,7 @@
     <div><h1>Training</h1><p id="runDayInfo">–</p></div>
   </div>
 
-  <div class="sec-label">Programme starten</div>
+  <div class="sec-label grp">Programme starten</div>
   <div class="card" data-sec="stretch">
     <div class="card-h"><h2>Aktiv Dehnen &amp; Mobility</h2><span>120 Übungen</span></div>
     <p class="muted" style="margin-bottom:12px">Wähle einen Bereich und wie lange du Zeit hast. Die App führt dich mit Timer, Ton und Animation durch.</p>
@@ -1369,7 +1402,7 @@
     <button class="btn accent block" id="btnRunTrackStart">🏃 Lauf starten</button>
   </div>
 
-  <div class="sec-label manual" style="order:4">Manuell erfassen</div>
+  <div class="sec-label manual grp" style="order:4">Manuell erfassen</div>
   <div id="runBlocks" data-sec="distance">
   <div class="card">
     <div class="card-h"><h2>Distanz wählen</h2></div>
@@ -1393,7 +1426,7 @@
     <div id="sportLog"></div>
   </div>
 
-  <div class="sec-label" style="order:6">Verlauf &amp; Statistik</div>
+  <div class="sec-label grp" data-grp="verlauf" style="order:6">Verlauf &amp; Statistik</div>
   <div class="card" data-sec="runstats">
     <div class="card-h"><h2>Lauf-Statistik</h2></div>
     <p class="muted" id="runStatsText">–</p>

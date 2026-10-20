@@ -378,6 +378,8 @@ var SECTION_DEFS = {
     {id:"importcard", l:"Import-Hinweis nach Datei-Upload"},
     {id:"readiness", l:"Trainingsbereitschaft"},
     {id:"hero", l:"Trainingskarte"},
+    {id:"kpis", l:"Kennzahlen (Bereitschaft, Wetter, Woche)"},
+    {id:"tsheute", l:"Dazu heute (Mobility, Atmung)"},
     {id:"adaptive", l:"Alternative Trainingsvorschläge"},
     {id:"stats", l:"Statistik-Zeile"},
     {id:"exercises", l:"Deine Übungen heute"},
@@ -396,9 +398,13 @@ var SECTION_DEFS = {
     {id:"calyearprogress", l:"Jahresfortschritt"},
     {id:"calsickoverview", l:"Krankheitsübersicht"},
     {id:"calinjuryoverview", l:"Verletzungsübersicht"},
-    {id:"calweekoverview", l:"Diese Woche im Überblick"}
+    {id:"calweekoverview", l:"Diese Woche im Überblick"},
+    {id:"tsweekall", l:"Woche aller Bereiche"}
   ],
   lauf: [
+    {id:"tsmob", l:"Mobility & Dehnen"},
+    {id:"tsbreath", l:"Atmung & HRV"},
+    {id:"tsbahn", l:"Bahnplan"},
     {id:"stretch", l:"Dehnen & Mobility"},
     {id:"rodeln", l:"Rodeln vorbereiten"},
     {id:"gym", l:"Gym-Training"},
@@ -423,7 +429,8 @@ var SECTION_DEFS = {
     {id:"fitwhy", l:"Woraus sich das ergibt"},
     {id:"fitmuscles", l:"Muskelgruppen"},
     {id:"fitweeks", l:"Einheiten pro Woche"},
-    {id:"fitbest", l:"Bestwerte"}
+    {id:"fitbest", l:"Bestwerte"},
+    {id:"tssources", l:"Wissenschaftliche Grundlagen"}
   ],
   daten: [
     {id:"dbefund", l:"Ehrlicher Befund"},
@@ -441,17 +448,40 @@ var SECTION_DEFS = {
   ]
 };
 S.sectionsOn = A.store.get("wk_sections", null) || {};
+// in 4.0 neu dazugekommene Bereiche – alle anderen kannte die App schon vorher
+var NEW_V4 = ["kpis","tsheute","tsmob","tsbreath","tsbahn","tssources","tsweekall"];
 (function(){
+  // Welche Bereiche die App schon einmal angeboten hat: nur wirklich neue werden angehängt,
+  // ausgeblendete bleiben aus (vorher kamen sie nach jedem Neustart wieder)
+  var seen = A.store.get("wk_sections_seen", null), first = !seen;
+  if (first) seen = {};
   Object.keys(SECTION_DEFS).forEach(function(scr){
     var allIds = SECTION_DEFS[scr].map(function(d){ return d.id; });
-    if (!S.sectionsOn[scr]){ S.sectionsOn[scr] = allIds; return; }
+    if (first) seen[scr] = allIds.filter(function(id){ return NEW_V4.indexOf(id) < 0; });
+    if (!S.sectionsOn[scr]){ S.sectionsOn[scr] = allIds; seen[scr] = allIds.slice(); return; }
     // Neu hinzugekommene Bereiche (z. B. nach einem App-Update) an bereits
     // gespeicherte Auswahl anhängen, statt sie unsichtbar zu lassen.
-    var known = S.sectionsOn[scr];
-    allIds.forEach(function(id){ if (known.indexOf(id) < 0) known.push(id); });
+    var known = S.sectionsOn[scr], was = seen[scr] || [];
+    allIds.forEach(function(id){ if (was.indexOf(id) < 0 && known.indexOf(id) < 0) known.push(id); });
+    seen[scr] = allIds.slice();
   });
+  A.store.set("wk_sections_seen", seen);
 })();
 function saveSections(){ A.store.set("wk_sections", S.sectionsOn); }
+/* Umbau 4.0: neue Grundreihenfolge (Hauptaktion oben, Verläufe unten) – einmalig, ausgeblendete Bereiche bleiben aus */
+var ORDER_V4 = {
+  heute: ["hero","kpis","sickcheckin","injurycheckin","adaptive","weatherwarn","tsheute","exercises","stats","readiness","weathertoday","weekbar","whatsnew","importcard","tip"],
+  lauf: ["runtrack","gym","tsmob","distance","nextrunday","stretch","rodeln","tsbreath","tsbahn","sportlog","runstats","gymhistory","stretchhistory","rodelnhistory","favoritesport","cooldownstatus"],
+  daten: ["dkpis","drings","dbefund","dweeks12","dweekoverview","dsharecard","ddropzone","dagoverview","dkmweek","dactivities","dexport","dpdfexport"]
+};
+if (!A.store.get("wk_sections_v4", null)){
+  Object.keys(ORDER_V4).forEach(function(scr){
+    var old = S.sectionsOn[scr] || [];
+    S.sectionsOn[scr] = ORDER_V4[scr].filter(function(id){ return old.indexOf(id) >= 0; })
+      .concat(old.filter(function(id){ return ORDER_V4[scr].indexOf(id) < 0; }));
+  });
+  saveSections(); A.store.set("wk_sections_v4", 1);
+}
 /* ============================================================
    Inhalte der neuen Kalender-Bereiche
    ============================================================ */
@@ -560,11 +590,99 @@ function applySections(screen){
     if (!elx) return;
     var idx = on.indexOf(def.id);
     if (idx < 0){ elx.classList.add("sec-hidden"); }
-    else { elx.classList.remove("sec-hidden"); elx.style.order = idx; }
+    else { elx.classList.remove("sec-hidden"); elx.style.order = idx * 2 + 2; }   // ungerade Plätze für Überschriften
   });
+  tidy(screen);
 }
+
+/* ============================================================
+   AUFGERÄUMT (4.0): einklappbare Karten, Kennzahlenreihe,
+   Überschrift „Verlauf“ vor den Verläufen. Zu zeigt eine Karte nur
+   ihre Kopfzeile mit der Kernzahl; der Zustand bleibt gemerkt.
+   ============================================================ */
+var AKK_KEY = "sg-training-akk-v1";
+// Karte → standardmäßig offen (1) oder zu (0); nicht genannte Karten klappen nicht
+var AKK = {
+  heute: { exercises:0, readiness:0, weathertoday:0, weekbar:0, sickcheckin:0, injurycheckin:0, adaptive:0, whatsnew:0, importcard:0, tip:0 },
+  lauf: { tsbreath:0, tsbahn:0, sportlog:0, runstats:0, gymhistory:0, stretchhistory:0, rodelnhistory:0, favoritesport:0, cooldownstatus:0 },
+  fitness: { tssources:0, fitweek:0, fitpr:0, fitach:0, fitreadiness:0, fitfatigue:0, fitwhy:0, fitmuscles:0, fitweeks:0, fitbest:0 },
+  daten: { dbefund:0, dweeks12:0, dweekoverview:0, dsharecard:0, dkmweek:0, dactivities:0, dexport:0, dpdfexport:0 },
+  kalender: { calmonthsummary:0, calstreaktext:0, calupcoming:0, calyearprogress:0, calsickoverview:0, calinjuryoverview:0, calweekoverview:0 }
+};
+var HIST = ["sportlog","runstats","gymhistory","stretchhistory","rodelnhistory","favoritesport","cooldownstatus"];
+function akkState(){ try { return JSON.parse(localStorage.getItem(AKK_KEY) || "{}") || {}; } catch(e){ return {}; } }
+function akkOpen(id, def){ var st = akkState(); return st[id] != null ? !!st[id] : !!def; }
+function akkSet(id, open){ var st = akkState(); st[id] = open ? 1 : 0; try { localStorage.setItem(AKK_KEY, JSON.stringify(st)); } catch(e){} }
+function akkCard(id){ var c = document.querySelector('[data-sec="' + id + '"]'); return c && c.querySelector(":scope > .card-h") ? c : (c && c.querySelector(".card") && c.querySelector(".card").querySelector(":scope > .card-h") ? c.querySelector(".card") : null); }
+function akkSummary(c){
+  var hd = c.querySelector(":scope > .card-h"), own = hd.querySelector(":scope > span:not(.acc-sum)");
+  if (own && own.textContent.trim()) return "";
+  var src = null;
+  Array.prototype.some.call(c.querySelectorAll("p, .wtemp, .wlabel, #readyScoreTxt, li"), function(x){ if (x.closest(".card-h") || !x.textContent.trim() || x.textContent.trim() === "–") return false; src = x; return true; });
+  return src ? src.textContent.trim().replace(/\s+/g, " ").slice(0, 80) : "";
+}
+function tidy(screen){
+  var defs = AKK[screen] || {};
+  Object.keys(defs).forEach(function(id){
+    var c = akkCard(id); if (!c) return;
+    var hd = c.querySelector(":scope > .card-h");
+    if (!c.classList.contains("acc")){
+      c.classList.add("acc"); c.dataset.acc = id;
+      hd.setAttribute("role", "button"); hd.setAttribute("tabindex", "0");
+      var sum = document.createElement("span"); sum.className = "acc-sum"; hd.appendChild(sum);
+    }
+    var open = akkOpen(id, defs[id]);
+    c.classList.toggle("open", open); c.classList.toggle("closed", !open); hd.setAttribute("aria-expanded", String(open));
+    hd.querySelector(".acc-sum").textContent = open ? "" : akkSummary(c);
+  });
+  if (screen === "lauf") {
+    // Überschrift „Verlauf & Statistik“ direkt vor dem ersten sichtbaren Verlauf
+    var lab = document.querySelector('#s-lauf .sec-label[data-grp="verlauf"]'), first = null;
+    HIST.forEach(function(id){ var e = document.querySelector('#s-lauf [data-sec="' + id + '"]'); if (e && e.offsetParent && (!first || +e.style.order < +first.style.order)) first = e; });
+    if (lab){ lab.classList.toggle("on", !!first); if (first) lab.style.order = +first.style.order - 1; }
+  }
+  if (screen === "heute") kpis();
+}
+function akkToggle(c){
+  var open = !c.classList.contains("open"); akkSet(c.dataset.acc, open);
+  var scr = c.closest(".screen"); tidy(scr ? scr.id.replace(/^s-/, "") : S.screen);
+}
+document.addEventListener("click", function(e){
+  var hd = e.target.closest(".acc > .card-h");
+  if (hd && !e.target.closest("button, a, input, select, label")) { akkToggle(hd.parentNode); return; }
+  var k = e.target.closest("[data-acc-open]");
+  if (k){
+    var c = akkCard(k.dataset.accOpen); if (!c || !c.offsetParent) return;
+    if (!c.classList.contains("open")) akkToggle(c);
+    window.scrollTo({ top: Math.max(0, c.getBoundingClientRect().top + window.scrollY - 12), behavior: "smooth" });
+  }
+});
+document.addEventListener("keydown", function(e){
+  var hd = e.target.closest && e.target.closest(".acc > .card-h");
+  if (hd && e.target === hd && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); akkToggle(hd.parentNode); }
+});
+// Kennzahlenreihe auf „Heute“: Bereitschaft (Ampel), Wetter (eine Zeile), Woche als sieben Punkte (Mo–So)
+function kpis(){
+  var row = document.querySelector('[data-sec="kpis"]'); if (!row) return;
+  var rc = $("readinessCard"), wc = $("weatherToday"), kr = $("kpiReady"), kw = $("kpiWeather"), kk = $("kpiWeek");
+  var rOn = rc && rc.style.display !== "none", pct = rOn ? parseInt(($("readyPct") || {}).textContent, 10) : NaN;
+  kr.hidden = !rOn || isNaN(pct);
+  if (!kr.hidden){ kr.querySelector("b").textContent = pct + " %"; kr.dataset.amp = pct >= 70 ? "gut" : pct >= 40 ? "mittel" : "schlecht"; kr.setAttribute("aria-label", "Bereitschaft " + pct + " Prozent, " + ($("readyLabel") || {}).textContent); }
+  var wOn = wc && wc.style.display !== "none" && $("wTodayTemp") && $("wTodayTemp").textContent.trim() !== "–";
+  kw.hidden = !wOn;
+  if (wOn){ kw.querySelector("b").textContent = $("wTodayTemp").textContent.trim(); kw.querySelector("span").textContent = $("wTodayLabel").textContent.trim() || "Wetter"; }
+  var mon = W.weekMonday(S.today), dots = "", n = 0;
+  for (var i = 0; i < 7; i++){ var d = W.addDays(mon, i), on = !!(S.log[d] && S.log[d].done); if (on) n++; dots += '<i class="' + (on ? "on" : "") + (d === S.today ? " today" : "") + '"></i>'; }
+  kk.querySelector(".dots").innerHTML = dots; kk.setAttribute("aria-label", "Diese Woche " + n + " Einheiten erledigt");
+  var vis = [kr, kw, kk].filter(function(x){ return !x.hidden; }).length;
+  row.style.gridTemplateColumns = "repeat(" + vis + ", minmax(0, 1fr))";
+}
+// welche Bereiche im Ausschnitt Laufen bzw. Kraft gar nicht vorkommen (wie die Regeln in training/index.html)
+var PART_OFF = { lauf: ["stretch","rodeln","gym","rodelnhistory","gymhistory","stretchhistory","cooldownstatus","tsmob","tsbreath","tsbahn"],
+  kraft: ["runtrack","distance","sportlog","runstats","nextrunday","favoritesport"] };
 function renderSectionEditorList(screen){
-  var defs = SECTION_DEFS[screen];
+  var part = screen === "lauf" && $("s-lauf").getAttribute("data-part");
+  var defs = SECTION_DEFS[screen] && SECTION_DEFS[screen].filter(function(d){ return !part || PART_OFF[part].indexOf(d.id) < 0; });
   var host = $("sectionsList");
   host.innerHTML = "";
   if (!defs){
@@ -598,7 +716,9 @@ function renderSectionEditorList(screen){
       btn.onclick = function(){
         var list = S.sectionsOn[screen] || [];
         var i = list.indexOf(def.id);
-        var j = btn.dataset.dir === "up" ? i - 1 : i + 1;
+        // Nachbar überspringen, der im Ausschnitt (Laufen/Kraft) gar nicht zu sehen ist
+        var step = btn.dataset.dir === "up" ? -1 : 1, j = i + step, ids = defs.map(function(d){ return d.id; });
+        while (j >= 0 && j < list.length && ids.indexOf(list[j]) < 0) j += step;
         if (j < 0 || j >= list.length) return;
         var tmp = list[i]; list[i] = list[j]; list[j] = tmp;
         S.sectionsOn[screen] = list;
@@ -665,7 +785,9 @@ function renderWidgetEditorList(screen){
       btn.onclick = function(){
         var list = S.widgetsOn[screen] || [];
         var i = list.indexOf(def.id);
-        var j = btn.dataset.dir === "up" ? i - 1 : i + 1;
+        // Nachbar überspringen, der im Ausschnitt (Laufen/Kraft) gar nicht zu sehen ist
+        var step = btn.dataset.dir === "up" ? -1 : 1, j = i + step, ids = defs.map(function(d){ return d.id; });
+        while (j >= 0 && j < list.length && ids.indexOf(list[j]) < 0) j += step;
         if (j < 0 || j >= list.length) return;
         var tmp = list[i]; list[i] = list[j]; list[j] = tmp;
         S.widgetsOn[screen] = list;
@@ -691,6 +813,7 @@ renderAllWidgets();
 Object.keys(SECTION_DEFS).forEach(applySections);
 
 window.APP5 = {
+  layout: function(){ Object.keys(SECTION_DEFS).forEach(applySections); },
   renderWidgets: renderWidgets, renderAllWidgets: renderAllWidgets, WIDGET_DEFS: WIDGET_DEFS,
   after: function(screen){
     renderWidgets(screen); applySections(screen);

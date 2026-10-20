@@ -33,7 +33,8 @@ button { cursor: pointer; }
 /* ---------- Kopf ---------- */
 .top { grid-area: top; display: flex; align-items: center; gap: 4px; height: calc(58px + var(--top)); padding: var(--top) 8px 0 18px; }
 .top .ttl { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-.top.hasmenu { padding-left: 6px; }
+.top.hasmenu { padding-left: calc(6px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px))); }
+.top { padding-right: calc(8px + var(--safe-area-inset-right, env(safe-area-inset-right, 0px))); }
 .top.hasmenu .ttl { margin-left: 2px; }
 .top.hasmenu h1 { font-size: 20px; line-height: 1.2; }
 .path { align-self: flex-start; max-width: 100%; border: 0; background: none; padding: 0; margin: 1px 0 0; min-height: 20px; color: var(--muted); font-size: 13px; font-weight: 600; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -84,6 +85,7 @@ button { cursor: pointer; }
 }
 /* ---------- Seitenmenü (Handy: von links, Tablet ab 900 px: feste Spalte) ---------- */
 .drawer { position: fixed; inset: 0; z-index: 850; background: rgba(0,0,0,.45); visibility: hidden; opacity: 0; transition: opacity .22s, visibility 0s .22s; }
+.drawer:not(.on) { pointer-events: none; }
 .drawer.on { visibility: visible; opacity: 1; transition: opacity .22s; }
 .dw-pn { position: absolute; top: 0; bottom: 0; left: 0; width: min(86%, 320px); background: var(--s1); overflow-y: auto; overscroll-behavior: contain; border-radius: 0 24px 24px 0; outline: none;
   padding: calc(12px + var(--top)) 12px calc(16px + var(--bot)) calc(12px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));
@@ -105,11 +107,11 @@ button { cursor: pointer; }
 .dw-it.sub { padding-left: 36px; font-size: 14.5px; font-weight: 550; color: var(--muted); }
 .dw-it.sub.on { color: var(--ink); background: var(--s2); box-shadow: inset 3px 0 0 var(--c, var(--acc)); }
 .dw-ft { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
-@media (min-width: 900px) {
+@media (min-width: 900px) and (min-height: 600px) {
   body.hasdw { grid-template-columns: 92px 260px minmax(0, 1fr); grid-template-areas: "nav dw top" "nav dw chips" "nav dw stage"; }
   body > .drawer { display: none; }
-  body.hasdw > .drawer { display: block; grid-area: dw; position: relative; inset: auto; z-index: auto; visibility: visible; opacity: 1; background: none; transition: none; min-height: 0; }
-  body.hasdw .dw-pn { position: absolute; inset: 0; width: auto; transform: none; transition: none; border-radius: 0; box-shadow: none; border-right: 1px solid var(--line); padding: calc(16px + var(--top)) 10px 16px; }
+  body.hasdw > .drawer { display: block; grid-area: dw; position: relative; inset: auto; z-index: auto; visibility: visible; opacity: 1; background: none; transition: none; min-height: 0; pointer-events: auto; }
+  body.hasdw .dw-pn { position: absolute; inset: 0; width: auto; transform: none; transition: none; border-radius: 0; box-shadow: none; border-right: 1px solid var(--line); padding: calc(16px + var(--top)) 10px calc(16px + var(--bot)); }
   .top .menu { display: none !important; }
   .top.hasmenu { padding-left: 24px; }
   .path { pointer-events: none; }
@@ -278,7 +280,7 @@ button { cursor: pointer; }
 <!-- verbund-design:end -->
 </head>
 <body>
-<header class="top"><button class="ib back" id="back" aria-label="Zurück" hidden></button><button class="ib menu" id="menu" aria-label="Bereichsmenü öffnen" aria-expanded="false" aria-controls="dwpn" hidden></button><div class="ttl"><h1 id="title">Kalender</h1><button class="path" id="path" hidden></button></div><span id="acts"></span></header>
+<header class="top"><button class="ib back" id="back" aria-label="Zurück" hidden></button><button class="ib menu" id="menu" aria-label="Bereichsmenü öffnen" aria-expanded="false" aria-controls="dwpn" hidden></button><div class="ttl"><h1 id="title" tabindex="-1">Kalender</h1><button class="path" id="path" hidden></button></div><span id="acts"></span></header>
 <div class="chips" id="chips"></div>
 <main id="stage">
   <section class="native" id="n-kalender"><div class="wrap"></div></section>

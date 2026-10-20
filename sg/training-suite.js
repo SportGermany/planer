@@ -200,20 +200,20 @@
   }
   function trainingHTML() {
     var m = mobilityInfo();
-    return "<div class='card' id='tsMobCard'><div class='card-h'><h2>Mobility & Dehnen</h2><span>alles an einem Ort</span></div>" +
+    return "<div class='card' id='tsMobCard' data-sec='tsmob'><div class='card-h'><h2>Mobility & Dehnen</h2><span>alles an einem Ort</span></div>" +
       "<p class='muted' id='tsMobText' style='margin-bottom:12px'>" + mobText(m) + "</p>" +
       "<div class='ts-grid'><button class='btn accent' data-tsopen='mobility'>Tagesblock " + m.block[0] + "<small>" + esc(m.block[1]) + "</small></button>" +
       "<button class='btn' data-tsopen='mobility/wettkampf'>Wettkampf<small>vor dem Start · nach dem Lauf</small></button>" +
       "<button class='btn' data-tsclick='btnStretchStart'>Freies Dehnen<small>120 Übungen, Bereich wählen</small></button>" +
       "<button class='btn' data-tsclick='btnRodelnStart'>Rodeln-Aufwärmen<small>15 Min., durchgehend bewegt</small></button></div></div>" +
-      "<div class='card' id='tsBreathCard'><div class='card-h'><h2>Atmung & HRV</h2><span>12-Wochen-Plan</span></div>" +
+      "<div class='card' id='tsBreathCard' data-sec='tsbreath'><div class='card-h'><h2>Atmung & HRV</h2><span>12-Wochen-Plan</span></div>" +
       "<p class='muted' style='margin-bottom:12px'>Resonanzatmung mit Biofeedback (Polar H10), Resonanztest, Morgenmessung der Herzratenvariabilität und Werkzeuge gegen akuten Stress. Die Morgen-HRV fließt in deine Trainingsbereitschaft ein.</p>" +
       "<div class='ts-grid'><button class='btn accent' data-tsopen='atmung'>Atmung öffnen<small>Übungen und Plan</small></button><button class='btn' data-tsopen='atmung/train'>Jetzt üben<small>Takt, Resonanz, Morgenmessung</small></button></div></div>" +
       bahnHTML();
   }
   function bahnHTML() {
     var b = json("bahnplan.v1"), n = b && b.tracks ? b.tracks.length : 0, cur = n && (b.tracks.find(function (t) { return t.id === b.cur; }) || b.tracks[0]);
-    return "<div class='card' id='tsBahnCard'><div class='card-h'><h2>Bahnplan</h2><span>Kurvenbuch</span></div>" +
+    return "<div class='card' id='tsBahnCard' data-sec='tsbahn'><div class='card-h'><h2>Bahnplan</h2><span>Kurvenbuch</span></div>" +
       "<p class='muted' style='margin-bottom:12px'>" + (n ? "Deine Bahnen: " + n + (cur ? " · zuletzt <b>" + esc(cur.name) + "</b>" : "") + ". Tippe im Plan auf eine Kurvennummer, um Linie, Körper und Ansage zu sehen."
         : "Bahnen aus aller Welt mit dem Original-Streckenplan von Wikipedia. Für jede Kurve hältst du Form, Linie, Steuern, Blick und Fehlerbilder fest – und druckst alles als Bahnplan aus.") + "</p>" +
       "<div class='ts-grid'><button class='btn accent' data-tsopen='bahnplan" + (n ? "/plan" : "") + "'>" + (n ? "Plan öffnen" : "Bahn wählen") + "<small>" + (n ? "Kurven mit Nummern" : "16 Bahnen, Plan von Wikipedia") + "</small></button>" +
@@ -276,6 +276,8 @@
     var el = document.getElementById(id);
     if (!el) {
       el = document.createElement("div"); el.className = "card"; el.id = id;
+      // eigener Name für Reihenfolge, Ein-/Ausblenden und Zuklappen (Seitenbereiche der Training-App)
+      el.setAttribute("data-sec", { tsHeute: "tsheute", tsSources: "tssources", tsWeekAll: "tsweekall" }[id] || id);
       where(el); if (!el.parentNode) return;
     }
     if (el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html; }
@@ -307,6 +309,7 @@
     var wk = weekAllHTML();
     if (wk) ensure("tsWeekAll", wk, function (el) { var g = document.querySelector("#s-kalender [data-sec='calgrid']"); if (g) g.parentNode.insertBefore(el, g.nextSibling); });
     if (document.querySelector("#s-kalender.active")) decoGrid();
+    if (window.APP5 && window.APP5.layout) window.APP5.layout();
   }
   // Die App zeichnet ihre Seiten neu – eigene Karten bei Bedarf wieder einsetzen
   new MutationObserver(function () { if (!document.getElementById("tsHeute") || !document.getElementById("tsMobCard") || (SC() && !document.getElementById("tsWeekAll"))) render(); })
