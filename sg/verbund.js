@@ -1805,6 +1805,7 @@
     var ext = [];
     try { ext = externalItems(from, to); } catch (x) {}
     ext.forEach(function (x) {
+      if (x.learn) return;   // Lernblöcke bleiben in der App (Hausaufgaben gehen auch nicht ins Handy)
       if ((x.app === "Lernplan" && opt.schule) || (x.app === "Atmung" && opt.atmung)) out.push({ id: x.id, title: x.title, date: x.date, time: x.time || "", end: x.end || "", note: x.note || "", app: x.app });
     });
     return out;
@@ -1977,6 +1978,7 @@
     if (opt.termine) occurrences(from, to).forEach(function (e) { if (e.app !== "Handy") add(e, (e.note ? e.note + "\n" : "") + "Planer · " + e.app); });
     var ext = []; try { ext = externalItems(from, to, true); } catch (x) {}
     ext.forEach(function (x) {
+      if (x.learn) return;
       if ((x.app === "Lernplan" && opt.schule) || (x.app === "Atmung" && opt.atmung)) add(x, (x.note ? x.note + "\n" : "") + "Planer · " + (x.app === "Lernplan" ? "Schule" : x.app));
     });
     if (opt.stunden) {

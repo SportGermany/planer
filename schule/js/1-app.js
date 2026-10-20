@@ -607,16 +607,24 @@ function statusCard(t) {
 const inMin = m => m < 60 ? m + ' Min.' : Math.floor(m / 60) + ' Std.' + (m % 60 ? ' ' + (m % 60) + ' Min.' : '');
 function nowCard(t) {
   if (!db.timetable.length) return '';
+  // Lehrgang oder krank heute: keine Stunde anzeigen (die Karten dazu stehen darunter)
+  if (isSchoolDay(t) && (campOn(t).length || absOn(t).length)) return '';
   const nm = nowMin(), ls = isSchoolDay(t) ? lessonsOn(t) : [];
   let cur = null, nxt = null;
   ls.forEach(l => { const p = period(l.period); if (!p) return; if (nm >= toMin(p.s) && nm < toMin(p.e)) cur = { l, p }; else if (!nxt && nm < toMin(p.s)) nxt = { l, p }; });
   const room = x => esc(x.l.room || subj(x.l.subject).room || ''), name = x => esc(subj(x.l.subject).name || '–'), col = x => subj(x.l.subject).color;
+  // dieselbe Regel wie „Heute im Stundenplan“: heute zählt, solange die letzte Stunde nicht vorbei ist oder keine Zeit hat
+  const lastP = ls.length ? period(ls[ls.length - 1].period) : null, todayOn = ls.length && (!lastP || nm < toMin(lastP.e));
   let lab, it, when;
-  if (cur) { lab = 'Jetzt'; it = cur; when = 'noch ' + inMin(toMin(cur.p.e) - nm) + (nxt ? ' · danach ' + name(nxt) : ''); }
+  if (cur) { lab = 'Jetzt'; it = cur; when = 'noch ' + inMin(toMin(cur.p.e) - nm) + (nxt && nxt.l.subject !== cur.l.subject ? ' · danach ' + name(nxt) : ''); }
   else if (nxt) { lab = 'Nächste Stunde'; it = nxt; when = 'beginnt in ' + inMin(toMin(nxt.p.s) - nm) + ' · ' + nxt.p.s + ' Uhr'; }
+  else if (todayOn) { lab = 'Heute'; it = { l: ls.find(l => !period(l.period)) || ls[0], p: null }; when = ls.length + ' Stunden'; }
   else {
-    const d = nextSchoolDay(t), l0 = lessonsOn(d)[0], p0 = l0 && period(l0.period); if (!l0) return '';
-    lab = diffDays(t, d) === 1 ? 'Morgen' : cap(WDL[dow(d)]) + ', ' + fmtShort(d); it = { l: l0, p: p0 }; when = (p0 ? p0.s + ' Uhr · ' : '') + lessonsOn(d).length + ' Stunden';
+    // nächster Schultag mit Unterricht (A/B-Woche, freie Tage überspringen)
+    let d = nextSchoolDay(t), g = 0;
+    while (!lessonsOn(d).length && g++ < 21) d = nextSchoolDay(d);
+    const l0 = lessonsOn(d)[0], p0 = l0 && period(l0.period); if (!l0) return '';
+    lab = diffDays(t, d) === 1 ? 'Morgen' : cap(WDL[dow(d)]) + ', ' + fmtDM(d); it = { l: l0, p: p0 }; when = (p0 ? p0.s + ' Uhr · ' : '') + lessonsOn(d).length + ' Stunden';
   }
   return `<div class="card nowcard" style="--c:${col(it)}"><div class="nw-l">${lab}</div><div class="nw-t"><i class="dot" style="--c:${col(it)}"></i>${name(it)}${room(it) ? `<span class="nw-r">${room(it)}</span>` : ''}</div><div class="nw-s">${when}</div></div>`;
 }
@@ -850,8 +858,7 @@ function weekAllHTML() {
 }
 function termineHTML() {
   return `${weekAllHTML()}<input class="inp" id="q" type="search" placeholder="Suchen: Fach, Thema, Notiz …" value="${esc(ui.search)}" data-f="search" autocomplete="off" style="margin-bottom:8px;background:var(--surface)">
-    <div class="hscroll"><button class="chip sm${ui.typeFilter === 'all' ? ' on' : ''}" data-a="tfilter" data-v="all">Alle</button><button class="chip sm${ui.typeFilter === 'exams' ? ' on' : ''}" data-a="tfilter" data-v="exams">Prüfungen</button>
-    ${USER_TYPES.map(k => `<button class="chip sm${ui.typeFilter === k ? ' on' : ''}" data-a="tfilter" data-v="${k}"><i class="dot" style="--c:${TYPES[k].color}"></i>${TYPES[k].label}</button>`).join('')}</div>
+    <label class="fsel"><span>Zeigen</span><select class="inp" data-tfilter aria-label="Art der Termine">${[['all', 'Alle'], ['exams', 'Prüfungen']].concat(USER_TYPES.map(k => [k, TYPES[k].label])).map(([k, l]) => `<option value="${k}"${ui.typeFilter === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
     <div id="listRes">${listResHTML()}</div>`;
 }
 function listResHTML() {
@@ -1780,7 +1787,10 @@ function studyFieldsHTML() {
 function saveStudy() { const { _new, ...c } = formState; c.min = Math.max(1, +c.min || 0); upsert('study', c); save(); closeSheet(); render(); toast('Lernzeit gespeichert'); }
 let clockTimer = null;
 function tickClock() { clearInterval(clockTimer); if (local.timer && local.timer.running) clockTimer = setInterval(() => { const el = $('#clock'); if (el) el.textContent = fmtClock(timerElapsed()); else clearInterval(clockTimer); }, 1000); }
-function startTimer(subject) { local.timer = { subject, start: Date.now(), acc: 0, running: true }; saveLocal(); ui.view = 'aufgaben'; ui.auf = 'lernzeit'; if (sheetOpen) { sheetReturn = null; closeSheet(); } render(); window.scrollTo(0, 0); }
+// In der Hülle: Abschnitt melden, wenn die Seite selbst den Bereich wechselt (Pfadzeile und Seitenmenü bleiben richtig)
+const SHELL_SEC = { heute: 'heute', plan: 'plan', aufgaben: 'aufgaben', kalender: 'ferien', lehrgang: 'lernplan' };
+function shellSec(sec) { if (!IN_PLANER || !sec) return; try { const sh = window.parent.SGShell; if (sh) sh.go('schule', sec, null, { push: false }); } catch (e) {} }
+function startTimer(subject) { local.timer = { subject, start: Date.now(), acc: 0, running: true }; saveLocal(); ui.view = 'aufgaben'; ui.auf = 'lernzeit'; if (sheetOpen) { sheetReturn = null; closeSheet(); } render(); window.scrollTo(0, 0); shellSec('lernzeit'); }
 function stopTimer(saveIt) {
   const min = Math.round(timerElapsed() / 60000), tm = local.timer;
   local.timer = null; saveLocal();
@@ -2502,7 +2512,7 @@ function fabAction() {
   const v = ui.view;
   if (v === 'heute') return openChooser();
   if (v === 'kalender') return ui.kal === 'fehlzeiten' ? openAbs(null) : openForm(null, ui.kal === 'woche' && mondayOf(ui.cursor) !== mondayOf(todayStr()) ? mondayOf(ui.cursor) : null);
-  if (v === 'aufgaben') return ui.auf === 'lernzeit' ? openStudy(null) : ui.auf === 'ablage' ? openScan({}) : openHw(null);
+  if (v === 'aufgaben') return ui.auf === 'lernzeit' ? openStudy(null) : ui.auf === 'ablage' ? openScan({}) : ui.auf === 'pruef' ? openForm(null) : openHw(null);
   if (v === 'lehrgang') return ui.camp ? openHw(null, { campId: ui.camp, due: (() => { const c = db.camps.find(x => x.id === ui.camp); return c ? nextSchoolDay(c.end || c.start) : ''; })() }) : openCamp(null);
 }
 
@@ -2514,8 +2524,10 @@ document.addEventListener('click', e => {
   switch (act) {
     // Navigation
     case 'tab': if (sheetOpen) { sheetReturn = null; closeSheet(); } if (v === 'lehrgang' && ui.view === 'lehrgang') ui.camp = null;
-      if (IN_PLANER && v === 'aufgaben' && a.classList.contains('tab') && (ui.auf === 'ablage' || ui.auf === 'lernzeit')) ui.auf = 'offen';
-      ui.view = v; render(); window.scrollTo(0, 0); break;
+      if (IN_PLANER && v === 'aufgaben' && (ui.auf === 'ablage' || ui.auf === 'lernzeit')) ui.auf = 'offen';
+      ui.view = v; render(); window.scrollTo(0, 0);
+      if (!a.classList.contains('tab')) shellSec(SHELL_SEC[v]);   // Sprung aus der Seite („Alle →“, „Plan →“)
+      break;
     case 'sub': { const [k, val] = v.split(':'); ui[k] = val; render(); window.scrollTo(0, 0); break; }
     case 'prev': shift(-1); break;
     case 'next': shift(1); break;
@@ -2524,7 +2536,7 @@ document.addEventListener('click', e => {
     case 'goday': ui.cursor = v; ui.view = 'kalender'; ui.kal = 'tag'; render(); window.scrollTo(0, 0); break;
     case 'wday': ui.cursor = v; render(); break;
     case 'kalWoche': ui.view = 'kalender'; ui.kal = 'woche'; render(); break;
-    case 'kalList': ui.view = 'kalender'; ui.kal = 'termine'; ui.typeFilter = 'exams'; render(); window.scrollTo(0, 0); break;
+    case 'kalList': ui.view = 'kalender'; ui.kal = 'termine'; ui.typeFilter = 'exams'; render(); window.scrollTo(0, 0); if (!a.classList.contains('tab')) shellSec('ferien'); break;
     case 'fab': fabAction(); break;
     case 'settings': openSettings(); break;
     case 'close': closeSheet(); break;
@@ -2762,6 +2774,8 @@ window.addEventListener('storage', e => {
   if (ui.view === 'kalender' && ui.kal === 'termine' && document.activeElement?.id !== 'q') render();
 });
 document.addEventListener('change', e => {
+  // Filter der Termine als Auswahl statt Knopf-Wand (4.0)
+  if (e.target.matches && e.target.matches('[data-tfilter]')) { ui.typeFilter = e.target.value; render(); return; }
   const el = e.target, f = formState, k = el.dataset.f;
   if (f && f._scan && k === 'scanmode') { f.docMode = el.checked; if (f.originals.length) scanReprocess(); return; }
   if (f && f._doc && ['dochw', 'docev', 'doccamp'].includes(k)) { f[{ dochw: 'hwId', docev: 'eventId', doccamp: 'campId' }[k]] = el.value; if (k === 'dochw' && el.value && !f.subject) f.subject = (db.homework.find(x => x.id === el.value) || {}).subject || ''; return; }

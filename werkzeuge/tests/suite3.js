@@ -4,7 +4,7 @@ const fs = require('fs');
 const U = 'http://localhost:8765/planer/', APP = U + 'app/';
 const SEED = fs.readFileSync(__dirname + '/seed.js', 'utf8');
 const ONLY = process.argv[2] || '';
-const VER = '3.6.0';
+const VER = '3.7.0';
 const results = [];
 const PAGES = ['', 'schule/', 'pause/', 'training/', 'training/mobility/', 'training/atmung/', 'training/bahnplan/', 'bibel/', 'wissen/'];
 const PHONE = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 };
@@ -445,6 +445,39 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(await f.evaluate(() => document.getElementById('title').textContent === 'Aufgaben' && !document.getElementById('subnav').hidden), 'Aufgabenliste nach Ablage');
     assert(!e.length, e.join(' | ')); await c.close();
   });
+  await test('P4 Prüfbefunde Phase 4: Wochentag, Stunden ohne Zeit, krank, Lernzeit-Pfad, „Alle →“, Plus in Prüfungen, keine Doppel, Handy ohne Lernblöcke', async () => {
+    const bad = [], mk = async (time, extra) => { const c = await ctxFor(Object.assign({ timezoneId: 'Europe/Berlin' }, SMALL)); await c.addInitScript(SCHUL_EXTRA); if (extra) await c.addInitScript(extra);
+      const p = await c.newPage(); await p.clock.install({ time: new Date(time) }); return { c, p, e: watch(p) }; };
+    // Samstag: „Montag, 26.10.“ (nicht „Montag, Mo 26.10.“)
+    let { c, p, e } = await mk('2026-10-24T10:00:00+02:00'); await open(p, '#schule/heute');
+    let t = await schFrame(p).textContent('.nowcard').catch(() => '');
+    if (!/^Montag, 26\.10\./.test(t)) bad.push('Wochentag: ' + t); bad.push(...e); await c.close();
+    // nur 4 Stundenzeiten, 5. Stunde ohne Zeit: um 12:30 bleibt „Heute“
+    ({ c, p, e } = await mk('2026-10-20T12:30:00+02:00', () => { if (sessionStorage.pz) return; sessionStorage.pz = 1; const k = 'schulkalender-bayern-v1', db = JSON.parse(localStorage.getItem(k)); db.settings.periods = (db.settings.periods || []).slice(0, 4); localStorage.setItem(k, JSON.stringify(db)); }));
+    await open(p, '#schule/heute'); t = await schFrame(p).textContent('.nowcard').catch(() => '');
+    if (!/^Heute/.test(t)) bad.push('ohne Zeit: ' + t); bad.push(...e); await c.close();
+    // krank heute: keine Jetzt-Karte
+    ({ c, p, e } = await mk('2026-10-20T09:40:00+02:00', () => { if (sessionStorage.ab) return; sessionStorage.ab = 1; const k = 'schulkalender-bayern-v1', db = JSON.parse(localStorage.getItem(k)); db.absences = (db.absences || []).concat([{ id: 'aX', date: '2026-10-20', reason: 'krank' }]); localStorage.setItem(k, JSON.stringify(db)); }));
+    await open(p, '#schule/heute'); if (await schFrame(p).$('.nowcard')) bad.push('Jetzt-Karte trotz krank'); bad.push(...e); await c.close();
+    // „▶ Lernzeit“ an einer Prüfung: Pfadzeile folgt; danach „Alle →“ vom Schultag zeigt die Aufgabenliste
+    ({ c, p, e } = await mk('2026-10-20T09:40:00+02:00')); await open(p, '#schule/heute'); let f = schFrame(p);
+    await f.click('.card.next [data-a=timerFor]'); await wait(p, 1200);
+    let st = await state(p); if (st.hash !== '#schule/lernzeit' || st.path !== 'Lernzeit') bad.push('Lernzeit-Pfad ' + st.hash + ' ' + st.path);
+    await p.click('#menu'); await wait(p, 400); await p.click('#dwpn .dw-r [data-sec=heute]'); await wait(p, 1200);
+    await f.click('[data-a=tab][data-v=aufgaben].more'); await wait(p, 1200); st = await state(p);
+    if (st.hash !== '#schule/aufgaben' || !(await f.evaluate(() => document.getElementById('title').textContent === 'Aufgaben'))) bad.push('Alle → ' + st.hash);
+    // Plus in „Prüfungen“ öffnet eine Prüfung
+    await f.click('#subnav [data-v="auf:pruef"]'); await wait(p, 300); await f.click('#fab'); await wait(p, 500);
+    if (!(await f.evaluate(() => /Prüfung|Termin/.test((document.querySelector('.sheet.on, #sheet.on, [class*=sheet][open]') || document.body).textContent) && !!document.querySelector('#ff')))) bad.push('Plus in Prüfungen');
+    // Lernblöcke nicht doppelt auf der Aufgaben-Seite, nicht im Handy-Abgleich
+    await p.goto(APP + '#aufgaben'); await wait(p, 2200);
+    const n = await frameOf(p, '').evaluate(() => (document.body.innerText.match(/Lernen: Kapitel 1–3/g) || []).length);
+    if (n > 1) bad.push('Lernblock doppelt (' + n + ')');
+    const ho = await p.evaluate(() => { try { return SharedCalendar.handy.out().filter(x => /^lh-/.test(x.id || '') || /Lernen: Kapitel/.test(x.title || '')).length; } catch (x) { return 'Fehler ' + x.message; } });
+    if (ho !== 0) bad.push('Handy-Abgleich enthält Lernblöcke: ' + ho);
+    bad.push(...e); await c.close();
+    assert(!bad.length, bad.join(' | '));
+  });
   await test('P4 Keine waagrecht scrollende Knopf-Reihe in der ganzen App (außer Mobility)', async () => {
     const c = await ctxFor(SMALL), p = await c.newPage(), e = watch(p), bad = [];
     await open(p, '#kalender');
@@ -478,6 +511,10 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     await open(p, '#kalender');
     const t = await p.textContent('[data-gl=bibel]');
     assert(/Gelesen ✓/.test(t) && /Serie 6/.test(t) && /Bekannte Kapitel/.test(t), 'Karte: ' + t);
+    await p.evaluate(() => { const d = new Date(), k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'), b = JSON.parse(localStorage.getItem('zweiminutenbibel_v2'));
+      Object.assign(b, { dailyGoal: 2, todayDone: { date: k, ids: ['x'] }, lastDate: k }); localStorage.setItem('zweiminutenbibel_v2', JSON.stringify(b)); });
+    await p.reload(); await wait(p, 2200);
+    assert(/Gelesen ✓/.test(await p.textContent('[data-gl=bibel]')), 'lastDate heute');
     assert(!e.length, e.join(' | ')); await c.close();
   });
   await test('P4 Mobility unverändert: Chips, Pfadzeile „Atmung & HRV · …“, Inhalt unter dem Kopf', async () => {
@@ -975,7 +1012,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
     await p.goto(W + '#karten'); await wait(p, 500);
     assert(/45 Merksätze und 88/.test(await p.textContent('main')), 'Kartenzahl');
-    await p.click('[data-cfch="k3"]'); await p.click('[data-cfk="m"]');
+    await p.selectOption('[data-fsel=data-cfch]', 'k3'); await p.waitForTimeout(150); await p.click('[data-cfk="m"]');
     assert(/Lernen · 5 Karten/.test(await p.textContent('[data-a=learn]')), 'Filter Kapitel 3 Merksätze');
     await p.click('[data-a=learn]'); await wait(p, 200);
     assert(/Karte 1 von 5/.test(await p.textContent('.progline')), 'Sitzung');
@@ -993,7 +1030,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
   await test('L Quiz: Auswertung, falsche Antworten kommen wieder und verschwinden bei richtiger Antwort', async () => {
     const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
     await p.goto(W + '#quiz'); await wait(p, 500);
-    await p.click('[data-qfch="k5"]'); await p.click('[data-a=quiz]'); await wait(p, 200);
+    await p.selectOption('[data-fsel=data-qfch]', 'k5'); await wait(p, 150); await p.click('[data-a=quiz]'); await wait(p, 200);
     const wrongIdx = () => p.evaluate(() => { const b = [...document.querySelectorAll('[data-opt]')]; return b.findIndex(x => !/8–10 Stunden|Massage|bremsen Muskel|Wettkampfwochenende|keine Veränderung|Schneller und|unter 7 Stunden/.test(x.textContent)); });
     for (let i = 0; i < 7; i++) { await p.click('[data-opt="' + await wrongIdx() + '"]'); await p.click('[data-a=qnext]'); }
     assert(/0 von 7 richtig/.test(await p.textContent('main')), 'Auswertung: ' + (await p.textContent('.res h1')));

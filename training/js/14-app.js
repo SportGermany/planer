@@ -454,7 +454,7 @@ var NEW_V4 = ["kpis","tsheute","tsmob","tsbreath","tsbahn","tssources","tsweekal
   // __seen: welche Bereiche die App schon angeboten hat – nur wirklich neue werden angehängt, ausgeblendete bleiben aus.
   // Steht im selben Schlüssel wie die Auswahl, damit Sicherung, Cloud und Umzug beides zusammen tragen.
   // Ohne __seen (alte Version, alte Sicherung) wird wie früher alles Fehlende angehängt – nichts wird erraten.
-  var seen = S.sectionsOn.__seen || null;
+  var seen = S.sectionsOn.__seen || A.store.get("wk_sections_seen", null);   // Rückfall: Zwischenstand vor 3.7.0
   Object.keys(SECTION_DEFS).forEach(function(scr){
     var allIds = SECTION_DEFS[scr].map(function(d){ return d.id; });
     if (!S.sectionsOn[scr]){ S.sectionsOn[scr] = allIds.slice(); return; }
@@ -473,6 +473,7 @@ var ORDER_V4 = {
   fitness: ["fitscore","fitweek","fitweeks","fitbest","fitpr","fitach","fitreadiness","fitfatigue","fitmuscles","fitwhy","tssources"],
   daten: ["dkpis","drings","dbefund","dweeks12","dweekoverview","dsharecard","dagoverview","dkmweek","ddropzone","dactivities","dexport","dpdfexport"]
 };
+if (!S.sectionsOn.__v4 && A.store.get("wk_sections_v4", null)) S.sectionsOn.__v4 = 1;
 if (!S.sectionsOn.__v4){
   Object.keys(ORDER_V4).forEach(function(scr){
     var list = S.sectionsOn[scr] || [], v4 = ORDER_V4[scr];

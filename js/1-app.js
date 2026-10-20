@@ -133,6 +133,7 @@ function extItems(from, to, withLessons) {
   }
   // Schule (Termine, Lehrgänge), Atmung und Training: gemeinsame Quelle aus dem Verbund
   C.externalItems(from, to).forEach(function (e) {
+    if (e.learn) return;   // Lernblöcke stehen hier schon als Aufgabe (homework) – nicht doppelt
     out.push(Object.assign({}, e, { link: e.linkApp === "planer" ? e.linkHash : e.link }));
   });
   out.forEach(function (e) { EXT[e.id] = e; });

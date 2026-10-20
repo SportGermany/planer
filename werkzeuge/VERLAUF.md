@@ -173,6 +173,24 @@ Fehler und Ursachen:
 | Gruppen-Überschriften der Analyse fehlten | Karten liegen in Reitern (Overview/Daten), Überschrift stand am Seitenende | Überschrift wandert in den Behälter der Karten |
 Tests: suite3 72/72, offline3 58/58, apk, upd, schnell 68/68, bahnplan-1/2.
 
+Prüfung Phase 4 (Prüf-Agent, 12 Befunde):
+| # | Befund | Lösung |
+|---|---|---|
+| F1 | Jetzt-Karte: „Montag, Mo 26.10.“ | Datum ohne Wochentagskürzel |
+| F2 | Stunden ohne Zeit → Karte sprang mitten am Tag auf morgen | gleiche Regel wie „Heute im Stundenplan“; „Heute · N Stunden“ |
+| S3 | „▶ Lernzeit“/„Alle Termine“ aus der Seite: Pfadzeile blieb stehen | Seite meldet den Bereich an die Hülle (`shellSec` → `SGShell.go`) |
+| S4 | „Alle →“ nach Lernzeit öffnete wieder Lernzeit | Aufgaben-Sprung setzt die Ansicht immer auf die Liste zurück |
+| S5 | Lernblöcke doppelt auf der Aufgaben-Seite (Termin + Aufgabe) | dort nur als Aufgabe |
+| S6 | Lernblöcke wären in den Handykalender gegangen | aus Handy-Abgleich und ics-Export ausgenommen |
+| S7 | Plus in „Prüfungen“ öffnete „Neue Aufgabe“ | öffnet „Neue Prüfung“ |
+| S8 | Jetzt-Karte bei Lehrgang/krank; leer bei freiem nächsten Schultag | dann keine Karte; sucht bis zum nächsten Tag mit Unterricht |
+| H9 | Bibel-Kachel: Tagesziel 2 / alte Daten | „Gelesen ✓“, sobald `lastDate` heute ist (wie die Bibel selbst) |
+| H10 | Segment gewählt kaum sichtbar, Farbstreifen der Karte unsichtbar (design.js setzt Rahmen 0), „Mehr für heute“ ohne Pfeil | gewählt = Textfarbe als Fläche, Streifen als Schatten, Pfeil |
+| H11 | Chip-Wände statt Scrollen (Kapitel, Termin-Arten) | Auswahlfelder; Kartenart als 3er-Segment |
+| H12 | Zwischenstand-Schlüssel `wk_sections_seen/_v4` | als Rückfall gelesen |
+| (Test) | Kapitel-Auswahl im Quiz änderte den Filter der Karteikarten | gemeinsamer Baustein: Auswahlfeld trägt jetzt, welcher Filter gemeint ist (`data-fsel`) – vom Test „L Quiz“ gefunden |
+Version 3.7.0.
+
 ## 3.5.0 – erste veröffentlichte Android-App
 
 Secret `APK_PASSWORT` vom Nutzer eingetragen (Passwort bekam er als PDF, weil er die .txt nicht öffnen konnte).

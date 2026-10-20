@@ -611,7 +611,8 @@
     } catch (e) {}
     var b = null; try { b = JSON.parse(localStorage.getItem("zweiminutenbibel_v2") || "null"); } catch (e) {}
     // todayDone ist in der Bibel {date, ids} (Tagesziel dailyGoal); früher ein Datum
-    var bd = b && b.todayDone, read = !!bd && (bd === today() || (bd.date === today() && (bd.ids || []).length >= (b.dailyGoal || 1)));
+    // wie die Bibel selbst: heute gelesen, sobald lastDate heute ist; sonst todayDone (neu {date, ids}, alt ein Datum)
+    var bd = b && b.todayDone, read = !!b && (b.lastDate === today() || bd === today() || (!!bd && bd.date === today() && (bd.ids || []).length >= (b.dailyGoal || 1)));
     out.push(["bibel", "book", read ? "Gelesen ✓" : "Bibel", (b && b.streak ? "Serie " + b.streak : "heute lesen") + (b && b.plan === "hl" ? " · Bekannte Kapitel" : b && b.plan ? " · Ganze Bibel" : ""), "bibel"]);
     var w = null; try { w = JSON.parse(localStorage.getItem("sg-wissen-v1") || "null"); } catch (e) {}
     if (w && w.sum && w.sum.due) out.push(["training", "book", w.sum.due + " Karten", "Sportwissenschaft", "karten"]);

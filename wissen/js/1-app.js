@@ -199,9 +199,10 @@
   function st(c) { return S.cards[c.id]; }
   function dueCards(list) { var now = Date.now(); return list.filter(function (c) { var s = st(c); return s && s.n <= now && s.b < 6; }); }
   var sess = null;
+  // Kapitelwahl als Auswahlfeld statt Knopf-Wand (4.0)
   function chipRow(sel, cur, all, attr) {
-    return '<div class="chips">' + [["", all]].concat(KAP.map(function (c) { return [c.id, "Kap. " + c.id.slice(1)]; })).map(function (x) {
-      return '<button class="chip' + (cur === x[0] ? " on" : "") + '" ' + attr + '="' + x[0] + '">' + x[1] + "</button>"; }).join("") + "</div>";
+    return '<label class="fsel"><span>Kapitel</span><select data-fsel="' + attr + '" aria-label="Kapitel">' + [["", all]].concat(KAP.map(function (c) { return [c.id, "Kap. " + c.id.slice(1) + " · " + short(c)]; })).map(function (x) {
+      return '<option value="' + x[0] + '"' + (cur === x[0] ? " selected" : "") + ">" + esc(x[1]) + "</option>"; }).join("") + "</select></label>";
   }
   function cardsHome() {
     tab("karten"); setBar("Karteikarten");
@@ -209,7 +210,7 @@
     var h = '<h1>Karteikarten</h1><p class="sub">' + B.cards.filter(function (c) { return c.k === "m"; }).length + " Merksätze und " + B.cards.filter(function (c) { return c.k === "ml"; }).length +
       " Mach-das/Lass-das-Regeln aus allen Kapiteln. Was du nicht weißt, kommt früher wieder.</p>";
     h += chipRow("ch", S.cf.ch, "Alle Kapitel", "data-cfch");
-    h += '<div class="chips">' + [["", "Alle Karten"], ["m", "Merksätze"], ["ml", "Mach das / Lass das"]].map(function (x) { return '<button class="chip' + (S.cf.k === x[0] ? " on" : "") + '" data-cfk="' + x[0] + '">' + x[1] + "</button>"; }).join("") + "</div>";
+    h += '<div class="chips seg3">' + [["", "Alle Karten"], ["m", "Merksätze"], ["ml", "Mach das / Lass das"]].map(function (x) { return '<button class="chip' + (S.cf.k === x[0] ? " on" : "") + '" data-cfk="' + x[0] + '">' + x[1] + "</button>"; }).join("") + "</div>";
     h += '<div class="stats"><div class="stat"><b>' + due.length + "</b><small>fällig</small></div><div class=\"stat\"><b>" + fresh.length + "</b><small>neu</small></div><div class=\"stat\"><b>" + known.length + "</b><small>sitzen</small></div></div>";
     var n = Math.min(20, due.length + fresh.length);
     h += '<div class="btns" style="margin-bottom:22px"><button class="btn p" data-a="learn"' + (n ? "" : " disabled") + ">" + (n ? "Lernen · " + n + " Karten" : "Alles gelernt – schau später wieder rein") + "</button>" +
@@ -413,6 +414,11 @@
   }
 
   /* ---------- Klicks ---------- */
+  document.addEventListener("change", function (e) {
+    var a = e.target.matches && e.target.matches("[data-fsel]") && e.target.dataset.fsel;
+    if (a === "data-cfch") { S.cf.ch = e.target.value; save(); cardsHome(); }
+    else if (a === "data-qfch") { S.qf.ch = e.target.value; save(); quizHome(); }
+  });
   document.addEventListener("click", function (e) {
     var g = e.target.closest("[data-go]"); if (g) { e.preventDefault(); return go(g.dataset.go); }
     var l = e.target.closest('a[href^="#lesen"]'); if (l) { e.preventDefault(); return go(l.getAttribute("href")); }

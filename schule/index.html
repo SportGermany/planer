@@ -312,18 +312,23 @@ select.inp{appearance:auto}
 .hscroll{display:flex;flex-wrap:wrap;gap:6px;padding:2px 0 4px} /* keine waagrecht scrollenden Reihen (4.0) */
 /* Segmentschalter statt Chip-Reihe (4.0) */
 .subnav.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;padding:3px;border-radius:12px;background:var(--surface2);overflow:visible}
-.subnav.seg .chip{justify-content:center;border:0;border-radius:9px;min-height:36px;background:none;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.subnav.seg .chip.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.subnav.seg .chip{justify-content:center;border:0;border-radius:9px;min-height:36px;padding:0 4px;background:none;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.subnav.seg .chip.on{background:var(--text);color:var(--bg);box-shadow:0 1px 3px rgba(0,0,0,.25)}
 /* Schultag (4.0): jetzt/nächste Stunde, Rest zugeklappt */
-.nowcard{margin-top:10px;border-left:4px solid var(--c);padding:12px 14px}
+.nowcard{margin-top:10px;box-shadow:inset 4px 0 var(--c);padding:12px 14px 12px 16px} /* Rahmen setzt design.js auf 0 – Farbstreifen per Schatten */
 .nowcard .nw-l{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .nowcard .nw-t{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:700;margin:3px 0 2px}
 .nowcard .nw-r{margin-left:auto;font-size:14px;font-weight:600;color:var(--muted)}
 .nowcard .nw-s{font-size:14px;color:var(--muted)}
 details.more-today{margin-top:16px}
+.fsel{display:flex;align-items:center;gap:10px;margin:0 0 8px}.fsel span{font-size:13px;color:var(--muted);flex:none}.fsel select{flex:1;min-width:0;min-height:44px}
 details.more-today>summary{cursor:pointer;list-style:none;display:flex;flex-direction:column;gap:1px;padding:12px 14px;border-radius:14px;background:var(--surface);font-weight:650;min-height:48px;justify-content:center}
 details.more-today>summary::-webkit-details-marker{display:none}
 details.more-today>summary span{font-size:12.5px;font-weight:500;color:var(--muted)}
+details.more-today>summary{position:relative;padding-right:40px}
+details.more-today>summary::after{content:"";position:absolute;right:18px;top:50%;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-70%) rotate(45deg);transition:transform .2s}
+details.more-today[open]>summary::after{transform:translateY(-30%) rotate(-135deg)}
+@media (prefers-reduced-motion: reduce){details.more-today>summary::after{transition:none}}
 details.more-today[open]>summary{margin-bottom:6px}
 .hscroll::-webkit-scrollbar{display:none}
 .tchip{border-radius:999px;padding:7px 12px;font-size:13.5px;font-weight:650;border:1.5px solid color-mix(in srgb,var(--c) 45%,transparent)}
@@ -484,7 +489,7 @@ code{background:var(--surface2);border-radius:5px;padding:1px 5px;font-size:12.5
 .printtitle{display:none}
 </style>
 <!-- verbund-design:start -->
-<script data-design="lernplan" data-sync="lernplan" src="../sg/design.js?v=3.6.0"></script>
+<script data-design="lernplan" data-sync="lernplan" src="../sg/design.js?v=3.7.0"></script>
 <!-- verbund-design:end -->
 </head>
 <body>
@@ -522,9 +527,9 @@ code{background:var(--surface2);border-radius:5px;padding:1px 5px;font-size:12.5
 <input type="file" id="camIn" accept="image/*" capture="environment" hidden>
 <input type="file" id="galIn" accept="image/*" multiple hidden>
 <input type="file" id="ttFile" accept=".xlsx,.xlsm,.xls,.ods,.csv,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
-<script src="js/1-app.js?v=3.6.0"></script>
+<script src="js/1-app.js?v=3.7.0"></script>
 <!-- gemeinsamer-kalender:start -->
-<script data-app="lernplan" src="../sg/verbund.js?v=3.6.0"></script>
+<script data-app="lernplan" src="../sg/verbund.js?v=3.7.0"></script>
 <!-- gemeinsamer-kalender:end -->
 </body>
 </html>
