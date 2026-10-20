@@ -17,7 +17,10 @@ const OUT = process.argv[2] || 'inventar.json', APP = 'http://localhost:8765/pla
   await c.addInitScript(fs.readFileSync(__dirname + '/seed.js', 'utf8'));
   const p = await c.newPage(); await p.goto(APP + '#kalender'); await p.waitForTimeout(2500);
   // alle Pfade aus der Navigationstabelle der Hülle
-  const paths = await p.evaluate(() => window.SGShellPaths ? window.SGShellPaths() : null);
+  const paths = await p.evaluate(() => { const V = window.SGShell && SGShell.V; if (!V) return null; const l = [];
+    Object.keys(V).forEach(v => { if (!V[v].secs) return l.push(v); if (V[v].secs.length === 1 && !V[v].secs[0].kids) return l.push(v);
+      V[v].secs.forEach(s => (s.kids ? s.kids.map(k => v + '/' + s.id + '/' + k.id) : [v + '/' + s.id]).forEach(x => l.push(x))); });
+    return l; });
   const list = paths || ['kalender', 'mehr', 'notizen', 'aufgaben', 'tset', 'training/heute', 'training/lauf', 'training/rodeln/plan', 'training/rodeln/bahnen', 'training/rodeln/laeufe', 'training/rodeln/buch',
     'training/auswertung/fitness', 'training/auswertung/analyse', 'training/wissen/lesen', 'training/wissen/karten', 'training/wissen/quiz', 'training/wissen/suche',
     'mobility/mobility/heute', 'mobility/mobility/wettkampf', 'mobility/mobility/uebungen', 'mobility/mobility/fortschritt',

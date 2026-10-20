@@ -115,6 +115,19 @@ Fehler und Ursachen:
 | Ausgeblendete Bereiche kamen nach jedem Neustart wieder (alter Fehler) | Beim Laden wurde jede fehlende Kennung als „neu“ angehängt | `wk_sections_seen` merkt, was die App schon kannte |
 | Heute ganz aufgeklappt 2353 px | lange Übungsliste | Vorgabe „höchstens drei Bildschirmhöhen Scrollen“: Scrollweg 1680 px = 2,5 Höhen – erfüllt |
 
+Inventar nachher (`werkzeuge/tests/inventar-nachher.json`, Pfade jetzt direkt aus `SGShell.V`) gegen vorher – alles, was nicht
+mehr sichtbar am alten Platz steht:
+| Vorher | Wo jetzt |
+|---|---|
+| Kalender: „Woche“/„Monat“, Tagesknöpfe „Mo19“ … | Phase 1: Wochenleiste, Tagesplan, Monatskalender (Datumstexte ändern sich täglich) |
+| „Version 3.5.0 Version aktualisieren“ | gleicher Eintrag, jetzt 3.6.0 |
+| „Training starten“ | gleicher Knopf, Beschriftung „Ganzkörper starten · 13 min“ |
+| Überschriften „Programme starten“, „Manuell erfassen“ | entfallen als Zwischenüberschrift (Karten stehen jetzt in Laufen bzw. Kraft); „Verlauf & Statistik“ bleibt |
+| „Atmung öffnen“, „Jetzt üben“ (Karte Atmung & HRV), „Bahn wählen“, „Buch“ (Karte Bahnplan) | Training › Kraft, Karten zugeklappt (Titel sichtbar); außerdem über Mobility › Atmung und Training › Rodeln |
+| Fitness: Überschrift „Mobility“, „📤 Fortschritt teilen“ | Training › Auswertung › Fitness, in zugeklappten Karten |
+| Menüpunkt „Laufen & Kraft“ | „Laufen“ und „Kraft“ |
+Neu dazu: Training › Kraft, Training › Auswertung › Kalender & Rückblick.
+
 ## 3.5.0 – erste veröffentlichte Android-App
 
 Secret `APK_PASSWORT` vom Nutzer eingetragen (Passwort bekam er als PDF, weil er die .txt nicht öffnen konnte).
