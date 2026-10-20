@@ -21,6 +21,34 @@ Seitenmenü nur über Symbol/Pfadzeile/erneuten Tab-Tipp (kein Randwischen) · T
 | --- | --- | --- |
 | bahnplan-1/-2 liefen nicht | Pfade relativ zum Arbeitsordner (`seed.js`, `fakemap.png`), Seite wurde in die Hülle umgeleitet | `__dirname`/Temp-Ordner, Seiten mit `?einzeln` öffnen |
 
+### Phase 1 – Kalender-Startseite (erledigt, Version 3.6.0)
+Plan: `app/js/1-app.js` (renderCal → renderStrip/renderDay/renderMonth/renderGlance/renderNext, calData, bindMonth), CSS in `app/index.html`,
+Ferien/Feiertage über `sg-stundenplan-v1.f` (Schul-Seite `publishLessons()`), Tests „K …“ in suite3.js.
+Umsetzung wie Abschnitt 4. Schalter Woche/Monat entfällt (der Monat steht als großer Kalender darunter).
+
+Prüf-Agent (unabhängig) fand, alles behoben und mit Test belegt („K Prüfbefunde Phase 1 …“):
+
+| Befund | Ursache | Lösung |
+| --- | --- | --- |
+| F1 tägliche Serien fehlen in fernen Monaten | `occurrences()` rollte höchstens 800 Schritte aus; Abfrage reichte von der Wochenleiste bis zum weit geblätterten Raster | Schleife bis Zeitraumende; getrennte Abfragen für Leiste/Danach und Raster |
+| F2 Blatt „Neu“ schließt beim Loslassen nach langem Druck | Loslassen erzeugt einen Klick auf den Blatt-Hintergrund | `touchend` nach langem Druck `preventDefault`; Blatt ignoriert Hintergrund-Tipps 450 ms nach dem Öffnen |
+| F3 Doppeltipp wählt falschen Tag | zweiter Tipp trifft, was beim Hochscrollen darunter gleitet | während der Scroll-Animation (≈300 ms) keine Tipps im Kalender |
+| S1 überfällige Aufgaben fehlen in Punkt/Zählung von heute | Leiste/Raster zählten nur genau fällige | `openTasks()` wie im Tagesplan |
+| S2 Kontrast < 4,5 (Nachbarmonat, KW) | Deckkraft .42 / `--faint` | `--muted`; Test prüft beides |
+| S3 Monatskopf ohne Monatsnamen für Screenreader | aria-label überschrieb Text | „Oktober 2026, Monat und Jahr wählen“ |
+| S4 kein Wechsel Balken/Zeilen beim Drehen | Breite nur beim Zeichnen | `resize` zeichnet bei Grenzwechsel neu |
+| S5 Uhrzeit unmaskiert im HTML | `e.time` ohne `esc()` | maskiert |
+| S6 nach Mitternacht „Gestern“ | kein Tageswechsel bei offener App | `dayRoll()` alle 30 s und beim Zurückkehren (bewusst gewählter Tag bleibt) |
+| S7 Text-Knöpfe 28 px | | 48 px Antippfläche |
+| S8 ungleich hohe Zellen bei vielen Einträgen | `min-height` | feste Höhe 70 px, „+N“ oben rechts |
+| S9 Titel bei 130 % stark gekürzt | einzeilig | zweizeilig |
+| H1/H2/H7 ohne Titel leer, „Danach“ ohne …, „Zum Monat“ mittig | | „(ohne Titel)“, Textelement mit Ellipse, Knopf links |
+| (eigener Fund) fehlende Symbol-Dateien Pause/Mobility/Atmung/Bahnplan → 404 | alte Verweise | auf gemeinsame Symbole; Tests scheitern jetzt auch an Konsolenfehlern |
+
+Offen/notiert: H5 „Starten“ ist ein `span` im Zeilenknopf (für Screenreader nicht einzeln bedienbar, schon vorher so) – Querschnitt Phase 8.
+Tests: suite3 53/53, offline3 44/44, apk, upd, bahnplan-1/-2, schnell 68/68 grün.
+
+
 ## 3.5.0 – erste veröffentlichte Android-App
 
 Secret `APK_PASSWORT` vom Nutzer eingetragen (Passwort bekam er als PDF, weil er die .txt nicht öffnen konnte).

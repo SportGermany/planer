@@ -4,7 +4,7 @@ const fs = require('fs');
 const U = 'http://localhost:8765/planer/', APP = U + 'app/';
 const SEED = fs.readFileSync(__dirname + '/seed.js', 'utf8');
 const ONLY = process.argv[2] || '';
-const VER = '3.5.0';
+const VER = '3.6.0';
 const results = [];
 const PAGES = ['', 'schule/', 'pause/', 'training/', 'training/mobility/', 'training/atmung/', 'training/bahnplan/', 'bibel/', 'wissen/'];
 const PHONE = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 };
@@ -203,6 +203,67 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(['Training', 'Mobility', 'Atmung', 'Schule', 'Aufgabe', 'Notiz', 'Termin', 'Ferien'].every(x => lg.includes(x)), 'Legende ' + lg);
     assert(!e.length, e.join(' | ')); await c.close();
   });
+  // echte Touch-Eingaben wie am Handy (Chrome DevTools Protocol): langer Druck, Doppeltipp
+  const cdpTouch = async (p, x, y, ms) => { const s = await p.context().newCDPSession(p);
+    await s.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] }); await new Promise(r => setTimeout(r, ms));
+    await s.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await s.detach(); };
+  await test('K Prüfbefunde Phase 1: Serien weit weg, langer Druck, Doppeltipp, überfällig, Bedienhilfe, Breite, Maskierung', async () => {
+    const c = await ctxFor(Object.assign({ timezoneId: 'Europe/Berlin' }, PHONE)), p = await c.newPage(), e = watch(p);
+    await open(p, '#kalender');
+    // F1: tägliche Serie auch 26 Monate weiter vollständig
+    await p.evaluate(() => SharedCalendar.add({ title: 'Täglich dehnen', date: '2026-01-01', time: '07:00', app: 'Kalender' }).id).then(id => p.evaluate(id => SharedCalendar.update(id, { rep: { f: 'd' } }), id));
+    await wait(p, 300);
+    for (let i = 0; i < 26; i++) await p.click('[data-c=mnext]');
+    await wait(p, 300);
+    const f1 = await p.evaluate(() => { const cells = [...document.querySelectorAll('#mgrid .mc:not(.o)')]; return [cells.length, cells.filter(b => /[1-9]\d* Eintr|1 Eintrag/.test(b.getAttribute('aria-label'))).length, document.querySelector('.mhd .mt').textContent]; });
+    assert(f1[0] > 27 && f1[0] === f1[1], 'Serie in ' + f1[2] + ': ' + f1[1] + '/' + f1[0]);
+    await p.click('[data-c=mtoday]'); await wait(p, 200);
+    // F2: langer Druck mit echtem Finger: Blatt bleibt nach dem Loslassen offen
+    const box = await p.locator('#mgrid [data-mday]').nth(17).boundingBox();
+    await cdpTouch(p, box.x + box.width / 2, box.y + 20, 700); await wait(p, 500);
+    assert(await p.evaluate(() => document.getElementById('sheet').classList.contains('on')) && /Neu/.test(await p.textContent('#sheet')), 'Blatt bleibt offen');
+    await p.evaluate(() => history.back()); await wait(p, 300);
+    // F3: Doppeltipp wählt den getippten Tag, nicht den darunter
+    await p.evaluate(() => { document.getElementById('n-kalender').scrollTop = 450; }); await wait(p, 100);
+    const cell = p.locator('#mgrid [data-mday]').nth(23), k = await cell.getAttribute('data-mday'), b2 = await cell.boundingBox();
+    await cdpTouch(p, b2.x + b2.width / 2, b2.y + 15, 40); await wait(p, 80); await cdpTouch(p, b2.x + b2.width / 2, b2.y + 15, 40); await wait(p, 500);
+    assert(await p.evaluate(() => document.querySelector('#strip .wd.s').dataset.day) === k, 'Doppeltipp');
+    // S1: überfällige Aufgabe zählt heute in Leiste und Raster
+    await p.evaluate(() => { const d = new Date(Date.now() - 2 * 864e5); SharedCalendar.tasks.add({ title: 'Überfällig', due: d.toISOString().slice(0, 10) }); });
+    await p.click('[data-c=today]').catch(() => {}); await wait(p, 400);
+    const s1 = await p.evaluate(() => { const t = document.querySelector('#strip .wd.t'), m = document.querySelector('#mgrid .mc.t'); return [t.getAttribute('aria-label'), m.getAttribute('aria-label'), document.querySelectorAll('#dayplan .ev').length]; });
+    const n = +((s1[1].match(/(\d+) Eintr/) || [])[1] || 0);
+    assert(n === s1[2] && s1[0] === s1[1], 'Zählung heute ' + JSON.stringify(s1));
+    // S3: Monatskopf nennt den Monat
+    assert(/^\S+ \d{4}, Monat und Jahr wählen$/.test(await p.getAttribute('.mhd .mt', 'aria-label')), 'Monatskopf');
+    // S4: Breite ab 600 px → Zeilen mit Titel
+    await p.setViewportSize({ width: 800, height: 915 }); await wait(p, 400);
+    assert(await p.$('#mgrid.wide'), 'breit nach Drehen');
+    await p.setViewportSize({ width: 412, height: 915 }); await wait(p, 400);
+    assert(!(await p.$('#mgrid.wide')), 'schmal');
+    // S5/H1: Uhrzeit maskiert, Eintrag ohne Titel
+    await p.evaluate(() => { const k = new Date().toISOString().slice(0, 10); const n = SharedCalendar.add({ title: 'x', date: k, time: '<b>x', app: 'Kalender' }); SharedCalendar.update(n.id, { title: '' }); }); await wait(p, 400);
+    assert(!(await p.$('#dayplan .tm b')) && /\(ohne Titel\)/.test(await p.textContent('#dayplan')), 'maskiert/ohne Titel');
+    // S8: viele Einträge → gleich hohe Zellen
+    await p.evaluate(() => { const k = new Date().toISOString().slice(0, 8); for (let i = 0; i < 200; i++) SharedCalendar.add({ title: 'Viel ' + i, date: k + String(1 + i % 28).padStart(2, '0'), time: '10:00', app: 'Kalender' }); }); await wait(p, 600);
+    const hs = await p.evaluate(() => [...new Set([...document.querySelectorAll('#mgrid .mc')].map(b => Math.round(b.getBoundingClientRect().height)))]);
+    assert(hs.length === 1 && hs[0] >= 64 && hs[0] <= 76, 'Zellhöhen ' + hs);
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('K Prüfbefunde Phase 1: Mitternacht bei offener App, Titel bei Schrift 130 %', async () => {
+    const c = await ctxFor(Object.assign({ timezoneId: 'Europe/Berlin' }, PHONE)), p = await c.newPage(), e = watch(p);
+    await p.clock.install({ time: new Date('2026-10-20T23:59:20+02:00') });
+    await open(p, '#kalender');
+    assert(/Heute · Dienstag, 20\./.test(await p.textContent('#dayplan header')), 'vorher');
+    await p.clock.fastForward(75000); await wait(p, 300);
+    assert(/Heute · Mittwoch, 21\./.test(await p.textContent('#dayplan header')), 'nach Mitternacht: ' + await p.textContent('#dayplan header'));
+    await c.close();
+    const c2 = await ctxFor({ viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true }), q = await c2.newPage();
+    await open(q, '#kalender'); await q.evaluate(() => { document.documentElement.style.zoom = '1.3'; }); await wait(q, 300);
+    const cut = await q.evaluate(() => [...document.querySelectorAll('#dayplan .ev b')].filter(b => b.scrollHeight > b.clientHeight + 1).map(b => b.textContent));
+    assert(!cut.length, 'abgeschnitten: ' + cut);
+    assert(!e.length, e.join(' | ')); await c2.close();
+  });
   await test('K Kalender: Schrift 130 %, Tablet, alle zehn Farbwelten lesbar', async () => {
     for (const vp of [{ width: 360, height: 640 }, { width: 800, height: 1280 }, { width: 1280, height: 800 }]) {
       const c = await ctxFor(Object.assign({}, PHONE, { viewport: vp })), p = await c.newPage(), e = watch(p);
@@ -218,8 +279,8 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     const lum = 'const L=c=>{const m=c.match(/\\d+(\\.\\d+)?/g).map(Number);const f=v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)};return .2126*f(m[0])+.7152*f(m[1])+.0722*f(m[2])};const K=(a,b)=>{const x=L(a),y=L(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)};';
     for (const id of ids) {
       await p.evaluate(id => SGTheme.set(id), id); await wait(p, 150);
-      const k = await p.evaluate(lum + 'const bg=getComputedStyle(document.querySelector("#mgrid")).backgroundColor,fg=getComputedStyle(document.querySelector("#mgrid .mc:not(.o) .n")).color,mu=getComputedStyle(document.querySelector("#mgrid .mh span")).color,dbg=getComputedStyle(document.querySelector("#dayplan .cells")).backgroundColor,dfg=getComputedStyle(document.querySelector("#dayplan .ev b")).color;[K(fg,bg),K(mu,bg),K(dfg,dbg)]');
-      if (k[0] < 4.5 || k[1] < 4.5 || k[2] < 4.5) bad.push(id + ' ' + k.map(x => x.toFixed(1)).join('/'));
+      const k = await p.evaluate(lum + 'const bg=getComputedStyle(document.querySelector("#mgrid")).backgroundColor,fg=getComputedStyle(document.querySelector("#mgrid .mc:not(.o) .n")).color,mu=getComputedStyle(document.querySelector("#mgrid .mh span")).color,dbg=getComputedStyle(document.querySelector("#dayplan .cells")).backgroundColor,dfg=getComputedStyle(document.querySelector("#dayplan .ev b")).color,oc=getComputedStyle(document.querySelector("#mgrid .mc.o .n")).color,kw=getComputedStyle(document.querySelector("#mgrid .mrow:not(.mh) .kw")).color;[K(fg,bg),K(mu,bg),K(dfg,dbg),K(oc,bg),K(kw,bg)]');
+      if (k.some(x => x < 4.5)) bad.push(id + ' ' + k.map(x => x.toFixed(1)).join('/'));
     }
     assert(!bad.length, 'Kontrast zu niedrig: ' + bad.join(', '));
     await c.close();

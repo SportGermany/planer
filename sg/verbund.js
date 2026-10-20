@@ -139,8 +139,9 @@
         if (k >= from && k <= until && k >= e.date && ex.indexOf(k) < 0) out.push(Object.assign({}, e, { date: k, sid: e.id, start: e.date }));
       }
       if (step) {
-        var skip = Math.max(0, Math.floor((parse(from) - s0) / 864e5 / step) - 1);
-        for (var i = skip; i < skip + 800; i++) {
+        // bis zum Ende des Zeitraums (nicht fest begrenzt – sonst fehlen tägliche Serien in fernen Monaten)
+        var skip = Math.max(0, Math.floor((parse(from) - s0) / 864e5 / step) - 1), last = skip + Math.ceil((parse(until) - parse(from)) / 864e5 / step) + 3;
+        for (var i = skip; i < last; i++) {
           var d = new Date(s0.getFullYear(), s0.getMonth(), s0.getDate() + i * step);
           if (iso(d) > until) break; push(d);
         }

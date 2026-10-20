@@ -292,37 +292,45 @@
   function shiftMonth(m, n) { var d = parse(m); d.setMonth(d.getMonth() + n, 1); return iso(d); }
   function gridFrom() { return monday(calMonth); }
   function calData() {
-    var sFrom = monday(calSel), gFrom = gridFrom(), from = sFrom < gFrom ? sFrom : gFrom, to = plus(gFrom, 48), nTo = plus(calSel, 45);
-    if (plus(sFrom, 7) > to) to = plus(sFrom, 7);
-    if (nTo > to) to = nTo;
-    var list = items(from, to), by = {}, free = {}, tasks = [], tby = {};
+    var sFrom = monday(calSel), sTo = plus(calSel, 45), gFrom = gridFrom(), gTo = plus(gFrom, 48);
+    if (plus(sFrom, 6) > sTo) sTo = plus(sFrom, 6);
+    // Wochenleiste + „Danach“ und das Raster: eine Abfrage, wenn sie sich berühren, sonst zwei (weit geblättert)
+    var ranges = sTo < gFrom || gTo < sFrom ? [[sFrom, sTo], [gFrom, gTo]] : [[sFrom < gFrom ? sFrom : gFrom, sTo > gTo ? sTo : gTo]];
+    var list = [], seen = {}, by = {}, free = {}, tasks = [], tby = {};
+    ranges.forEach(function (r) { items(r[0], r[1]).forEach(function (e) { var id = (e.id || e.title) + "@" + e.date + "@" + (e.time || ""); if (!seen[id]) { seen[id] = 1; list.push(e); } }); });
     ITEMS = {};
     list.forEach(function (e, i) { e._k = "i" + i; ITEMS[e._k] = e; (by[e.date] = by[e.date] || []).push(e); });
     try { var sp = JSON.parse(localStorage.getItem("sg-stundenplan-v1") || "null"); (sp && sp.f || []).forEach(function (x) { free[x[0]] = x[1]; }); } catch (e) {}
     try { tasks = C().tasks.list(); } catch (e) {}
     tasks.forEach(function (q) { if (q.due) (tby[q.due] = tby[q.due] || []).push(q); });
-    CD = { from: from, to: to, list: list, by: by, free: free, tby: tby, tasks: tasks };
+    CD = { ranges: ranges, list: list, by: by, free: free, tby: tby, tasks: tasks };
     return CD;
   }
   function needData() {
-    if (!CD || monday(calSel) < CD.from || gridFrom() < CD.from || plus(gridFrom(), 48) > CD.to || plus(calSel, 45) > CD.to) calData();
+    var ok = CD && CD.ranges.some(function (r) { return monday(calSel) >= r[0] && plus(calSel, 45) <= r[1]; }) && CD.ranges.some(function (r) { return gridFrom() >= r[0] && plus(gridFrom(), 48) <= r[1]; });
+    if (!ok) calData();
     return CD;
   }
+  // offene Aufgaben eines Tages – heute auch die überfälligen (wie im Tagesplan)
+  function openTasks(k) { return (k === today() ? tasksFor(k) : (CD.tby[k] || [])).filter(function (q) { return !q.done; }); }
+  // Tageswechsel bei offener App: war „heute“ gewählt, wandert die Auswahl mit
+  var calToday = today();
+  function dayRoll() { var t = today(); if (t === calToday) return false; if (calSel === calToday) setSel(t); calToday = t; return true; }
   function calBox() {
     var w = $("n-kalender").firstElementChild;
     if (!$("cal-strip")) w.innerHTML = '<div id="cal-strip"></div><div id="cal-day"></div><div id="cal-month"></div><div id="cal-glance"></div><div id="cal-next"></div>';
     return w;
   }
-  function renderCal() { calBox(); calData(); renderStrip(); renderDay(); renderMonth(); renderGlance(); renderNext(); toMonthBtn(); }
+  function renderCal() { dayRoll(); calBox(); calData(); renderStrip(); renderDay(); renderMonth(); renderGlance(); renderNext(); toMonthBtn(); }
   function dayLabel(k, n) {
     var d = parse(k), t = today();
-    if (n == null) n = (CD && CD.by[k] || []).length + ((CD && CD.tby[k]) || []).filter(function (q) { return !q.done; }).length;
+    if (n == null) n = (CD && CD.by[k] || []).length + (CD ? openTasks(k).length : 0);
     return WDL[d.getDay()] + ", " + d.getDate() + ". " + MO[d.getMonth()] + ", " + (n === 1 ? "1 Eintrag" : (n || "keine") + " Einträge") + (k === t ? ", heute" : "");
   }
   function stripDots(k) {
     var seen = {}, out = [];
     (CD.by[k] || []).forEach(function (e) { var a = area(e); if (!seen[a]) { seen[a] = 1; out.push(AREA[a].c); } });
-    if ((CD.tby[k] || []).some(function (q) { return !q.done; }) && !seen.aufgabe) out.push(AREA.aufgabe.c);
+    if (openTasks(k).length && !seen.aufgabe) out.push(AREA.aufgabe.c);
     return out.slice(0, 3).map(function (c) { return '<i style="background:' + c + '"></i>'; }).join("");
   }
   function renderStrip() {
@@ -352,17 +360,18 @@
   }
   function monthMarks(k, wide) {
     var all = (CD.by[k] || []).map(function (e) { return [area(e), e.title]; })
-      .concat((CD.tby[k] || []).filter(function (q) { return !q.done; }).map(function (q) { return ["aufgabe", q.title]; }));
+      .concat(openTasks(k).map(function (q) { return ["aufgabe", q.title]; }));
     var h = all.slice(0, 3).map(function (x) {
       var A = AREA[x[0]];
-      return wide ? '<span class="ml" style="--c:' + A.c + '">' + ico(A.ic) + "<em>" + esc(x[1] || "") + "</em></span>" : '<span class="mb" style="--c:' + A.c + '">' + ico(A.ic) + "<i></i></span>";
+      return wide ? '<span class="ml" style="--c:' + A.c + '">' + ico(A.ic) + "<em>" + esc(x[1] || "(ohne Titel)") + "</em></span>" : '<span class="mb" style="--c:' + A.c + '">' + ico(A.ic) + "<i></i></span>";
     }).join("");
     return [h + (all.length > 3 ? '<span class="more">+' + (all.length - 3) + "</span>" : ""), all.length];
   }
   function renderMonth(slide) {
     needData();
     var t = today(), m0 = parse(calMonth), from = gridFrom(), box = $("n-kalender"), wide = (box.clientWidth || innerWidth) >= 600;
-    var h = '<div class="mhd"><button class="ib" data-c="mprev" aria-label="Vorheriger Monat">' + ico("chevl") + '</button><button class="mt" data-c="mpick" aria-label="Monat und Jahr wählen">' + MO[m0.getMonth()] + " " + m0.getFullYear() +
+    renderMonth.wide = wide;
+    var h = '<div class="mhd"><button class="ib" data-c="mprev" aria-label="Vorheriger Monat">' + ico("chevl") + '</button><button class="mt" data-c="mpick" aria-label="' + MO[m0.getMonth()] + " " + m0.getFullYear() + ', Monat und Jahr wählen">' + MO[m0.getMonth()] + " " + m0.getFullYear() +
       '</button><button class="ib" data-c="mnext" aria-label="Nächster Monat">' + ico("chev") + "</button>" + (calMonth !== t.slice(0, 8) + "01" ? '<button class="lnk" data-c="mtoday">Heute</button>' : "") + "</div>";
     h += '<div class="mgrid' + (wide ? " wide" : "") + (slide ? " sl" + slide : "") + '" id="mgrid" role="grid" aria-label="' + MO[m0.getMonth()] + " " + m0.getFullYear() + '">' +
       '<div class="mrow mh" role="row"><span class="kw" role="columnheader">KW</span>' + ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map(function (w) { return '<span role="columnheader">' + w + "</span>"; }).join("") + "</div>";
@@ -389,8 +398,8 @@
       .sort(function (a, b) { return (a.k + (a.tm || "~")).localeCompare(b.k + (b.tm || "~")); }).slice(0, 5);
     $("cal-next").innerHTML = '<div class="grp next"><header><span>Danach</span></header><div class="cells">' + (rows.length ? rows.map(function (x) {
       var d = parse(x.k);
-      return '<button class="nd" data-day="' + x.k + '"><span class="d">' + WD[d.getDay()] + "<small>" + d.getDate() + "." + (d.getMonth() + 1) + '.</small></span><span class="l"><span style="--c:' + x.c + '"><i></i>' +
-        (x.tm ? x.tm + " " : x.task ? "Aufgabe: " : "") + esc(x.t) + "</span></span></button>";
+      return '<button class="nd" data-day="' + x.k + '"><span class="d">' + WD[d.getDay()] + "<small>" + d.getDate() + "." + (d.getMonth() + 1) + '.</small></span><span class="l"><span style="--c:' + x.c + '"><i></i><span class="tt">' +
+        (x.tm ? esc(x.tm) + " " : x.task ? "Aufgabe: " : "") + esc(x.t || "(ohne Titel)") + "</span></span></span></button>";
     }).join("") : '<div class="empty">Danach ist nichts geplant.</div>') + "</div></div>";
   }
   // Tag gewählt: Leiste, Tagesplan, Monat, Blick und Danach neu; von unten (Monat, Danach) weich nach oben zum Tagesplan
@@ -398,7 +407,9 @@
     renderStrip(); renderDay(); renderMonth(); renderGlance(); renderNext();
     if (scrollUp) scrollCal(0); else toMonthBtn();
   }
+  var scrollBusy = 0;
   function scrollCal(y) {
+    scrollBusy = Date.now() + 320;
     var el = $("n-kalender"), s = el.scrollTop, d = y - s, t0 = performance.now(), dur = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 250;
     if (!dur || Math.abs(d) < 2) { el.scrollTop = y; toMonthBtn(); return; }
     (function f(n) { var p = Math.min(1, (n - t0) / dur); el.scrollTop = s + d * (1 - Math.pow(1 - p, 3)); if (p < 1) requestAnimationFrame(f); else toMonthBtn(); })(t0);
@@ -424,11 +435,11 @@
   // Monatsraster: Tippen wählt (Klick), langer Druck (450 ms) = „Neu“ für diesen Tag, Wischen = Monat wechseln (Tag bleibt)
   var mSuppress = 0;
   function bindMonth(g) {
-    var x0 = 0, y0 = 0, timer = null, down = false;
+    var x0 = 0, y0 = 0, timer = null, down = false, fired = false;
     function start(x, y, target) {
-      x0 = x; y0 = y; down = true; clearTimeout(timer);
+      x0 = x; y0 = y; down = true; fired = false; clearTimeout(timer);
       var cell = target.closest && target.closest("[data-mday]");
-      if (cell) timer = setTimeout(function () { if (!down) return; mSuppress = Date.now(); down = false; setSel(cell.dataset.mday); renderAfterPick(); addSheet(); }, 450);
+      if (cell) timer = setTimeout(function () { if (!down) return; mSuppress = Date.now(); down = false; fired = true; setSel(cell.dataset.mday); renderAfterPick(); addSheet(); }, 450);
     }
     function move(x, y) { if (down && (Math.abs(x - x0) > 10 || Math.abs(y - y0) > 10)) clearTimeout(timer); }
     function end(x, y) {
@@ -438,7 +449,8 @@
     }
     g.addEventListener("touchstart", function (e) { start(e.touches[0].clientX, e.touches[0].clientY, e.target); }, { passive: true });
     g.addEventListener("touchmove", function (e) { move(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
-    g.addEventListener("touchend", function (e) { end(e.changedTouches[0].clientX, e.changedTouches[0].clientY); }, { passive: true });
+    // nach langem Druck erzeugt das Loslassen keinen Klick (sonst schlösse er das eben geöffnete Blatt)
+    g.addEventListener("touchend", function (e) { if (fired) { e.preventDefault(); fired = false; } end(e.changedTouches[0].clientX, e.changedTouches[0].clientY); }, { passive: false });
     g.addEventListener("touchcancel", function () { clearTimeout(timer); down = false; }, { passive: true });
     g.addEventListener("mousedown", function (e) { if (e.button === 0) start(e.clientX, e.clientY, e.target); });
     g.addEventListener("mousemove", function (e) { move(e.clientX, e.clientY); });
@@ -468,9 +480,9 @@
       '<div class="lg"><span class="lgbox fr">26</span><b>Ferien oder Feiertag</b></div><div class="lg"><span class="more">+2</span><b>weitere Einträge</b></div></div>', function () {});
   }
   function evRow(e, isToday) {
-    var a = area(e), A = AREA[a], tm = e.time ? e.time + (e.end ? "<small>" + e.end + "</small>" : "") : "<small>ganztägig</small>";
+    var a = area(e), A = AREA[a], tm = e.time ? esc(e.time) + (e.end ? "<small>" + esc(e.end) + "</small>" : "") : "<small>ganztägig</small>";
     var sub = A.label + (e.note && a !== "notiz" ? " · " + e.note.split("\n")[0].slice(0, 50) : "");
-    return '<button class="ev" data-ev="' + e._k + '" style="--c:' + A.c + '"><span class="tm">' + tm + '</span><span class="bar"></span><span class="tx"><b>' + esc(e.title) + "</b><small>" + esc(sub) + "</small></span>" +
+    return '<button class="ev" data-ev="' + e._k + '" style="--c:' + A.c + '"><span class="tm">' + tm + '</span><span class="bar"></span><span class="tx"><b>' + esc(e.title || "(ohne Titel)") + "</b><small>" + esc(sub) + "</small></span>" +
       (A.act && isToday ? '<span class="go" data-start="' + e._k + '">' + A.act + "</span>" : "") + "</button>";
   }
   function taskRow(q) {
@@ -497,9 +509,17 @@
       return '<button class="gl" data-gl="' + x[4] + '" style="--c:var(--c-' + x[0] + ')"><i>' + ico(x[1]) + "</i><b>" + esc(x[2]) + "</b><small>" + esc(x[3]) + "</small></button>";
     }).join("") + "</div>";
   }
+  window.addEventListener("resize", function () {
+    if (cur.v !== "kalender" || !$("mgrid")) return;
+    var w = ($("n-kalender").clientWidth || innerWidth) >= 600;
+    if (w !== renderMonth.wide) renderMonth(); toMonthBtn();
+  });
+  setInterval(function () { if (!document.hidden && dayRoll() && cur.v === "kalender") renderCal(); }, 30000);
   $("n-kalender").addEventListener("scroll", function () { if (!toMonthBtn.t) toMonthBtn.t = requestAnimationFrame(function () { toMonthBtn.t = 0; toMonthBtn(); }); }, { passive: true });
   $("tomonth").addEventListener("click", function () { var el = $("n-kalender"), g = $("cal-month"); if (g) scrollCal(Math.max(0, el.scrollTop + g.getBoundingClientRect().top - el.getBoundingClientRect().top - 8)); });
   $("n-kalender").addEventListener("click", function (e) {
+    // während des weichen Hochscrollens (etwa 300 ms) zählt kein Tipp – sonst trifft ein Doppeltipp, was gerade darunter gleitet
+    if (Date.now() < scrollBusy) { e.preventDefault(); return; }
     var ck = e.target.closest("[data-ck]");
     if (ck) { var c = C(), q = c.tasks.list().find(function (x) { return x.id === ck.dataset.ck; }); if (q) { c.tasks.update(q.id, { done: !q.done }); snack(q.done ? "Wieder offen" : "Erledigt", function () { c.tasks.update(q.id, { done: q.done }); renderCal(); }); renderCal(); } return; }
     var st = e.target.closest("[data-start]"); if (st) { var it = ITEMS[st.dataset.start]; AREA[area(it)].to(it); return; }
@@ -927,9 +947,10 @@
 
   /* ---------- Blatt von unten, Hinweis ---------- */
   var sheetEl = $("sheet"), sheetOpen = false, sheetCb = null;
+  var sheetAt = 0;
   function sheet(html, cb) {
     sheetEl.querySelector(".pn").innerHTML = '<div class="hd"></div>' + html; sheetCb = cb;
-    if (!sheetOpen) { history.pushState({ app: 1, sheet: 1 }, "", location.hash); sheetOpen = true; }
+    if (!sheetOpen) { history.pushState({ app: 1, sheet: 1 }, "", location.hash); sheetOpen = true; sheetAt = Date.now(); }
     sheetEl.classList.add("on");
   }
   function closeSheet(fromPop) {
@@ -937,7 +958,8 @@
     if (!fromPop && history.state && history.state.sheet) history.back();
   }
   sheetEl.addEventListener("click", function (e) {
-    if (e.target === sheetEl) return closeSheet();
+    // ein Tipp, der noch vom Öffnen stammt (Doppeltipp, Loslassen nach langem Druck), schließt nicht gleich wieder
+    if (e.target === sheetEl) { if (Date.now() - sheetAt < 450) return; return closeSheet(); }
     var b = e.target.closest("[data-s]"); if (b && sheetCb) sheetCb(b.dataset.s, b);
   });
   var snackT = null;
@@ -973,7 +995,7 @@
   document.addEventListener("focusout", function () { setTimeout(function () { keepNav("focusout"); }, 300); }, true);
   var scT = 0; window.addEventListener("scroll", function () { if (!scT) scT = requestAnimationFrame(function () { scT = 0; keepNav("scroll"); }); }, true);
   document.addEventListener("visibilitychange", function () { if (!document.hidden) setTimeout(function () { keepNav("zurueck"); }, 150); });
-  document.addEventListener("visibilitychange", function () { if (!document.hidden) { if (calSel < today() && cur.v === "kalender") setSel(today()); refresh(); } });
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) { dayRoll(); refresh(); } });
 
   /* ---------- Start ---------- */
   navEl.innerHTML = TABS.map(function (t) { return '<button data-tab="' + t[0] + '"><span class="pill">' + ico(t[2]) + "</span>" + t[1] + "</button>"; }).join("");
