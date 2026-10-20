@@ -146,6 +146,16 @@ jobs:
           script: |
             adb install -r test/planer-test.apk
             OUT=emu-out node werkzeuge/tests/emulator.js
+      # Bildschirmfotos und Protokolle zusätzlich in den Branch „emulator-ergebnis“ (lesbar ohne Artefakt-Download)
+      - name: Ergebnis in Branch emulator-ergebnis
+        if: always()
+        run: |
+          [ -d emu-out ] || exit 0
+          cd emu-out
+          git init -q -b emulator-ergebnis && git config user.name "github-actions" && git config user.email "github-actions@users.noreply.github.com"
+          echo "Lauf ${{ github.run_id }} · ${{ github.sha }}" > LAUF.txt
+          git add -A && git commit -qm "Emulator-Ergebnis ${{ github.run_id }}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" emulator-ergebnis
       - uses: actions/upload-artifact@v4
         if: always()
         with:

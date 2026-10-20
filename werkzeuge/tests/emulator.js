@@ -20,6 +20,11 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   const wv = await dev.webView({ pkg: PKG }, { timeout: 60000 });
   const page = await wv.page();
   const errs = []; page.on('pageerror', e => errs.push(e.message)); page.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
+  const logcat = async (name) => {
+    const lc = execSync('adb logcat -d -t 1500', { encoding: 'utf8', maxBuffer: 1 << 24 }).split('\n').filter(l => /Capacitor|chromium|Console|WebView|AndroidRuntime|planer|FATAL|lowmemory|ActivityManager.*(Kill|died)|crash|renderer/i.test(l)).slice(-200).join('\n');
+    fs.writeFileSync(OUT + '/logcat-' + name + '.txt', lc); console.log('--- logcat ' + name + ' ---\n' + lc.split('\n').slice(-60).join('\n'));
+    await dev.screenshot({ path: OUT + '/x-' + name + '.png' }).catch(() => {});
+  };
   const diag = async (why) => {
     console.log('DIAGNOSE (' + why + ')');
     await dev.screenshot({ path: OUT + '/0-diagnose.png' }).catch(() => {});
@@ -36,7 +41,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   const info = await page.evaluate(() => ({ url: location.href, native: !!window.SGNative, ver: window.SGVersion, sheet: document.getElementById('sheet').textContent.slice(0, 80),
     nav: (() => { const r = document.getElementById('nav').getBoundingClientRect(); return [r.top, r.bottom, innerHeight, r.height]; })(),
     bot: getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-bottom') }));
-  ok(/\/planer\/app\/$/.test(info.url), 'Start in der Hülle: ' + info.url);
+  ok(/\/planer\/app\/(#.*)?$/.test(info.url), 'Start in der Hülle: ' + info.url);
   ok(info.native, 'App erkennt die Android-Umgebung (SGNative), Version ' + info.ver);
   ok(info.nav[3] >= 50 && info.nav[1] <= info.nav[2] + 1 && info.nav[0] > 0, 'Untere Leiste sichtbar und im Bild ' + JSON.stringify(info.nav) + ' Rand unten ' + info.bot);
   ok(/Willkommen in der Android-App/.test(info.sheet), 'Willkommen mit Umzug beim ersten Start');
@@ -64,7 +69,8 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   ok(hs.r.on && (pend.notifications || []).some(n => /Emulator-Training/.test(n.title)), 'Erinnerungen geplant (' + (pend.notifications || []).length + ')' + (hs.r.err ? ' Fehler: ' + hs.r.err : ''));
   // Bereiche durchgehen: jede Seite lädt, Leiste bleibt sichtbar
   for (const h of ['kalender', 'training/heute', 'training/rodeln', 'training/wissen', 'mobility/mobility', 'mobility/atmung', 'schule', 'mehr', 'bibel', 'pause', 'notizen', 'aufgaben']) {
-    await page.evaluate(h => { location.hash = h; }, h); await wait(2500);
+    try { await page.evaluate(h => { location.hash = h; }, h); } catch (e) { ok(false, 'Bereich ' + h + ': Verbindung zur App weg (' + e.message + ')'); await logcat('abbruch-' + h.replace(/\//g, '_')); throw e; }
+    await wait(2500);
     const r = await page.evaluate(() => { const n = document.getElementById('nav').getBoundingClientRect(), f = document.querySelector('#stage iframe.on'), nat = document.querySelector('.native.on');
       let txt = 0; try { txt = f ? f.contentDocument.body.innerText.length : (nat ? nat.innerText.length : 0); } catch (e) { txt = -1; }
       return { nav: n.bottom <= innerHeight + 1 && n.height >= 50, txt, path: f ? f.contentWindow.location.pathname : 'native' }; });

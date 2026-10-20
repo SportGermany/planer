@@ -4,7 +4,7 @@ const fs = require('fs');
 const U = 'http://localhost:8765/planer/', APP = U + 'app/';
 const SEED = fs.readFileSync(__dirname + '/seed.js', 'utf8');
 const ONLY = process.argv[2] || '';
-const VER = '3.4.0';
+const VER = '3.4.1';
 const results = [];
 const PAGES = ['', 'schule/', 'pause/', 'training/', 'training/mobility/', 'training/atmung/', 'training/bahnplan/', 'bibel/', 'wissen/'];
 const PHONE = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 };
@@ -292,6 +292,18 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     if (over) bad.push('Hinweis liegt auf der Leiste');
     assert(!bad.length, bad.join(', '));
     assert(!(await p.evaluate(() => window.SGShellDiag())).some(d => /Leiste/.test(d.t)), 'Fehlerprotokoll meldet Leiste');
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+
+  await test('S Speicher: höchstens 7 Bereiche gleichzeitig geladen, geschlossene laden beim Öffnen neu', async () => {
+    const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
+    await open(p, '#kalender');
+    for (const h of ['training/heute', 'training/rodeln', 'training/wissen', 'mobility/mobility', 'mobility/atmung', 'schule', 'bibel', 'pause', 'aufgaben', 'tset']) { await p.evaluate(h => { location.hash = h; }, h); await wait(p, 700); }
+    const n = await p.evaluate(() => document.querySelectorAll('#stage iframe').length);
+    assert(n <= 7, 'geladen: ' + n);
+    await p.evaluate(() => { location.hash = 'training/rodeln'; }); await wait(p, 2000);
+    const ok = await p.evaluate(() => { const f = document.querySelector('#stage iframe.on'); return f && /bahnplan/.test(f.src) && f.contentDocument.body.innerText.length > 20; });
+    assert(ok, 'wieder geöffnet');
     assert(!e.length, e.join(' | ')); await c.close();
   });
 

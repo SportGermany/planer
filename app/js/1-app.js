@@ -94,8 +94,20 @@
       f.addEventListener("load", function () { f.dataset.ready = "1"; if (f.classList.contains("on")) $("load").classList.remove("on"); });
       stage.insertBefore(f, $("load"));
       frames[p] = f;
+      trimFrames(p);
     }
+    f.dataset.used = String(Date.now());
     return f;
+  }
+  // Höchstens so viele Bereiche bleiben geladen – sonst geht dem Handy (v. a. in der Android-App) der Speicher aus.
+  // Der am längsten nicht benutzte wird geschlossen (er speichert dabei selbst) und beim nächsten Öffnen neu geladen.
+  var MAXF = window.SGNative ? 5 : 7;
+  function trimFrames(keep) {
+    var list = Object.keys(frames).filter(function (k) { return k !== keep && !frames[k].classList.contains("on"); });
+    while (list.length && Object.keys(frames).length > MAXF) {
+      list.sort(function (a, b) { return (+frames[a].dataset.used || 0) - (+frames[b].dataset.used || 0); });
+      var k = list.shift(); frames[k].remove(); delete frames[k];
+    }
   }
   // Unterbereich in der Seite wählen: Sprungadresse setzen oder Knopf ihrer Leiste drücken (sobald geladen)
   function apply(f, spec, fresh) {
