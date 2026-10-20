@@ -5,6 +5,22 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## 3.4.x – Android-App: Handykalender (B), Erinnerungen (C), Test im echten Emulator
+
+**Umsetzung:** siehe WISSEN.md › APK. Workflow: bauen → Emulator-Test (`werkzeuge/tests/emulator.js`, API 34, Pixel 6) → erst dann Release.
+Ergebnisse (Bildschirmfotos, Protokoll) zusätzlich im Branch `emulator-ergebnis` (Artefakt-Speicher ist aus der Claude-Umgebung gesperrt).
+
+| Fehler | Ursache | Lösung |
+| --- | --- | --- |
+| APK blieb im Emulator leer (Leiste nie sichtbar) | Capacitors Server liefert für Pfade **ohne Dateiendung** (`/planer/app/`) nichts, wenn `html5mode` aus ist – der RouteProcessor wird dafür gar nicht gefragt | eigener `BridgeWebViewClient` in `MainActivity` hängt `index.html` an, bevor die Anfrage zum Server geht |
+| Verbindung zur App brach beim 12. Bereich ab | alle besuchten Bereiche blieben als iframes geladen (Speicher) | höchstens 7 (APK: 5) Bereiche geladen, der älteste wird geschlossen (`trimFrames`) |
+| 404 im Emulator | `sw.js` fehlte in der APK, Seiten fragen ihn ab | `sw.js` wird mitkopiert (nicht registriert) |
+| Test: Start-Adresse „falsch“ | Adresse endet auf `#kalender` | Prüfung angepasst |
+
+Im Emulator geprüft (grün): Start in der Hülle, Leiste über der Android-Gestenleiste, Willkommen/Umzug, Einrichtung,
+Kalender „Planer“ im Android-Kalender angelegt und befüllt, Handytermin aus „Mein Kalender“ erscheint in der App, Erinnerungen geplant,
+alle 13 Bereiche laden, Leiste nach Tastatur wieder im Bild.
+
 ## 3.3.0 – Android-App (APK), Schritt A
 
 **Wunsch:** „Als APK zum Laufen kriegen … nicht im Play Store, einfach per APK herunterladbar.“ Gewählt: Weg 1 (Capacitor, Bau auf GitHub).
