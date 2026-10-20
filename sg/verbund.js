@@ -187,6 +187,11 @@
           out.push(Object.assign({ id: "lp-" + e.id, title: title || "Schultermin", date: k, time: k === e.date ? e.time || "" : "", end: "", app: "Lernplan", color: t[1], note: e.notes || "", ro: "Lernplan", exam: ["sa", "ka", "ex", "test", "ap"].indexOf(e.type) > -1, subject: sn }, where("planer", "#schule")));
         });
       });
+      // Lernblöcke, die der Lernplan zu einer Prüfung automatisch einträgt (Aufgaben mit planFor)
+      (db.homework || []).forEach(function (h) {
+        if (!h.planFor || !h.due || h.due < from || h.due > to) return;
+        out.push(Object.assign({ id: "lh-" + h.id, title: (h.done ? "✓ " : "") + (h.text || "Lernen"), date: h.due, time: "", end: "", app: "Lernplan", note: h.notes || "", ro: "Lernplan", subject: subj(h.subject).name || "", learn: true }, where("planer", "#schule")));
+      });
       (db.camps || []).forEach(function (c) {
         if (!c.start) return;
         eachDay(c.start, c.end, from, to, function (k) {

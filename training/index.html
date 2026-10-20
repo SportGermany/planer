@@ -384,7 +384,11 @@
   .wmove:disabled{ opacity:.25; cursor:default; }
   .sec-hidden{ display:none !important; }
   /* Aufgeräumt (4.0): Karten klappen zu – zu zeigt nur die Kopfzeile mit Kernzahl, Zustand gemerkt (sg-training-akk-v1) */
-  .acc > .card-h{ cursor:pointer; margin-bottom:12px; min-height:28px; }
+  .acc > .card-h{ cursor:pointer; margin-bottom:12px; min-height:44px; }
+  .acc.closed{ cursor:pointer; }
+  .acc-t{ all:unset; cursor:pointer; display:inline-flex; align-items:center; min-height:44px; font:inherit; color:inherit; }
+  .acc-t:focus-visible{ outline:2px solid var(--work); outline-offset:3px; border-radius:6px; }
+  .acc.sumx.closed > .card-h > span:not(.acc-sum){ display:none; }
   .acc > .card-h::after{ content:""; flex:none; width:8px; height:8px; margin:0 4px 0 2px; border-right:2px solid var(--text-faint); border-bottom:2px solid var(--text-faint); transform:rotate(-135deg) translate(-2px,-2px); transition:transform .2s; }
   .acc.closed > .card-h{ margin-bottom:0; }
   .acc.closed > .card-h::after{ transform:rotate(45deg); }
@@ -392,22 +396,26 @@
   .acc > .card-h h2{ flex:none; }
   .acc > .card-h .acc-sum, .acc > .card-h > span{ flex:1; min-width:0; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .acc.open > .card-h .acc-sum{ display:none; }
-  .acc > .card-h:focus-visible{ outline:2px solid var(--accent, #529cca); outline-offset:4px; border-radius:6px; }
-  .acc.closed{ padding-top:13px; padding-bottom:13px; }
-  .sick-checkin.acc.closed, .adaptive-card.acc.closed{ border-left:3px solid var(--accent, #529cca); }
+  .card.acc.closed, html[data-skin] .card.acc.closed{ padding-top:6px; padding-bottom:6px; }
+  @media (prefers-reduced-motion: reduce){ .acc > .card-h::after{ transition:none; } }
+  .sick-checkin.acc.closed, .adaptive-card.acc.closed{ border-left:3px solid var(--work); }
   .kpi-row{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; margin:0 0 12px; }
   .kpi{ min-width:0; min-height:62px; border:0; border-radius:14px; background:var(--panel); color:var(--text); display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:3px; padding:9px 11px; text-align:left; font:inherit; cursor:pointer; }
   .kpi[hidden]{ display:none; }
   .kpi b{ font-size:16px; font-weight:700; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .kpi span{ font-size:11.5px; color:var(--text-dim); }
-  .kpi[data-amp="gut"] b{ color:var(--work, #57c98d); } .kpi[data-amp="mittel"] b{ color:#e0b34e; } .kpi[data-amp="schlecht"] b{ color:#ef7f7f; }
+  .kpi span{ font-size:12px; color:var(--text-dim); }
+  .kpi-row.four{ grid-template-columns:repeat(4, minmax(0,1fr)); margin:14px 0 0; }
+  .kpi-row.four .kpi{ background:var(--panel-2); }
+  /* Ampel mit eigenen Farben (unabhängig von der Akzentfarbe der Farbwelt), dazu steht immer ein Wort */
+  .kpi[data-amp="gut"] b{ color:#4cc38a; } .kpi[data-amp="mittel"] b{ color:#e5a83b; } .kpi[data-amp="schlecht"] b{ color:#f2686b; }
+  html[data-theme="light"] .kpi[data-amp="gut"] b{ color:#1a7f4b; } html[data-theme="light"] .kpi[data-amp="mittel"] b{ color:#9a5b00; } html[data-theme="light"] .kpi[data-amp="schlecht"] b{ color:#c42b2f; }
   .kpi .dots{ display:flex; gap:4px; height:19px; align-items:center; }
   .kpi .dots i{ width:9px; height:9px; border-radius:50%; border:1.5px solid var(--text-faint); flex:none; }
   .kpi .dots i.on{ background:var(--work, #57c98d); border-color:transparent; }
   .kpi .dots i.today{ border-color:var(--text); }
   .sec-label.grp{ display:none; }
-  .widget-area, .widget-edit-btn{ order:999; }
   .sec-label.grp.on{ display:block; }
+  #s-lauf{ padding-bottom:96px; } /* Plus-Knopf verdeckt nichts */
   .widget-area, .widget-edit-btn{ order:999; }
   .widgets-tab{ display:flex; gap:8px; margin:14px 0 4px; }
   .widgets-tab button{
@@ -848,8 +856,7 @@
 
   /* ============ Einstellungs-Kategorien ============ */
   .catbar{
-    display:flex; gap:8px; overflow-x:auto; padding:2px 2px 10px; margin-bottom:2px;
-    -webkit-overflow-scrolling:touch; scrollbar-width:none;
+    display:flex; flex-wrap:wrap; gap:8px; padding:2px 2px 10px; margin-bottom:2px; /* umbrechen statt waagrecht scrollen (4.0) */
   }
   .catbar::-webkit-scrollbar{ display:none; }
   .catchip{
@@ -1484,6 +1491,7 @@
   <div class="pane" id="p-overview">
     <div class="bento">
       <div class="cell" data-sec="dbefund">
+        <div class="card-h"><h2>Ehrlicher Befund</h2></div>
         <p class="befund" id="befund">–</p>
         <div class="proof" id="proof"></div>
       </div>
@@ -1531,6 +1539,7 @@
       </div>
 
       <div class="cell" data-sec="dweekoverview">
+        <div class="card-h"><h2>Wochenübersicht</h2></div>
         <div class="cal-nav" style="margin-bottom:10px">
           <button class="nav-btn" id="wkPrev">‹</button>
           <b id="wkTitle">Wochenübersicht</b>

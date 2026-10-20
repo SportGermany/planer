@@ -847,7 +847,7 @@ function renderHeute(){
     .forEach(function(c){ chips.appendChild(el("span","chip",esc(c))); });
 
   // klare Beschriftung der Hauptaktion: was und wie lange
-  $("btnStartToday").textContent = p.rest ? "Atemübung starten · 2 min" : p.trainedElsewhere ? "Cool-down starten · 2 min" : p.run ? "Zum Lauf" :
+  $("btnStartToday").textContent = p.rest && p.sick ? "Sanftes Dehnen starten" : p.rest ? "Atemübung starten · 2 min" : p.trainedElsewhere ? "Cool-down starten · 2 min" : p.run ? "Zum Lauf" :
     (done ? "Nochmal trainieren" : $("heroTitle").textContent.replace(/-Zirkel$/, "") + " starten") + " · " + Math.round(todayDuration()/60) + " min";
   $("btnRest").classList.toggle("on", !!p.rest);
   $("btnRest").textContent = p.rest ? "Ruhetag aufheben" : "Heute als Ruhetag";
@@ -1653,6 +1653,7 @@ function finishWorkout(){
 function showPart(part){
   try { var sh = window.parent !== window && window.parent.SGShell; if (sh) { sh.go("training", part, null, { push: false }); return; } } catch(e){}
   switchTab("lauf"); $("s-lauf").setAttribute("data-part", part);
+  if (window.APP5 && window.APP5.layout) window.APP5.layout();
 }
 function switchTab(name){
   S.screen = name;
@@ -2084,6 +2085,7 @@ switchTab("heute");
     var part = hashTab === "lauf" || hashTab === "kraft" ? hashTab : "";
     switchTab(part ? "lauf" : hashTab); S.shortcutNav = true;
     if (part) $("s-lauf").setAttribute("data-part", part);
+    if (window.APP5 && window.APP5.layout) window.APP5.layout();   // Überschriften und Kopf passend zum Ausschnitt
   }
   // Direkt versuchen; zusätzlich auf "hashchange" reagieren, falls der
   // Browser den Hash bei dieser Navigation erst nachträglich setzt

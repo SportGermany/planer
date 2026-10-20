@@ -297,26 +297,40 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(r.sh - r.ih <= 3 * r.ih, 'Scrollweg ' + (r.sh - r.ih) + ' > ' + 3 * r.ih);
     assert(!e.length, e.join(' | ')); await c.close();
   });
-  await test('T Akkordeons: zu zeigt die Kernzahl, Tipp/Enter klappt, Zustand bleibt nach Neustart, Kennzahl öffnet Details', async () => {
+  await test('T Akkordeons: zu zeigt die Kernzahl, ganze Karte/Enter klappt, Zustand bleibt nach Neustart, Kennzahl öffnet Details', async () => {
     const c = await ctxFor(SMALL), p = await c.newPage(), e = watch(p);
     await open(p, '#training/heute');
     let f = trFrame(p);
-    const s0 = await f.evaluate(() => { const c = document.querySelector('.acc[data-acc=exercises]'); return [c.classList.contains('closed'), c.querySelector('.card-h').getAttribute('aria-expanded'), c.querySelector('.card-h > span:not(.acc-sum)').textContent, c.getBoundingClientRect().height]; });
-    assert(s0[0] && s0[1] === 'false' && /Übungen|Lauftag|Minuten/.test(s0[2]) && s0[3] < 80, 'zu ' + s0);
-    await f.click('.acc[data-acc=exercises] > .card-h'); await wait(p, 200);
+    const s0 = await f.evaluate(() => { const c = document.querySelector('.acc[data-acc=exercises]'), b = c.querySelector('h2 > button.acc-t'); return [c.classList.contains('closed'), b && b.getAttribute('aria-expanded'), c.querySelector('.acc-sum').textContent, c.getBoundingClientRect().height, b && b.getAttribute('aria-controls') === c.id, !c.querySelector('.card-h[role]')]; });
+    assert(s0[0] && s0[1] === 'false' && /Übungen|Lauftag|Minuten/.test(s0[2]) && s0[3] < 80 && s0[4] && s0[5], 'zu ' + s0);
+    // Tipp irgendwo auf die zugeklappte Karte (nicht nur die Kopfzeile)
+    const box = await (await f.$('.acc[data-acc=exercises]')).boundingBox(); await p.mouse.click(box.x + box.width - 30, box.y + box.height - 6, { delay: 30 }).catch(() => {});
+    await f.evaluate(() => { const c = document.querySelector('.acc[data-acc=exercises]'); if (c.classList.contains('closed')) c.click(); }); await wait(p, 200);
     assert(await f.evaluate(() => document.querySelector('.acc[data-acc=exercises]').classList.contains('open') && document.getElementById('todayList').offsetParent !== null), 'aufklappen');
-    await f.focus('.acc[data-acc=tip] > .card-h'); await f.press('.acc[data-acc=tip] > .card-h', 'Enter'); await wait(p, 150);
+    await f.focus('.acc[data-acc=tip] .acc-t'); await p.keyboard.press('Enter'); await wait(p, 150);
     assert(await f.evaluate(() => document.querySelector('.acc[data-acc=tip]').classList.contains('open')), 'Enter');
     await p.reload(); await wait(p, 2500); f = trFrame(p);
     assert(await f.evaluate(() => document.querySelector('.acc[data-acc=exercises]').classList.contains('open') && document.querySelector('.acc[data-acc=tip]').classList.contains('open')), 'Zustand nach Neustart');
     if (await f.evaluate(() => !document.getElementById('kpiReady').hidden)) {
+      assert(/% · (gut|mäßig|schwach)/.test(await f.textContent('#kpiReady b')), 'Ampel mit Wort');
       await f.click('#kpiReady'); await wait(p, 700);
       assert(await f.evaluate(() => document.getElementById('readinessCard').classList.contains('open')), 'Bereitschaft öffnet Details');
     }
-    // zugeklappte Karte in einer zweiten Seite (Verläufe in Kraft)
+    // Wochenkarte: Kernzahl statt Datum
+    await f.evaluate(() => localStorage.setItem('sg-training-akk-v1', '{}'));
+    await p.reload(); await wait(p, 2500); f = trFrame(p);
+    assert(/\d von 7 Tagen/.test(await f.textContent('.acc[data-acc=weekbar] .acc-sum')), 'Woche zu: ' + await f.textContent('.acc[data-acc=weekbar] .acc-sum'));
+    // zugeklappte Verläufe in Kraft mit Überschrift
     await open(p, '#training/kraft'); f = trFrame(p);
     assert(await f.evaluate(() => ['gymhistory', 'stretchhistory'].every(k => document.querySelector('[data-acc=' + k + ']').classList.contains('closed'))
-      && document.querySelector('#s-lauf .sec-label[data-grp=verlauf]').classList.contains('on')), 'Verläufe zu, Überschrift Verlauf');
+      && document.querySelector('#s-lauf .sec-label[data-grp=verlauf]').classList.contains('on') && document.querySelector('#s-lauf .top h1').textContent === 'Kraft'), 'Verläufe zu, Überschrift Verlauf, Kopf Kraft');
+    // Auswertung: vier Kennzahlen unter dem Fitness-Wert, Gruppen in der Analyse
+    await open(p, '#training/auswertung/fitness'); f = trFrame(p);
+    assert(await f.evaluate(() => document.querySelectorAll('#fitKpis .kpi').length === 4 && [...document.querySelectorAll('#s-fitness .sec-label.grp.on')].map(x => x.textContent).join() === 'Fortschritt,Körper und Erholung'), 'Fitness-Kennzahlen/Gruppen');
+    await open(p, '#training/auswertung/analyse'); f = trFrame(p);
+    await f.click('#s-daten .segbar button[data-p=daten]'); await wait(p, 300);
+    const g = await f.evaluate(() => [...document.querySelectorAll('#s-daten .sec-label.grp.on')].filter(x => x.offsetParent).map(x => x.textContent).join());
+    assert(g === 'Fortschritt,Aktivitäten,Berichte und Export', 'Analyse-Gruppen ' + g);
     assert(!e.length, e.join(' | ')); await c.close();
   });
   await test('T Starts: Training, Gym, Dehnen, Rodeln vorbereiten, Laufen mit GPS und Herzfrequenz (Testdaten)', async () => {
@@ -347,14 +361,134 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(!bad.length, bad.join('; '));
     assert(!e.length, e.join(' | ')); await c.close();
   });
-  await test('T Neue Reihenfolge einmalig übernommen, ausgeblendete Bereiche bleiben aus', async () => {
+  await test('T Reihenfolge 4.0: Grundreihenfolge übernommen, eigene bleibt, Ausgeblendetes bleibt aus, alte Sicherung verliert nichts', async () => {
+    const bad = [];
+    const run = async (seed, fn) => {
+      const c = await ctxFor(SMALL), p = await c.newPage(), e = watch(p);
+      await c.addInitScript(seed); await open(p, '#training/heute');
+      const r = await trFrame(p).evaluate(() => { const o = JSON.parse(localStorage.getItem('wk_sections')); return { heute: o.heute.join(), lauf: (o.lauf || []).join(), v4: o.__v4, seen: !!o.__seen, hid: [...document.querySelectorAll('#s-heute > .sec-hidden, #s-lauf > .sec-hidden')].map(x => x.dataset.sec).join() }; });
+      await fn(r, p); bad.push(...e); await c.close();
+    };
+    const OLD = ['whatsnew', 'weatherwarn', 'sickcheckin', 'injurycheckin', 'importcard', 'readiness', 'hero', 'adaptive', 'stats', 'exercises', 'weekbar', 'tip', 'weathertoday'];
+    // 1) unveränderte alte Grundreihenfolge → neue Reihenfolge
+    await run(new Function('if (!sessionStorage.m1) { sessionStorage.m1 = 1; localStorage.setItem("wk_sections", JSON.stringify({ heute: ' + JSON.stringify(OLD) + ' })); }'), r => { if (!/^hero,kpis,/.test(r.heute) || r.v4 !== 1 || !r.seen) bad.push('Grundreihenfolge ' + JSON.stringify(r)); });
+    // 2) eigene Reihenfolge bleibt, neue Bereiche passend eingereiht
+    await run(new Function('if (!sessionStorage.m2) { sessionStorage.m2 = 1; localStorage.setItem("wk_sections", JSON.stringify({ heute: ["tip","stats","exercises","hero","weekbar"] })); }'), r => {
+      if (!/^tip,stats,exercises,hero,kpis,/.test(r.heute)) bad.push('eigene Reihenfolge ' + r.heute); });
+    // 3) ausgeblendet (mit __seen) bleibt nach Neustart aus
+    await run(new Function('if (!sessionStorage.m3) { sessionStorage.m3 = 1; const all = ' + JSON.stringify(OLD) + '.concat(["kpis","tsheute"]); localStorage.setItem("wk_sections", JSON.stringify({ __v4: 1, __seen: { heute: all }, heute: all.filter(x => x !== "readiness") })); }'), async (r, p) => {
+      if (r.heute.indexOf('readiness') >= 0 || r.hid.indexOf('readiness') < 0) bad.push('ausgeblendet kam zurück ' + r.heute);
+      await p.reload(); await wait(p, 2500); if (!(await trFrame(p).evaluate(() => !!document.querySelector('[data-sec=readiness].sec-hidden')))) bad.push('nach Neustart wieder da'); });
+    // 4) alte Sicherung (ohne __seen, ohne neue Bereiche) → neue Bereiche sichtbar, nichts dauerhaft weg
+    await run(new Function('if (!sessionStorage.m4) { sessionStorage.m4 = 1; localStorage.setItem("wk_sections", JSON.stringify({ __v4: 1, heute: ' + JSON.stringify(OLD) + ', lauf: ["runtrack","gym","distance"] })); }'), r => {
+      if (['kpis', 'tsheute'].some(k => r.heute.indexOf(k) < 0) || ['tsmob', 'stretch', 'sportlog'].some(k => r.lauf.indexOf(k) < 0)) bad.push('alte Sicherung ' + JSON.stringify(r)); });
+    assert(!bad.length, bad.join(' | '));
+  });
+  await test('T Ausgeblendetes greift: ohne „Mobility & Dehnen“ kommen Dehnen/Rodeln zurück, ohne Bereitschaft keine Kennzahl', async () => {
     const c = await ctxFor(SMALL), p = await c.newPage(), e = watch(p);
-    await c.addInitScript(() => { if (!sessionStorage.mig) { localStorage.setItem('wk_sections', JSON.stringify({ heute: ['tip', 'stats', 'exercises', 'hero', 'weekbar'] })); localStorage.removeItem('wk_sections_v4'); sessionStorage.mig = 1; } });
-    await open(p, '#training/heute');
-    const r = await trFrame(p).evaluate(() => [JSON.parse(localStorage.getItem('wk_sections')).heute.join(), !!document.querySelector('[data-sec=readiness].sec-hidden'), localStorage.getItem('wk_sections_v4')]);
-    assert(/^hero,/.test(r[0]) && r[0].indexOf('readiness') < 0 && r[1] && r[2] === '1', 'Übernahme ' + r);
-    await p.reload(); await wait(p, 2500);
-    assert(await trFrame(p).evaluate(() => !!document.querySelector('[data-sec=readiness].sec-hidden')), 'ausgeblendet nach Neustart wieder da');
+    await c.addInitScript(() => { if (sessionStorage.h) return; sessionStorage.h = 1; const o = JSON.parse(localStorage.getItem('wk_sections') || '{}');
+      o.__v4 = 1; o.__seen = null; localStorage.setItem('wk_sections', JSON.stringify(o)); });
+    await open(p, '#training/kraft'); let f = trFrame(p);
+    await f.evaluate(() => { const o = JSON.parse(localStorage.getItem('wk_sections')); o.lauf = o.lauf.filter(x => x !== 'tsmob'); o.heute = o.heute.filter(x => x !== 'readiness'); localStorage.setItem('wk_sections', JSON.stringify(o)); });
+    await p.reload(); await wait(p, 2500); f = trFrame(p);
+    const r = await f.evaluate(() => ['stretch', 'rodeln'].map(k => !!document.querySelector('#s-lauf [data-sec=' + k + ']').offsetParent).join());
+    assert(r === 'true,true', 'Einzelkarten ' + r);
+    await open(p, '#training/heute'); f = trFrame(p);
+    assert(await f.evaluate(() => document.getElementById('kpiReady').hidden), 'Bereitschaft-Kennzahl trotz ausgeblendet');
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+
+  /* ---------- P4: Schule, Bibel, Pause, Mobility (Phase 4) ---------- */
+  const schFrame = p => p.frames().find(f => /\/planer\/schule\//.test(f.url()));
+  // Schuldaten ergänzen: eine überfällige Aufgabe und zwei Lernblöcke vom Lernplan
+  const SCHUL_EXTRA = () => { if (sessionStorage.sx) return; sessionStorage.sx = 1; const k = 'schulkalender-bayern-v1', db = JSON.parse(localStorage.getItem(k) || '{}'), d = n => { const x = new Date(); x.setDate(x.getDate() + n); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };
+    const sub = (db.subjects || [])[0] || {}; db.homework = (db.homework || []).concat([{ id: 'hOver', subject: sub.id, text: 'Referat Folien', due: d(-1), done: false },
+      { id: 'hL1', subject: sub.id, text: 'Lernen: Kapitel 1–3', due: d(1), kind: 'lernen', done: false, planFor: 'eX' }, { id: 'hL2', subject: sub.id, text: 'Lernen: Probetest', due: d(2), kind: 'lernen', done: false, planFor: 'eX' }]);
+    localStorage.setItem(k, JSON.stringify(db)); };
+  await test('P4 Schultag: nächste Stunde oben, Stundenplan, offene Aufgaben, Prüfung mit Countdown, Rest zugeklappt', async () => {
+    const c = await ctxFor(Object.assign({ timezoneId: 'Europe/Berlin' }, SMALL)), p = await c.newPage(), e = watch(p);
+    await c.addInitScript(SCHUL_EXTRA);
+    await p.clock.install({ time: new Date('2026-10-20T09:40:00+02:00') });
+    await open(p, '#schule/heute'); let f = schFrame(p);
+    const r = await f.evaluate(() => { const y = s => { const el = document.querySelector(s); return el ? el.getBoundingClientRect().top : -1; };
+      return { now: (document.querySelector('.nowcard') || {}).textContent || '', nowY: y('.nowcard'), lesY: y('.card.lessons'), hwY: y('.stack .hw'), exY: y('.card.next'), more: !!document.querySelector('details.more-today:not([open])'),
+        hwFirst: (document.querySelector('.stack .hw .txt') || {}).textContent, count: (document.querySelector('.card.next .nc-count') || {}).textContent || '' }; });
+    assert(/Nächste Stunde/.test(r.now) && /beginnt in 5 Min\./.test(r.now), 'Jetzt-Karte ' + r.now);
+    assert(r.nowY > 0 && r.nowY < r.lesY && r.lesY < r.hwY, 'Reihenfolge ' + JSON.stringify(r));
+    assert(r.exY > 0 && /Tage|morgen|heute/.test(r.count), 'Prüfung mit Countdown ' + r.count);
+    assert(r.hwFirst === 'Referat Folien', 'Überfälliges zuerst: ' + r.hwFirst);
+    assert(r.more, 'Rest nicht zugeklappt');
+    await f.click('details.more-today > summary'); await wait(p, 200); await p.reload(); await wait(p, 2500); f = schFrame(p);
+    assert(await f.evaluate(() => !!document.querySelector('details.more-today[open]')), 'Zustand „Mehr für heute“ nicht gemerkt');
+    // während der Stunde: „Jetzt … noch … Min.“
+    await p.clock.fastForward('20:00'); await f.evaluate(() => document.querySelector('.tab[data-v=heute]').click()); await wait(p, 300);
+    assert(/Jetzt.*noch 30 Min\./.test(await f.textContent('.nowcard')), 'laufende Stunde: ' + await f.textContent('.nowcard'));
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('P4 Aufgaben & Prüfungen: Schalter mit drei Einträgen, Überfälliges markiert, Prüfungen mit Countdown, Lernzeit/Ablage im Menü', async () => {
+    const c = await ctxFor(SMALL), p = await c.newPage(), e = watch(p);
+    await c.addInitScript(SCHUL_EXTRA);
+    await open(p, '#schule/aufgaben'); const f = schFrame(p);
+    const seg = await f.evaluate(() => { const sn = document.getElementById('subnav'); return { n: sn.querySelectorAll('button').length, seg: sn.classList.contains('seg'), scroll: sn.scrollWidth > sn.clientWidth + 1, labels: [...sn.querySelectorAll('button')].map(b => b.textContent).join('|'),
+      first: (document.querySelector('#view .hgroup') || {}).textContent || '', over: !!document.querySelector('#view .hgroup.over') }; });
+    assert(seg.n === 3 && seg.seg && !seg.scroll && /^Offen.*\|Prüfungen\|Erledigt$/.test(seg.labels), 'Schalter ' + JSON.stringify(seg));
+    assert(/Überfällig/.test(seg.first) && seg.over, 'Überfällig zuerst ' + seg.first);
+    await f.click('#subnav [data-v="auf:pruef"]'); await wait(p, 300);
+    assert(await f.evaluate(() => document.querySelectorAll('#view .card.next .nc-count').length >= 1), 'Prüfungsliste mit Countdown');
+    for (const [id, want] of [['lernzeit', '.timer'], ['ablage', '#view']]) {
+      await p.click('#menu'); await wait(p, 400); await p.click(`#dwpn .dw-r [data-sec=${id}]`); await wait(p, 1500);
+      const st = await state(p), ok = await f.evaluate(([id, want]) => document.getElementById('title').textContent === (id === 'lernzeit' ? 'Lernzeit' : 'Ablage') && !!document.querySelector(want) && document.getElementById('subnav').hidden, [id, want]);
+      assert(st.hash === '#schule/' + id && ok, id + ' ' + st.hash + ' ' + ok);
+    }
+    // zurück zu „Aufgaben & Prüfungen“ zeigt die Liste, nicht die Ablage
+    await p.click('#menu'); await wait(p, 400); await p.click('#dwpn .dw-r [data-sec=aufgaben]'); await wait(p, 1200);
+    assert(await f.evaluate(() => document.getElementById('title').textContent === 'Aufgaben' && !document.getElementById('subnav').hidden), 'Aufgabenliste nach Ablage');
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('P4 Keine waagrecht scrollende Knopf-Reihe in der ganzen App (außer Mobility)', async () => {
+    const c = await ctxFor(SMALL), p = await c.newPage(), e = watch(p), bad = [];
+    await open(p, '#kalender');
+    const paths = await p.evaluate(() => { const V = SGShell.V, l = []; Object.keys(V).forEach(v => { if (!V[v].secs) return l.push(v); V[v].secs.forEach(s => (s.kids ? s.kids.map(k => v + '/' + s.id + '/' + k.id) : [v + '/' + s.id]).forEach(x => l.push(x))); }); return l.filter(x => !/^mobility/.test(x)); });
+    const scan = () => [...document.querySelectorAll('body *')].filter(el => { const cs = getComputedStyle(el); return /auto|scroll/.test(cs.overflowX) && el.scrollWidth > el.clientWidth + 2 && el.querySelectorAll(':scope > button, :scope > .chip, :scope > a').length >= 2 && el.offsetParent; }).map(el => el.className || el.id);
+    for (const h of paths) {
+      await p.evaluate(h => { location.hash = h; }, h); await wait(p, 1300);
+      let r = await p.evaluate(scan);
+      const fr = await p.$('#stage iframe.on'); if (fr && !(await p.$('.native.on'))) r = r.concat(await (await fr.contentFrame()).evaluate(scan).catch(() => []));
+      if (r.length) bad.push(h + ': ' + r.join(','));
+    }
+    assert(paths.length > 30, 'nur ' + paths.length + ' Seiten');
+    assert(!bad.length, bad.join('; '));
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('P4 Lernblöcke vom Lernplan erscheinen im Monatskalender und im Tagesplan', async () => {
+    const c = await ctxFor(SMALL), p = await c.newPage(), e = watch(p);
+    await c.addInitScript(SCHUL_EXTRA);
+    await open(p, '#kalender');
+    const r = await p.evaluate(() => { const d = new Date(); d.setDate(d.getDate() + 1); const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      return { k, items: SharedCalendar.allItems(k, k).filter(x => /^lh-/.test(x.id)).map(x => x.title) }; });
+    assert(r.items.join() === 'Lernen: Kapitel 1–3', 'Verbund ' + JSON.stringify(r));
+    await p.click(`#mgrid [data-mday="${r.k}"]`); await wait(p, 600);
+    assert(/Lernen: Kapitel 1–3/.test(await p.textContent('#dayplan')), 'Tagesplan');
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('P4 Bibel in „Auf einen Blick“: Gelesen ✓, Serie und Leseplan', async () => {
+    const c = await ctxFor(SMALL), p = await c.newPage(), e = watch(p);
+    await c.addInitScript(() => { const d = new Date(), k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      const b = JSON.parse(localStorage.getItem('zweiminutenbibel_v2') || '{}'); Object.assign(b, { streak: 6, plan: 'hl', dailyGoal: 1, todayDone: { date: k, ids: ['x'] } }); localStorage.setItem('zweiminutenbibel_v2', JSON.stringify(b)); });
+    await open(p, '#kalender');
+    const t = await p.textContent('[data-gl=bibel]');
+    assert(/Gelesen ✓/.test(t) && /Serie 6/.test(t) && /Bekannte Kapitel/.test(t), 'Karte: ' + t);
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('P4 Mobility unverändert: Chips, Pfadzeile „Atmung & HRV · …“, Inhalt unter dem Kopf', async () => {
+    const c = await ctxFor(SMALL), p = await c.newPage(), e = watch(p);
+    await open(p, '#mobility/atmung/hrv');
+    const r = await p.evaluate(() => ({ path: document.getElementById('path').textContent, pathVis: !!document.getElementById('path').offsetParent, menu: !!document.getElementById('menu').offsetParent,
+      chips: document.querySelectorAll('#chips .chip').length, on: [...document.querySelectorAll('#chips .chip.on')].map(x => x.textContent).join('|'),
+      stTop: document.getElementById('stage').getBoundingClientRect().top, chipsBottom: document.getElementById('chips').getBoundingClientRect().bottom, topH: document.querySelector('.top').getBoundingClientRect().height }));
+    assert(r.path === 'Atmung & HRV · Üben & HRV messen' && r.pathVis && !r.menu, 'Pfadzeile ' + JSON.stringify(r));
+    assert(r.chips >= 7 && r.on === 'Atmung & HRV|Üben & HRV messen', 'Chips ' + r.on);
+    assert(Math.abs(r.stTop - r.chipsBottom) <= 1, 'Abstand Kopf/Inhalt ' + JSON.stringify(r));
     assert(!e.length, e.join(' | ')); await c.close();
   });
   await test('K Kalender: Reihenfolge Wochenleiste · Tagesplan · Monat, auf 360×800 ohne Scrollen sichtbar', async () => {

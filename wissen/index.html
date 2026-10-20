@@ -56,7 +56,7 @@ h1 { font-size: 28px; line-height: 1.15; letter-spacing: -.02em; margin: 6px 4px
 .btn:disabled { opacity: .45; }
 .btns { display: flex; gap: 8px; flex-wrap: wrap; }
 .btns .btn { flex: 1; min-width: 130px; }
-.chips { display: flex; gap: 7px; overflow-x: auto; margin: 0 -16px 14px; padding: 2px 16px; scrollbar-width: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 7px; margin: 0 0 14px; padding: 2px 0; } /* umbrechen statt waagrecht scrollen (4.0) */
 .chips::-webkit-scrollbar { display: none; }
 .chip { flex: none; height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--line); background: none; font-size: 14px; font-weight: 600; color: var(--muted); }
 .chip.on { background: var(--s2); color: var(--ink); border-color: transparent; }

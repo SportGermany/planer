@@ -62,7 +62,7 @@ svg{display:block}
 .syncdot.off{background:var(--muted)}
 @keyframes pulse{50%{opacity:.3}}
 .btn-today{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:650;margin:0 2px}
-.subnav{display:flex;gap:6px;max-width:760px;margin:8px auto 2px;overflow-x:auto;scrollbar-width:none}
+.subnav{display:flex;flex-wrap:wrap;gap:6px;max-width:760px;margin:8px auto 2px}
 .subnav::-webkit-scrollbar{display:none}
 
 /* Chips */
@@ -309,7 +309,22 @@ select.inp{appearance:auto}
 .row2{display:grid;grid-template-columns:1.35fr 1fr;gap:8px}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .wrap{display:flex;flex-wrap:wrap;gap:6px}
-.hscroll{display:flex;gap:6px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none}
+.hscroll{display:flex;flex-wrap:wrap;gap:6px;padding:2px 0 4px} /* keine waagrecht scrollenden Reihen (4.0) */
+/* Segmentschalter statt Chip-Reihe (4.0) */
+.subnav.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;padding:3px;border-radius:12px;background:var(--surface2);overflow:visible}
+.subnav.seg .chip{justify-content:center;border:0;border-radius:9px;min-height:36px;background:none;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.subnav.seg .chip.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+/* Schultag (4.0): jetzt/nächste Stunde, Rest zugeklappt */
+.nowcard{margin-top:10px;border-left:4px solid var(--c);padding:12px 14px}
+.nowcard .nw-l{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.nowcard .nw-t{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:700;margin:3px 0 2px}
+.nowcard .nw-r{margin-left:auto;font-size:14px;font-weight:600;color:var(--muted)}
+.nowcard .nw-s{font-size:14px;color:var(--muted)}
+details.more-today{margin-top:16px}
+details.more-today>summary{cursor:pointer;list-style:none;display:flex;flex-direction:column;gap:1px;padding:12px 14px;border-radius:14px;background:var(--surface);font-weight:650;min-height:48px;justify-content:center}
+details.more-today>summary::-webkit-details-marker{display:none}
+details.more-today>summary span{font-size:12.5px;font-weight:500;color:var(--muted)}
+details.more-today[open]>summary{margin-bottom:6px}
 .hscroll::-webkit-scrollbar{display:none}
 .tchip{border-radius:999px;padding:7px 12px;font-size:13.5px;font-weight:650;border:1.5px solid color-mix(in srgb,var(--c) 45%,transparent)}
 .tchip.on{background:var(--c);border-color:var(--c);color:#fff}

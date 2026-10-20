@@ -96,7 +96,7 @@ h1,h2,h3,p{ margin:0; }
 .chip[data-cat="wiki"].on{ background:var(--wiki-dim); color:var(--wiki); border-color:var(--wiki); }
 .chip[data-cat="aktpolitik"].on{ background:var(--aktuell-dim); color:var(--aktuell); border-color:var(--aktuell); }
 .chip[data-cat="raetsel"].on{ background:var(--raetsel-dim); color:var(--raetsel); border-color:var(--raetsel); }
-.chip.scroll-row{ overflow-x:auto; flex-wrap:nowrap; -webkit-overflow-scrolling:touch; }
+.chip.scroll-row, .chips.scroll-row{ flex-wrap:wrap; } /* keine waagrecht scrollenden Reihen (4.0) */
 
 .stat-row{ display:flex; gap:9px; margin-bottom:12px; }
 .stat{ flex:1; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px 10px; text-align:center; }

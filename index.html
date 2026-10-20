@@ -275,7 +275,7 @@ select.small { border: 1px solid var(--line); background: var(--s1); border-radi
 .tl-tile b { font-size: 26px; font-weight: 700; justify-self: end; font-variant-numeric: tabular-nums; }
 .tl-tile .nm { grid-column: 1 / -1; font-size: 14px; font-weight: 600; color: var(--muted); }
 .tl-tile.on { border-color: var(--c); box-shadow: 0 0 0 1px var(--c) inset; }
-.tl-src { display: flex; gap: 6px; overflow-x: auto; margin: 0 0 10px; padding-bottom: 2px; scrollbar-width: none; }
+.tl-src { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; padding-bottom: 2px; } /* umbrechen statt waagrecht scrollen (4.0) */
 .tl-src button { border: 1px solid var(--line); background: none; color: var(--muted); border-radius: 999px; padding: 6px 12px; font-size: 13px; white-space: nowrap; min-height: 34px; }
 .tl-src button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .tl-h { display: flex; align-items: baseline; gap: 8px; margin: 2px 6px 8px; font-size: 22px; font-weight: 700; }

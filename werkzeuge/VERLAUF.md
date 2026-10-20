@@ -95,7 +95,7 @@ Prüfung Phase 2 (unabhängiger Prüf-Agent, 15 Befunde):
 | H15 | „Seite bearbeiten“ in Laufen/Kraft listete alle Bereiche | Liste nach Ausschnitt gefiltert, Pfeile überspringen unsichtbare Nachbarn |
 Test „S Prüfbefunde Phase 2“ deckt F2, F3, F4, S5, S7, H11, H14 ab.
 
-### Phase 3 – Training aufräumen (in Arbeit)
+### Phase 3 – Training aufräumen (erledigt)
 Plan: vorhandenes System der Seitenbereiche (data-sec, Reihenfolge per CSS order, „Seite bearbeiten“) weiter nutzen, nichts löschen.
 Umgesetzt:
 - Einklappbare Karten (`.acc`, Zustand `sg-training-akk-v1`): zu zeigt Titel + Kernzahl, Tipp/Enter klappt.
@@ -127,6 +127,51 @@ mehr sichtbar am alten Platz steht:
 | Fitness: Überschrift „Mobility“, „📤 Fortschritt teilen“ | Training › Auswertung › Fitness, in zugeklappten Karten |
 | Menüpunkt „Laufen & Kraft“ | „Laufen“ und „Kraft“ |
 Neu dazu: Training › Kraft, Training › Auswertung › Kalender & Rückblick.
+
+Prüfung Phase 3 (Prüf-Agent, 20 Befunde):
+| # | Befund | Lösung |
+|---|---|---|
+| F1 | `wk_sections_seen`/`_v4` liefen nicht mit Cloud/Sicherung → alte Sicherung blendete neue Karten dauerhaft aus | „gesehen“ und „umgestellt“ stehen jetzt in `wk_sections` selbst (`__seen`, `__v4`) |
+| F2 | Erster Start erriet „ausgeblendet“ aus Altständen | ohne `__seen` wird wie früher alles Fehlende angehängt, erst danach gilt die Liste |
+| F3 | Ohne „Mobility & Dehnen“ waren Freies Dehnen/Rodeln-Aufwärmen unerreichbar | Einzelkarten kommen zurück, sobald tsmob ausgeblendet ist |
+| S4 | Ampel nutzte die Akzentfarbe (in manchen Farbwelten gut ≈ schlecht) | eigene Ampelfarben (hell/dunkel) plus Wort „gut/mäßig/schwach“ |
+| S5 | Kennzahl Bereitschaft trotz ausgeblendeter Karte | prüft `.sec-hidden`; Woche öffnet nur, wenn die Karte da ist |
+| S6 | role=button auf der Kopfzeile, Knöpfe darin verschachtelt | echter `<button class="acc-t" aria-expanded aria-controls>` in der Überschrift |
+| S7 | Tippfläche nur 28 px | Kopfzeile 44 px, zugeklappt ist die ganze Karte Tippfläche |
+| S8 | Leere/falsche Kernzahlen | eigene Kernzahl für Woche („3 von 7 Tagen trainiert“), Übungen, Zuletzt erfasst, Rekorde; sonst erste Textzeile |
+| S9 | Auswertung ohne Kennzahlen-Kacheln und Gruppen | Fitness: 4 Kacheln (Woche, 30 Tage, Serie, Rekorde); Gruppen Fortschritt · Körper und Erholung bzw. Fortschritt · Aktivitäten · Berichte und Export; Befund und Wochenübersicht klappen |
+| S10 | 11,5 px Text | 12 px |
+| S11 | Umstellung verwarf eigene Sortierung | eigene Reihenfolge bleibt, nur neue Bereiche werden eingereiht |
+| S12 | „Atemübung starten · 2 min“ am Krankheitstag falsch | „Sanftes Dehnen starten“ |
+| H13 | Editor-Pfeile im Ausschnitt | Position aus der sichtbaren Liste |
+| H14 | navy-Skin überschrieb zugeklappten Innenabstand | höhere Spezifität |
+| H15 | Kraft-Kopf zeigte „Training · Nächster Lauftag“, Plus verdeckte „Seite bearbeiten“ | Kopf „Kraft“/„Laufen“, Lauftag nur bei Laufen, Abstand unten |
+| H16 | Überschriften vor dem Setzen des Ausschnitts berechnet | nach dem Setzen erneut ausgerichtet |
+| H17 | Bewegung trotz „weniger Bewegung“ | sanftes Scrollen/Drehung aus |
+| H20 | doppelte CSS-Regel | entfernt |
+| H18/H19 | Cool-down nur als Hinweis, lange Erklärtexte → Info-Symbol, Rodeln innen, Sportwissenschaft-Zähler im Blick | offen für Phase 8 (Querschnitt) |
+Mobility: Bildvergleich vorher (Stand a921bfb, eigener Server) / nachher auf 5 Seiten – Unterschied nur im Kopf (y 11–49, neue Pfadzeile).
+
+### Phase 4 – Schule, Bibel, Pause; Mobility bleibt (erledigt, Version 3.7.0)
+Umgesetzt:
+- Schultag: oben „Jetzt“/„Nächste Stunde“ (Fach, Raum, Minuten), dann Stundenplan heute, alle offenen Aufgaben
+  (Überfälliges zuerst), nächste Prüfungen mit Countdown, Schnellknöpfe; Ferien, Lehrgang, Morgen, stressige Wochen und
+  die nächsten Tage in „Mehr für heute“ (zugeklappt, Zustand gemerkt). Ein laufender Lehrgang bleibt oben.
+- Aufgaben & Prüfungen: Segmentschalter Offen · Prüfungen · Erledigt (neue Prüfungsliste mit Countdown),
+  „⚠️ Überfällig“ markiert. Lernzeit und Ablage sind eigene Einträge im Seitenmenü (Sprungadressen #lernzeit/#ablage
+  auch während die Seite läuft). Einzeln geöffnet (ohne Hülle) bleiben alle fünf Schalter, umbrechend.
+- Keine waagrecht scrollenden Knopf-Reihen mehr außer Mobility: Schule (Unterleiste, Fach-Auswahl), Pause (Wissen),
+  Sportwissenschaft (Kapitel/Karten), Aufgaben (Quellen), Training einstellen (Kategorien) brechen jetzt um. Test prüft alle Seiten.
+- Lernblöcke aus dem Lernplan (Aufgaben mit planFor) erscheinen im großen Kalender (Verbund `externalItems`, Kennung lh-).
+- Bibel in „Auf einen Blick“: „Gelesen ✓“ ging nie (todayDone ist {date, ids}, verglichen wurde mit einem Datum) – behoben,
+  dazu Serie und Leseplan („Ganze Bibel“/„Bekannte Kapitel“).
+- Mobility: nur die Pfadzeile unter dem Titel („Atmung & HRV · Üben & HRV messen“), Chips und Inhalt unverändert.
+Fehler und Ursachen:
+| Fehler | Ursache | Lösung |
+|---|---|---|
+| Hülle startete nicht (SGShell fehlte) | Syntaxfehler beim Umbau der Pfadzeile (`else` nach geschlossenem Block) | korrigiert; Test „A Hülle lädt“ hätte es gefunden |
+| Gruppen-Überschriften der Analyse fehlten | Karten liegen in Reitern (Overview/Daten), Überschrift stand am Seitenende | Überschrift wandert in den Behälter der Karten |
+Tests: suite3 72/72, offline3 58/58, apk, upd, schnell 68/68, bahnplan-1/2.
 
 ## 3.5.0 – erste veröffentlichte Android-App
 

@@ -63,6 +63,8 @@
       { id: "heute", t: "Schultag", p: "schule/", sel: ".tab[data-v='X']", s: "heute" },
       { id: "plan", t: "Stundenplan", p: "schule/", sel: ".tab[data-v='X']", s: "plan" },
       { id: "aufgaben", t: "Aufgaben & Prüfungen", p: "schule/", sel: ".tab[data-v='X']", s: "aufgaben" },
+      { id: "lernzeit", t: "Lernzeit", p: "schule/", h: "lernzeit" },
+      { id: "ablage", t: "Ablage", p: "schule/", h: "ablage" },
       { id: "lernplan", t: "Lernplan", p: "schule/", sel: ".tab[data-v='X']", s: "lehrgang" },
       { id: "ferien", t: "Schuljahr & Ferien", p: "schule/", sel: ".tab[data-v='X']", s: "kalender" }
     ] },
@@ -144,7 +146,9 @@
     backEl.hidden = !v.up; backEl.innerHTML = ico("back");
     var dw = hasDw(v);
     var lostFocus = document.activeElement === menuEl && !dw;
-    menuEl.hidden = !dw; pathEl.hidden = !dw; topEl.classList.toggle("hasmenu", dw); document.body.classList.toggle("hasdw", dw);
+    // Pfadzeile auch bei Mobility (Chips) – dort nur Anzeige, kein Menü
+    var hasPath = dw || !!(v.secs && (v.secs.length > 1 || v.secs[0].kids));
+    menuEl.hidden = !dw; pathEl.hidden = !hasPath; pathEl.disabled = !dw; topEl.classList.toggle("hasmenu", dw); topEl.classList.toggle("haspath", hasPath); document.body.classList.toggle("hasdw", dw);
     pathEl.tabIndex = wideMQ.matches ? -1 : 0;
     if (!dw && drawerOpen) closeDrawer();
     if (lostFocus) (v.up ? backEl : titleEl).focus({ preventScroll: true });
@@ -165,8 +169,9 @@
     cur.s = s.id; cur.k = k ? k.id : null;
     M.sec[cur.v] = s.id; if (k) M.kid[cur.v + "/" + s.id] = k.id; saveM();
     // Seitenmenü (Pfadzeile unter dem Titel) oder Chips (Mobility)
-    if (dw) { pathEl.textContent = s.t + (k ? " · " + k.t : ""); pathEl.setAttribute("aria-label", "Bereichsmenü öffnen, aktuell " + pathEl.textContent); renderDrawer(v, s, k); }
-    else dwPn.innerHTML = "";
+    pathEl.textContent = s.t + (k ? " · " + k.t : "");
+    if (dw) { pathEl.setAttribute("aria-label", "Bereichsmenü öffnen, aktuell " + pathEl.textContent); renderDrawer(v, s, k); }
+    else { pathEl.removeAttribute("aria-label"); dwPn.innerHTML = ""; }
     var h = "";
     if (!dw && v.secs.length > 1) h += '<div class="crow">' + v.secs.map(function (x) { return '<button class="chip' + (x.id === s.id ? " on" : "") + '" data-sec="' + x.id + '">' + esc(x.t) + "</button>"; }).join("") + "</div>";
     if (s.kids && !dw) h += '<div class="crow sub">' + s.kids.map(function (x) { return '<button class="chip' + (k && x.id === k.id ? " on" : "") + '" data-kid="' + x.id + '">' + esc(x.t) + "</button>"; }).join("") + "</div>";
@@ -605,7 +610,9 @@
       if (wp && wp.on && !wp.planned[mon] && !wp.planned[plus(mon, 7)]) out.push(["training", "wand", "Woche planen", wp.std ? "Standard mit 1 Tipp" : "in 2 Minuten", "week"]);
     } catch (e) {}
     var b = null; try { b = JSON.parse(localStorage.getItem("zweiminutenbibel_v2") || "null"); } catch (e) {}
-    out.push(["bibel", "book", b && b.todayDone === today() ? "Gelesen ✓" : "Bibel", b && b.streak ? "Serie " + b.streak : "heute lesen", "bibel"]);
+    // todayDone ist in der Bibel {date, ids} (Tagesziel dailyGoal); früher ein Datum
+    var bd = b && b.todayDone, read = !!bd && (bd === today() || (bd.date === today() && (bd.ids || []).length >= (b.dailyGoal || 1)));
+    out.push(["bibel", "book", read ? "Gelesen ✓" : "Bibel", (b && b.streak ? "Serie " + b.streak : "heute lesen") + (b && b.plan === "hl" ? " · Bekannte Kapitel" : b && b.plan ? " · Ganze Bibel" : ""), "bibel"]);
     var w = null; try { w = JSON.parse(localStorage.getItem("sg-wissen-v1") || "null"); } catch (e) {}
     if (w && w.sum && w.sum.due) out.push(["training", "book", w.sum.due + " Karten", "Sportwissenschaft", "karten"]);
     return '<div class="glance">' + out.slice(0, 4).map(function (x) {

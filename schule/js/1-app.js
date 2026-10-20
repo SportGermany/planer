@@ -603,6 +603,23 @@ function statusCard(t) {
     <div class="st-s">${nf.name}: ${fmtShort(nf.start)} – ${fmtShort(nf.end)} · ${fr.days} Tage frei${t < last ? ' · letzter Schultag ' + fmtShort(last) : ''}</div>
     <div class="prog" aria-hidden="true"><i style="width:${pct}%"></i></div></div></div>`;
 }
+// Oben auf „Schultag“: laufende oder nächste Stunde mit Fach, Raum und Minuten bis Beginn/Ende
+const inMin = m => m < 60 ? m + ' Min.' : Math.floor(m / 60) + ' Std.' + (m % 60 ? ' ' + (m % 60) + ' Min.' : '');
+function nowCard(t) {
+  if (!db.timetable.length) return '';
+  const nm = nowMin(), ls = isSchoolDay(t) ? lessonsOn(t) : [];
+  let cur = null, nxt = null;
+  ls.forEach(l => { const p = period(l.period); if (!p) return; if (nm >= toMin(p.s) && nm < toMin(p.e)) cur = { l, p }; else if (!nxt && nm < toMin(p.s)) nxt = { l, p }; });
+  const room = x => esc(x.l.room || subj(x.l.subject).room || ''), name = x => esc(subj(x.l.subject).name || '–'), col = x => subj(x.l.subject).color;
+  let lab, it, when;
+  if (cur) { lab = 'Jetzt'; it = cur; when = 'noch ' + inMin(toMin(cur.p.e) - nm) + (nxt ? ' · danach ' + name(nxt) : ''); }
+  else if (nxt) { lab = 'Nächste Stunde'; it = nxt; when = 'beginnt in ' + inMin(toMin(nxt.p.s) - nm) + ' · ' + nxt.p.s + ' Uhr'; }
+  else {
+    const d = nextSchoolDay(t), l0 = lessonsOn(d)[0], p0 = l0 && period(l0.period); if (!l0) return '';
+    lab = diffDays(t, d) === 1 ? 'Morgen' : cap(WDL[dow(d)]) + ', ' + fmtShort(d); it = { l: l0, p: p0 }; when = (p0 ? p0.s + ' Uhr · ' : '') + lessonsOn(d).length + ' Stunden';
+  }
+  return `<div class="card nowcard" style="--c:${col(it)}"><div class="nw-l">${lab}</div><div class="nw-t"><i class="dot" style="--c:${col(it)}"></i>${name(it)}${room(it) ? `<span class="nw-r">${room(it)}</span>` : ''}</div><div class="nw-s">${when}</div></div>`;
+}
 function lessonsHTML(d, live) {
   const ls = lessonsOn(d); if (!ls.length) return '';
   const nm = nowMin();
@@ -681,10 +698,12 @@ function homeHTML() {
   let h = `<div class="hero"><div class="hwd">${WDL[d.getDay()]} · KW ${isoWeek(t)}${wt ? ' · ' + wt + '-Woche' : ''}${klasse() ? ' · ' + klasse() + '. Klasse' : ''}</div><div class="big">${d.getDate()}. ${MON[d.getMonth()]}</div></div>`;
   if (!db.settings.setupDone) h += setupCard(); else if (!klasse()) h += newYearCard();
   h += `<div class="cols2"><div class="col-l">`;
-  h += `<div style="margin-top:10px">${statusCard(t)}</div>`;
-  h += campHomeCard(t);
-  h += morgenCard(t);
-  h += `<div class="qa-row">
+  // Reihenfolge (4.0): jetzt/nächste Stunde · Stundenplan heute · offene Aufgaben · nächste Prüfung · der Rest zugeklappt
+  h += nowCard(t);
+  const campNow = db.camps.some(c => c.start <= t && (c.end || c.start) >= t);
+  if (campNow) h += campHomeCard(t);
+  let more = `<div style="margin-top:10px">${statusCard(t)}</div>` + (campNow ? '' : campHomeCard(t)) + morgenCard(t);
+  const qa = `<div class="qa-row">
     <button class="qa-btn" data-a="newHw"><span class="e">📝</span>Aufgabe</button>
     <button class="qa-btn" data-a="add"><span class="e">📅</span>Prüfung</button>
     <button class="qa-btn" data-a="sickToday"><span class="e">🤒</span>Krank</button></div>`;
@@ -699,8 +718,10 @@ function homeHTML() {
     h += `<div class="sec">Stundenplan</div><div class="card tip"><b>Stundenplan eintragen</b><div class="small">Am schnellsten per Excel-Import (z. B. aus einem Foto erstellt). Dann siehst du hier deine Stunden, und Hausaufgaben lassen sich „bis zur nächsten Stunde“ eintragen.</div><div class="rowb"><button class="btn" data-a="ttImport">Aus Excel importieren</button><button class="btn ghost" data-a="tab" data-v="plan">Selbst eintragen</button></div></div>`;
   }
   // Aufgaben
-  const due = db.homework.filter(x => !x.done && x.due && x.due <= addDays(t, 2)).sort((a, b) => a.due < b.due ? -1 : 1);
-  if (due.length) h += `<div class="sec">Fällige Aufgaben <span class="cnt">${due.length}</span><button class="more" data-a="tab" data-v="aufgaben">Alle →</button></div><div class="stack">${due.slice(0, 5).map(hwItem).join('')}</div>`;
+  // alle offenen Aufgaben, Überfälliges zuerst, ohne Datum zuletzt
+  const due = db.homework.filter(x => !x.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1);
+  if (due.length) h += `<div class="sec">Offene Aufgaben <span class="cnt">${due.length}</span><button class="more" data-a="tab" data-v="aufgaben">Alle →</button></div><div class="stack">${due.slice(0, 5).map(hwItem).join('')}</div>`;
+  h += qa;
   h += `</div><div class="col-r">`;
   // Prüfungen
   const exams = allEvents().filter(e => isExam(e) && e.date >= t && diffDays(t, e.date) <= 45).sort(sortEv);
@@ -709,11 +730,13 @@ function homeHTML() {
     if (exams.length > 3) h += `<button class="linkbtn" data-a="kalList">Alle ${exams.length} Prüfungen ansehen →</button>`;
   }
   const busy = busyWeeks();
-  if (busy.length) h += `<div class="sec">Stressige Wochen</div><div class="stack">${busy.map(w => {
+  if (busy.length) more += `<div class="sec">Stressige Wochen</div><div class="stack">${busy.map(w => {
     const rest = w.list.length - w.big;
     return `<div class="warn">⚠️<div><b>KW ${isoWeek(w.a)} (${fmtDM(w.a)}–${fmtDM(addDays(w.a, 4))})</b><br>${w.big ? w.big + ' große Prüfung' + (w.big > 1 ? 'en' : '') : ''}${w.big && rest ? ', ' : ''}${rest ? rest + ' weitere' : ''}: ${w.list.map(e => esc(subj(e.subject).name || evTitle(e))).join(', ')} – früh anfangen.</div></div>`;
   }).join('')}</div>`;
-  h += `<div class="sec">Nächste ${db.settings.agendaDays} Tage</div>${agendaHTML(t, db.settings.agendaDays)}`;
+  more += `<div class="sec">Nächste ${db.settings.agendaDays} Tage</div>${agendaHTML(t, db.settings.agendaDays)}`;
+  // alles Weitere zugeklappt, Zustand gemerkt
+  h += `<details class="more-today"${local.homeMore ? ' open' : ''}><summary>Mehr für heute<span>Ferien, morgen, nächste ${db.settings.agendaDays} Tage</span></summary>${more}</details>`;
   return h + `</div></div>`;
 }
 function newYearCard() {
@@ -948,6 +971,11 @@ function aufgabenHTML() {
   if (ui.auf === 'lernzeit') return studyHTML();
   if (ui.auf === 'ablage') return ablageHTML();
   const t = todayStr();
+  if (ui.auf === 'pruef') {
+    const ex = allEvents().filter(e => isExam(e) && e.date >= t).sort(sortEv);
+    return ex.length ? `<div class="stack">${ex.map(nextExamCard).join('')}</div><button class="linkbtn" data-a="kalList">Alle Termine im Kalender →</button>`
+      : `<div class="empty">Keine Prüfungen eingetragen.<br><br><button class="btn" data-a="add">Prüfung eintragen</button></div>`;
+  }
   if (ui.auf === 'erledigt') {
     const list = db.homework.filter(h => h.done).sort((a, b) => (b.u || 0) - (a.u || 0));
     return list.length ? `<div class="stack">${list.slice(0, 80).map(hwItem).join('')}</div>${list.length > 80 ? '<p class="small muted">Nur die letzten 80 werden angezeigt.</p>' : ''}` : `<div class="empty">Noch nichts erledigt.</div>`;
@@ -959,7 +987,7 @@ function aufgabenHTML() {
   let h = '', used = new Set();
   groups.forEach(([name, fn]) => {
     const list = open.filter(x => !used.has(x.id) && fn(x)); list.forEach(x => used.add(x.id));
-    if (list.length) h += `<div class="hgroup" style="${name === 'Überfällig' ? 'color:var(--danger)' : ''}">${name} <span class="sec" style="margin:0"><span class="cnt">${list.length}</span></span></div><div class="stack">${list.map(hwItem).join('')}</div>`;
+    if (list.length) h += `<div class="hgroup${name === 'Überfällig' ? ' over' : ''}" style="${name === 'Überfällig' ? 'color:var(--danger)' : ''}">${name === 'Überfällig' ? '⚠️ ' : ''}${name} <span class="sec" style="margin:0"><span class="cnt">${list.length}</span></span></div><div class="stack">${list.map(hwItem).join('')}</div>`;
   });
   return h;
 }
@@ -2435,19 +2463,21 @@ const IN_PLANER = (() => { try { return window.self !== window.top; } catch (e) 
 if (IN_PLANER) document.addEventListener('DOMContentLoaded', () => { const tl = document.querySelector('.tab[data-v="kalender"] .tl'); if (tl) tl.textContent = 'Termine'; });
 const SUBNAV = {
   kalender: ['kal', IN_PLANER ? [['termine', 'Termine'], ['ferien', 'Ferien'], ['fehlzeiten', 'Fehlzeiten']] : [['monat', 'Monat'], ['woche', 'Woche'], ['tag', 'Tag'], ['termine', 'Termine'], ['ferien', 'Ferien'], ['fehlzeiten', 'Fehlzeiten']]],
-  aufgaben: ['auf', [['offen', 'Offen'], ['erledigt', 'Erledigt'], ['ablage', 'Ablage'], ['lernzeit', 'Lernzeit']]],
+  // im Planer höchstens drei Einträge (Segmentschalter); Lernzeit und Ablage stehen dort im Seitenmenü
+  aufgaben: ['auf', IN_PLANER ? [['offen', 'Offen'], ['pruef', 'Prüfungen'], ['erledigt', 'Erledigt']] : [['offen', 'Offen'], ['pruef', 'Prüfungen'], ['erledigt', 'Erledigt'], ['ablage', 'Ablage'], ['lernzeit', 'Lernzeit']]],
 };
 function render() {
   if (IN_PLANER && ui.view === 'kalender' && ['monat', 'woche', 'tag'].includes(ui.kal)) ui.kal = 'termine';
   const v = ui.view, c = pd(ui.cursor), t = todayStr();
   document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x.dataset.v === v));
   const calNav = v === 'kalender' && (ui.kal === 'monat' || ui.kal === 'tag' || ui.kal === 'woche');
-  $('#title').textContent = v === 'heute' ? 'Schule' : calNav ? MON[c.getMonth()] + ' ' + c.getFullYear() : { kalender: IN_PLANER ? 'Termine' : 'Kalender', plan: 'Stundenplan', aufgaben: ui.auf === 'ablage' ? 'Ablage' : 'Aufgaben', lehrgang: 'Lehrgänge', morgen: 'Morgen' }[v];
+  $('#title').textContent = v === 'heute' ? 'Schule' : calNav ? MON[c.getMonth()] + ' ' + c.getFullYear() : { kalender: IN_PLANER ? 'Termine' : 'Kalender', plan: 'Stundenplan', aufgaben: ui.auf === 'ablage' ? 'Ablage' : ui.auf === 'lernzeit' ? 'Lernzeit' : 'Aufgaben', lehrgang: 'Lehrgänge', morgen: 'Morgen' }[v];
   $('#nav').hidden = !calNav;
   $('#btnToday').hidden = !(calNav && ui.cursor !== t);
   const sn = $('#subnav'), cfg = SUBNAV[v];
   if (cfg) {
-    const [key, opts] = cfg; sn.hidden = false;
+    const [key, opts] = cfg; sn.hidden = IN_PLANER && v === 'aufgaben' && (ui.auf === 'ablage' || ui.auf === 'lernzeit'); sn.classList.toggle('seg', IN_PLANER && opts.length <= 3);
+    // Lernzeit/Ablage gehören nicht in den Schalter – dort ist keiner gewählt
     sn.innerHTML = opts.map(([k, l]) => {
       let badge = '';
       if (k === 'offen') { const n = db.homework.filter(h => !h.done).length; if (n) badge = ` · ${n}`; }
@@ -2483,7 +2513,9 @@ document.addEventListener('click', e => {
   const act = a.dataset.a, v = a.dataset.v, f = formState;
   switch (act) {
     // Navigation
-    case 'tab': if (sheetOpen) { sheetReturn = null; closeSheet(); } if (v === 'lehrgang' && ui.view === 'lehrgang') ui.camp = null; ui.view = v; render(); window.scrollTo(0, 0); break;
+    case 'tab': if (sheetOpen) { sheetReturn = null; closeSheet(); } if (v === 'lehrgang' && ui.view === 'lehrgang') ui.camp = null;
+      if (IN_PLANER && v === 'aufgaben' && a.classList.contains('tab') && (ui.auf === 'ablage' || ui.auf === 'lernzeit')) ui.auf = 'offen';
+      ui.view = v; render(); window.scrollTo(0, 0); break;
     case 'sub': { const [k, val] = v.split(':'); ui[k] = val; render(); window.scrollTo(0, 0); break; }
     case 'prev': shift(-1); break;
     case 'next': shift(1); break;
@@ -2834,7 +2866,12 @@ const params = new URLSearchParams(location.search);
 const vParam = params.get('v') || location.hash.slice(1);
 if (START_VIEWS.some(x => x[0] === local.startView)) ui.view = local.startView;
 if (vParam === 'monat') { ui.view = 'kalender'; ui.kal = 'monat'; } else if (['kalender', 'plan', 'aufgaben', 'lehrgang', 'morgen'].includes(vParam)) ui.view = vParam;
-if (vParam === 'ablage') { ui.view = 'aufgaben'; ui.auf = 'ablage'; }
+if (vParam === 'ablage' || vParam === 'lernzeit') { ui.view = 'aufgaben'; ui.auf = vParam; }
+window.addEventListener('hashchange', () => {
+  const h = location.hash.slice(1);
+  if (h === 'ablage' || h === 'lernzeit') { if (sheetOpen) { sheetReturn = null; closeSheet(); } ui.view = 'aufgaben'; ui.auf = h; render(); window.scrollTo(0, 0); }
+});
+document.addEventListener('toggle', e => { if (e.target.matches && e.target.matches('details.more-today')) { local.homeMore = e.target.open; saveLocal(); } }, true);
 if (local.timer) { /* laufender Timer bleibt erhalten */ }
 persist(); render();
 refreshLocalFiles().then(() => { if (!sheetOpen) render(); handleSharedInbox(); Files.schedule(2500); });

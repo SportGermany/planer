@@ -93,7 +93,7 @@
     if (h[0] === "start" || SCREENS[h[0]]) {
       history.replaceState(null, "", location.pathname);
       var tab = document.querySelector("#nav [data-t='" + (h[0] === "start" ? "heute" : h[0] === "kraft" ? "lauf" : h[0]) + "']"); if (tab) tab.click();
-      if (h[0] === "lauf" || h[0] === "kraft") { var sl = document.getElementById("s-lauf"); if (sl) sl.setAttribute("data-part", h[0]); }
+      if (h[0] === "lauf" || h[0] === "kraft") { var sl = document.getElementById("s-lauf"); if (sl) sl.setAttribute("data-part", h[0]); if (window.APP5 && window.APP5.layout) window.APP5.layout(); }
       if (h[0] === "start") setTimeout(function () { var b = document.getElementById("btnStartToday"); if (b) b.click(); }, 150);
     }
   }

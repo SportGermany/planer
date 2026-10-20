@@ -448,40 +448,51 @@ var SECTION_DEFS = {
   ]
 };
 S.sectionsOn = A.store.get("wk_sections", null) || {};
-// in 4.0 neu dazugekommene Bereiche – alle anderen kannte die App schon vorher
+// in 4.0 neu dazugekommene Bereiche
 var NEW_V4 = ["kpis","tsheute","tsmob","tsbreath","tsbahn","tssources","tsweekall"];
 (function(){
-  // Welche Bereiche die App schon einmal angeboten hat: nur wirklich neue werden angehängt,
-  // ausgeblendete bleiben aus (vorher kamen sie nach jedem Neustart wieder)
-  var seen = A.store.get("wk_sections_seen", null), first = !seen;
-  if (first) seen = {};
+  // __seen: welche Bereiche die App schon angeboten hat – nur wirklich neue werden angehängt, ausgeblendete bleiben aus.
+  // Steht im selben Schlüssel wie die Auswahl, damit Sicherung, Cloud und Umzug beides zusammen tragen.
+  // Ohne __seen (alte Version, alte Sicherung) wird wie früher alles Fehlende angehängt – nichts wird erraten.
+  var seen = S.sectionsOn.__seen || null;
   Object.keys(SECTION_DEFS).forEach(function(scr){
     var allIds = SECTION_DEFS[scr].map(function(d){ return d.id; });
-    if (first) seen[scr] = allIds.filter(function(id){ return NEW_V4.indexOf(id) < 0; });
-    if (!S.sectionsOn[scr]){ S.sectionsOn[scr] = allIds; seen[scr] = allIds.slice(); return; }
-    // Neu hinzugekommene Bereiche (z. B. nach einem App-Update) an bereits
-    // gespeicherte Auswahl anhängen, statt sie unsichtbar zu lassen.
-    var known = S.sectionsOn[scr], was = seen[scr] || [];
+    if (!S.sectionsOn[scr]){ S.sectionsOn[scr] = allIds.slice(); return; }
+    var known = S.sectionsOn[scr], was = seen ? (seen[scr] || []) : [];
     allIds.forEach(function(id){ if (was.indexOf(id) < 0 && known.indexOf(id) < 0) known.push(id); });
-    seen[scr] = allIds.slice();
   });
-  A.store.set("wk_sections_seen", seen);
+  seen = {}; Object.keys(SECTION_DEFS).forEach(function(scr){ seen[scr] = SECTION_DEFS[scr].map(function(d){ return d.id; }); });
+  S.sectionsOn.__seen = seen;
 })();
 function saveSections(){ A.store.set("wk_sections", S.sectionsOn); }
-/* Umbau 4.0: neue Grundreihenfolge (Hauptaktion oben, Verläufe unten) – einmalig, ausgeblendete Bereiche bleiben aus */
+/* Umbau 4.0: neue Grundreihenfolge (Hauptaktion oben, Verläufe unten), einmalig (__v4).
+   Hatte jemand die Reihenfolge selbst geändert, bleibt sie – dann werden nur die neuen Bereiche passend eingereiht. */
 var ORDER_V4 = {
   heute: ["hero","kpis","sickcheckin","injurycheckin","adaptive","weatherwarn","tsheute","exercises","stats","readiness","weathertoday","weekbar","whatsnew","importcard","tip"],
   lauf: ["runtrack","gym","tsmob","distance","nextrunday","stretch","rodeln","tsbreath","tsbahn","sportlog","runstats","gymhistory","stretchhistory","rodelnhistory","favoritesport","cooldownstatus"],
-  daten: ["dkpis","drings","dbefund","dweeks12","dweekoverview","dsharecard","ddropzone","dagoverview","dkmweek","dactivities","dexport","dpdfexport"]
+  fitness: ["fitscore","fitweek","fitweeks","fitbest","fitpr","fitach","fitreadiness","fitfatigue","fitmuscles","fitwhy","tssources"],
+  daten: ["dkpis","drings","dbefund","dweeks12","dweekoverview","dsharecard","dagoverview","dkmweek","ddropzone","dactivities","dexport","dpdfexport"]
 };
-if (!A.store.get("wk_sections_v4", null)){
+if (!S.sectionsOn.__v4){
   Object.keys(ORDER_V4).forEach(function(scr){
-    var old = S.sectionsOn[scr] || [];
-    S.sectionsOn[scr] = ORDER_V4[scr].filter(function(id){ return old.indexOf(id) >= 0; })
-      .concat(old.filter(function(id){ return ORDER_V4[scr].indexOf(id) < 0; }));
+    var list = S.sectionsOn[scr] || [], v4 = ORDER_V4[scr];
+    var oldDef = SECTION_DEFS[scr].map(function(d){ return d.id; }).filter(function(id){ return NEW_V4.indexOf(id) < 0; });
+    var mine = list.filter(function(id){ return NEW_V4.indexOf(id) < 0; });
+    var untouched = mine.join() === oldDef.filter(function(id){ return mine.indexOf(id) >= 0; }).join();
+    if (untouched) S.sectionsOn[scr] = v4.filter(function(id){ return list.indexOf(id) >= 0; }).concat(list.filter(function(id){ return v4.indexOf(id) < 0; }));
+    else {
+      var out = mine.slice();
+      v4.forEach(function(id, i){
+        if (NEW_V4.indexOf(id) < 0 || list.indexOf(id) < 0) return;
+        var j = i - 1; while (j >= 0 && out.indexOf(v4[j]) < 0) j--;
+        out.splice(j < 0 ? 0 : out.indexOf(v4[j]) + 1, 0, id);
+      });
+      S.sectionsOn[scr] = out;
+    }
   });
-  saveSections(); A.store.set("wk_sections_v4", 1);
+  S.sectionsOn.__v4 = 1;
 }
+saveSections();
 /* ============================================================
    Inhalte der neuen Kalender-Bereiche
    ============================================================ */
@@ -610,72 +621,121 @@ var AKK = {
   kalender: { calmonthsummary:0, calstreaktext:0, calupcoming:0, calyearprogress:0, calsickoverview:0, calinjuryoverview:0, calweekoverview:0 }
 };
 var HIST = ["sportlog","runstats","gymhistory","stretchhistory","rodelnhistory","favoritesport","cooldownstatus"];
+// Zwischenüberschriften: stehen vor dem ersten sichtbaren Bereich ihrer Gruppe
+var GROUPS = {
+  lauf: [["Verlauf & Statistik", HIST]],
+  fitness: [["Fortschritt", ["fitweek","fitweeks","fitbest","fitpr","fitach"]], ["Körper und Erholung", ["fitreadiness","fitfatigue","fitmuscles","fitwhy"]]],
+  daten: [["Fortschritt", ["dagoverview","dkmweek"]], ["Aktivitäten", ["ddropzone","dactivities"]], ["Berichte und Export", ["dexport","dpdfexport"]]]
+};
+var RM = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+function weekDone(){ var mon = W.weekMonday(S.today), n = 0; for (var i = 0; i < 7; i++){ var d = W.addDays(mon, i); if (S.log[d] && S.log[d].done) n++; } return n; }
+// Kernzahl je Karte im zugeklappten Zustand (sonst: erster Text der Karte)
+var SUM = {
+  weekbar: function(){ return weekDone() + " von 7 Tagen trainiert"; },
+  exercises: function(){ return ($("exCount") || {}).textContent || ""; },
+  sportlog: function(){ var n = +(($("sportLogCount") || {}).textContent || 0); return n ? n + (n === 1 ? " Eintrag" : " Einträge") : "noch nichts erfasst"; },
+  fitpr: function(c){ var n = c.querySelectorAll("#prList > *").length; return n ? n + (n === 1 ? " Rekord" : " Rekorde") : "noch keine Rekorde"; }
+};
 function akkState(){ try { return JSON.parse(localStorage.getItem(AKK_KEY) || "{}") || {}; } catch(e){ return {}; } }
 function akkOpen(id, def){ var st = akkState(); return st[id] != null ? !!st[id] : !!def; }
 function akkSet(id, open){ var st = akkState(); st[id] = open ? 1 : 0; try { localStorage.setItem(AKK_KEY, JSON.stringify(st)); } catch(e){} }
 function akkCard(id){ var c = document.querySelector('[data-sec="' + id + '"]'); return c && c.querySelector(":scope > .card-h") ? c : (c && c.querySelector(".card") && c.querySelector(".card").querySelector(":scope > .card-h") ? c.querySelector(".card") : null); }
-function akkSummary(c){
+function akkSummary(c, id){
+  if (SUM[id]) return SUM[id](c);
   var hd = c.querySelector(":scope > .card-h"), own = hd.querySelector(":scope > span:not(.acc-sum)");
   if (own && own.textContent.trim()) return "";
   var src = null;
   Array.prototype.some.call(c.querySelectorAll("p, .wtemp, .wlabel, #readyScoreTxt, li"), function(x){ if (x.closest(".card-h") || !x.textContent.trim() || x.textContent.trim() === "–") return false; src = x; return true; });
-  return src ? src.textContent.trim().replace(/\s+/g, " ").slice(0, 80) : "";
+  if (src) return src.textContent.trim().replace(/\s+/g, " ").slice(0, 80);
+  // sonst die erste Textzeile unter der Kopfzeile
+  var txt = (c.textContent || "").replace(hd.textContent, "").split("\n").map(function(x){ return x.trim(); }).filter(function(x){ return x && x !== "–"; })[0];
+  return txt ? txt.slice(0, 80) : "";
 }
 function tidy(screen){
   var defs = AKK[screen] || {};
   Object.keys(defs).forEach(function(id){
     var c = akkCard(id); if (!c) return;
-    var hd = c.querySelector(":scope > .card-h");
+    var hd = c.querySelector(":scope > .card-h"), h2 = hd.querySelector("h2");
     if (!c.classList.contains("acc")){
-      c.classList.add("acc"); c.dataset.acc = id;
-      hd.setAttribute("role", "button"); hd.setAttribute("tabindex", "0");
-      var sum = document.createElement("span"); sum.className = "acc-sum"; hd.appendChild(sum);
+      // echter Knopf in der Überschrift (Muster „Akkordeon“): Überschrift bleibt Überschrift, Zusatzknöpfe stehen daneben
+      c.classList.add("acc"); c.dataset.acc = id; c.id = c.id || "acc-" + id;
+      var bt = document.createElement("button"); bt.type = "button"; bt.className = "acc-t"; bt.setAttribute("aria-controls", c.id);
+      while (h2 && h2.firstChild) bt.appendChild(h2.firstChild);
+      if (h2) h2.appendChild(bt);
+      var sum = document.createElement("span"); sum.className = "acc-sum"; sum.setAttribute("aria-hidden", "true"); hd.appendChild(sum);
+      if (SUM[id]) c.classList.add("sumx");
     }
-    var open = akkOpen(id, defs[id]);
-    c.classList.toggle("open", open); c.classList.toggle("closed", !open); hd.setAttribute("aria-expanded", String(open));
-    hd.querySelector(".acc-sum").textContent = open ? "" : akkSummary(c);
+    var open = akkOpen(id, defs[id]), btn = hd.querySelector(".acc-t");
+    c.classList.toggle("open", open); c.classList.toggle("closed", !open);
+    if (btn) btn.setAttribute("aria-expanded", String(open));
+    hd.querySelector(".acc-sum").textContent = open ? "" : akkSummary(c, id);
   });
-  if (screen === "lauf") {
-    // Überschrift „Verlauf & Statistik“ direkt vor dem ersten sichtbaren Verlauf
-    var lab = document.querySelector('#s-lauf .sec-label[data-grp="verlauf"]'), first = null;
-    HIST.forEach(function(id){ var e = document.querySelector('#s-lauf [data-sec="' + id + '"]'); if (e && e.offsetParent && (!first || +e.style.order < +first.style.order)) first = e; });
-    if (lab){ lab.classList.toggle("on", !!first); if (first) lab.style.order = +first.style.order - 1; }
+  // Zwischenüberschriften der Gruppen
+  (GROUPS[screen] || []).forEach(function(g, gi){
+    var host = $("s-" + screen); if (!host) return;
+    var lab = host.querySelector('.sec-label[data-grp="' + screen + gi + '"]') || (screen === "lauf" && host.querySelector('.sec-label[data-grp="verlauf"]'));
+    if (!lab){ lab = document.createElement("div"); lab.className = "sec-label grp"; lab.textContent = g[0]; host.appendChild(lab); }
+    lab.dataset.grp = lab.dataset.grp === "verlauf" ? "verlauf" : screen + gi;
+    var first = null;
+    g[1].forEach(function(id){ var e = host.querySelector('[data-sec="' + id + '"]'); if (e && !e.classList.contains("sec-hidden") && getComputedStyle(e).display !== "none" && (!first || +e.style.order < +first.style.order)) first = e; });
+    // die Überschrift gehört in denselben Behälter wie ihre Karten (Analyse: Bereiche liegen in Reitern)
+    if (first && lab.parentNode !== first.parentNode) first.parentNode.appendChild(lab);
+    lab.classList.toggle("on", !!first); if (first) lab.style.order = +first.style.order - 1;
+  });
+  if (screen === "lauf"){
+    // Freies Dehnen und Rodeln-Aufwärmen stecken in „Mobility & Dehnen“ – ist die ausgeblendet, kommen die Einzelkarten zurück
+    var mob = document.querySelector('[data-sec="tsmob"]'), merged = !!(mob && !mob.classList.contains("sec-hidden"));
+    ["stretch", "rodeln"].forEach(function(k){ var x = document.querySelector('#s-lauf [data-sec="' + k + '"]'); if (x) x.classList.toggle("ts-merged", merged); });
+    // Kopf passend zum Ausschnitt
+    var part = $("s-lauf").getAttribute("data-part"), h1 = document.querySelector("#s-lauf .top h1");
+    if (h1) h1.textContent = part === "kraft" ? "Kraft" : part === "lauf" ? "Laufen" : "Training";
+    if ($("runDayInfo")) $("runDayInfo").hidden = part === "kraft";
   }
   if (screen === "heute") kpis();
+  if (screen === "fitness") fitKpis();
 }
 function akkToggle(c){
   var open = !c.classList.contains("open"); akkSet(c.dataset.acc, open);
   var scr = c.closest(".screen"); tidy(scr ? scr.id.replace(/^s-/, "") : S.screen);
 }
 document.addEventListener("click", function(e){
-  var hd = e.target.closest(".acc > .card-h");
-  if (hd && !e.target.closest("button, a, input, select, label")) { akkToggle(hd.parentNode); return; }
+  // zu: die ganze Karte ist Tippfläche; offen: die Kopfzeile (ohne ihre Zusatzknöpfe)
+  var acc = e.target.closest(".acc"), other = e.target.closest("button, a, input, select, label, textarea");
+  if (acc && (e.target.closest(".acc-t") || (!other && (acc.classList.contains("closed") || e.target.closest(".acc > .card-h"))))) { akkToggle(acc); return; }
   var k = e.target.closest("[data-acc-open]");
   if (k){
     var c = akkCard(k.dataset.accOpen); if (!c || !c.offsetParent) return;
     if (!c.classList.contains("open")) akkToggle(c);
-    window.scrollTo({ top: Math.max(0, c.getBoundingClientRect().top + window.scrollY - 12), behavior: "smooth" });
+    window.scrollTo({ top: Math.max(0, c.getBoundingClientRect().top + window.scrollY - 12), behavior: RM ? "auto" : "smooth" });
   }
 });
-document.addEventListener("keydown", function(e){
-  var hd = e.target.closest && e.target.closest(".acc > .card-h");
-  if (hd && e.target === hd && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); akkToggle(hd.parentNode); }
-});
-// Kennzahlenreihe auf „Heute“: Bereitschaft (Ampel), Wetter (eine Zeile), Woche als sieben Punkte (Mo–So)
+// Ampel: eigene Farben (nicht die Akzentfarbe der Farbwelt) und dazu ein Wort
+var AMP = { gut: "gut", mittel: "mäßig", schlecht: "schwach" };
 function kpis(){
   var row = document.querySelector('[data-sec="kpis"]'); if (!row) return;
   var rc = $("readinessCard"), wc = $("weatherToday"), kr = $("kpiReady"), kw = $("kpiWeather"), kk = $("kpiWeek");
-  var rOn = rc && rc.style.display !== "none", pct = rOn ? parseInt(($("readyPct") || {}).textContent, 10) : NaN;
+  var rOn = rc && rc.style.display !== "none" && !rc.classList.contains("sec-hidden"), pct = rOn ? parseInt(($("readyPct") || {}).textContent, 10) : NaN;
   kr.hidden = !rOn || isNaN(pct);
-  if (!kr.hidden){ kr.querySelector("b").textContent = pct + " %"; kr.dataset.amp = pct >= 70 ? "gut" : pct >= 40 ? "mittel" : "schlecht"; kr.setAttribute("aria-label", "Bereitschaft " + pct + " Prozent, " + ($("readyLabel") || {}).textContent); }
-  var wOn = wc && wc.style.display !== "none" && $("wTodayTemp") && $("wTodayTemp").textContent.trim() !== "–";
+  if (!kr.hidden){ var amp = pct >= 70 ? "gut" : pct >= 40 ? "mittel" : "schlecht"; kr.querySelector("b").textContent = pct + " % · " + AMP[amp]; kr.dataset.amp = amp; kr.setAttribute("aria-label", "Bereitschaft " + pct + " Prozent, " + AMP[amp]); }
+  var wOn = wc && wc.style.display !== "none" && !wc.classList.contains("sec-hidden") && $("wTodayTemp") && $("wTodayTemp").textContent.trim() !== "–";
   kw.hidden = !wOn;
   if (wOn){ kw.querySelector("b").textContent = $("wTodayTemp").textContent.trim(); kw.querySelector("span").textContent = $("wTodayLabel").textContent.trim() || "Wetter"; }
-  var mon = W.weekMonday(S.today), dots = "", n = 0;
-  for (var i = 0; i < 7; i++){ var d = W.addDays(mon, i), on = !!(S.log[d] && S.log[d].done); if (on) n++; dots += '<i class="' + (on ? "on" : "") + (d === S.today ? " today" : "") + '"></i>'; }
-  kk.querySelector(".dots").innerHTML = dots; kk.setAttribute("aria-label", "Diese Woche " + n + " Einheiten erledigt");
+  var mon = W.weekMonday(S.today), dots = "", n = weekDone();
+  for (var i = 0; i < 7; i++){ var d = W.addDays(mon, i), on = !!(S.log[d] && S.log[d].done); dots += '<i class="' + (on ? "on" : "") + (d === S.today ? " today" : "") + '"></i>'; }
+  kk.querySelector(".dots").innerHTML = dots; kk.setAttribute("aria-label", "Diese Woche " + n + " von 7 Tagen trainiert");
+  var wb = $("kpiWeek"), wbc = akkCard("weekbar"); wb.toggleAttribute("data-acc-open", false); if (wbc && wbc.offsetParent) wb.setAttribute("data-acc-open", "weekbar");
   var vis = [kr, kw, kk].filter(function(x){ return !x.hidden; }).length;
   row.style.gridTemplateColumns = "repeat(" + vis + ", minmax(0, 1fr))";
+}
+// Auswertung › Fitness: unter dem Fitness-Wert vier Kennzahlen (Woche, Monat, Serie, Rekorde), Tipp öffnet die Details
+function fitKpis(){
+  var host = document.querySelector('#s-fitness [data-sec="fitscore"]'); if (!host) return;
+  var row = $("fitKpis");
+  if (!row){ row = document.createElement("div"); row.id = "fitKpis"; row.className = "kpi-row four"; host.appendChild(row); }
+  var streak = ($("streakVal") || {}).textContent || "0", prs = document.querySelectorAll("#prList > *").length;
+  var tiles = [[W.doneInLastDays(S.log, S.today, 7) + "/7", "Woche", "fitweek"], [W.doneInLastDays(S.log, S.today, 30) + "", "30 Tage", "fitweeks"], [streak, "Serie", "fitbest"], [prs + "", "Rekorde", "fitpr"]];
+  var h = tiles.map(function(t){ return '<button class="kpi" data-acc-open="' + t[2] + '"><b>' + esc(t[0]) + "</b><span>" + t[1] + "</span></button>"; }).join("");
+  if (row.dataset.h !== h){ row.innerHTML = h; row.dataset.h = h; }
 }
 // welche Bereiche im Ausschnitt Laufen bzw. Kraft gar nicht vorkommen (wie die Regeln in training/index.html)
 var PART_OFF = { lauf: ["stretch","rodeln","gym","rodelnhistory","gymhistory","stretchhistory","cooldownstatus","tsmob","tsbreath","tsbahn"],
@@ -697,9 +757,9 @@ function renderSectionEditorList(screen){
     var row = el("div","widget-check-row");
     var arrows = "";
     if (isOn){
-      var pos = on.indexOf(def.id);
+      var vis = on.filter(function(id){ return defs.some(function(d){ return d.id === id; }); }), pos = vis.indexOf(def.id);
       arrows = "<button class='wmove' data-dir='up' " + (pos===0?"disabled":"") + ">▲</button>" +
-               "<button class='wmove' data-dir='down' " + (pos===on.length-1?"disabled":"") + ">▼</button>";
+               "<button class='wmove' data-dir='down' " + (pos===vis.length-1?"disabled":"") + ">▼</button>";
     }
     row.innerHTML = "<div class='wl'><b>" + esc(def.l) + "</b></div><div class='wmove-group'>" + arrows + "</div>";
     var sw = document.createElement("button");
@@ -764,9 +824,9 @@ function renderWidgetEditorList(screen){
     var val; try { val = def.v(); } catch(e){ val = "–"; }
     var arrows = "";
     if (isOn){
-      var pos = on.indexOf(def.id);
+      var vis = on.filter(function(id){ return defs.some(function(d){ return d.id === id; }); }), pos = vis.indexOf(def.id);
       arrows = "<button class='wmove' data-dir='up' " + (pos===0?"disabled":"") + ">▲</button>" +
-               "<button class='wmove' data-dir='down' " + (pos===on.length-1?"disabled":"") + ">▼</button>";
+               "<button class='wmove' data-dir='down' " + (pos===vis.length-1?"disabled":"") + ">▼</button>";
     }
     row.innerHTML = "<div class='wl'><b>" + esc(def.t) + "</b><span>" + esc(String(val)) + "</span></div>" +
       "<div class='wmove-group'>" + arrows + "</div>";
