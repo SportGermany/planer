@@ -17,8 +17,18 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   await dev.shell('am force-stop ' + PKG);
   await dev.shell('am start -n ' + PKG + '/.MainActivity');
   await wait(8000);
-  const wv = await dev.webView({ pkg: PKG }, { timeout: 60000 });
-  const page = await wv.page();
+  // die sichtbare Ansicht der App suchen (es kann kurzzeitig mehrere WebView-Seiten geben) und warten, bis sie Größe hat
+  await dev.webView({ pkg: PKG }, { timeout: 60000 });
+  let page = null;
+  for (let i = 0; i < 40 && !page; i++) {
+    for (const w of dev.webViews().filter(w => w.pkg() === PKG)) {
+      const pg = await w.page().catch(() => null); if (!pg) continue;
+      const h = await pg.evaluate(() => innerHeight).catch(() => 0);
+      if (h > 100) { page = pg; break; }
+    }
+    if (!page) await wait(1000);
+  }
+  if (!page) throw new Error('Keine sichtbare Ansicht der App gefunden (WebViews: ' + dev.webViews().length + ')');
   const errs = []; page.on('pageerror', e => errs.push(e.message)); page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push('console: ' + m.text()); });
   page.on('response', r => { if (r.status() >= 400) errs.push('Datei fehlt (' + r.status() + '): ' + r.url()); });
   page.on('requestfailed', r => { if (!/^https:\/\/(api\.github|github)\.com/.test(r.url())) errs.push('Laden fehlgeschlagen: ' + r.url() + ' ' + (r.failure() || {}).errorText); });
