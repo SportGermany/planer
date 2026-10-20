@@ -83,15 +83,17 @@
     try { A.renderAll(); } catch (e) {}
     render();
   }
-  // Sprungziele aus dem Befehlsmenü: #start, #kalender, #lauf, #fitness, #daten, #einst
-  var SCREENS = { kalender: 1, lauf: 1, fitness: 1, daten: 1, einst: 1, heute: 1 };
+  // Sprungziele aus dem Befehlsmenü: #start, #kalender, #lauf, #kraft, #fitness, #daten, #einst
+  // (#lauf und #kraft sind zwei Ausschnitte derselben Seite, data-part an #s-lauf)
+  var SCREENS = { kalender: 1, lauf: 1, kraft: 1, fitness: 1, daten: 1, einst: 1, heute: 1 };
   function fromHash() {
     var h = location.hash.replace("#", "").split("/");
     if (MODS[h[0]]) { openMod(h[0], h[1]); return; }
     if (openId) closeMod();
     if (h[0] === "start" || SCREENS[h[0]]) {
       history.replaceState(null, "", location.pathname);
-      var tab = document.querySelector("#nav [data-t='" + (h[0] === "start" ? "heute" : h[0]) + "']"); if (tab) tab.click();
+      var tab = document.querySelector("#nav [data-t='" + (h[0] === "start" ? "heute" : h[0] === "kraft" ? "lauf" : h[0]) + "']"); if (tab) tab.click();
+      if (h[0] === "lauf" || h[0] === "kraft") { var sl = document.getElementById("s-lauf"); if (sl) sl.setAttribute("data-part", h[0]); }
       if (h[0] === "start") setTimeout(function () { var b = document.getElementById("btnStartToday"); if (b) b.click(); }, 150);
     }
   }

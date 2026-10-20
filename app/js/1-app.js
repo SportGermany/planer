@@ -1,14 +1,15 @@
 /* Planer – Hülle für die ganze App.
  * Fünf Ziele: Kalender (Start) · Training · Mobility · Schule · Mehr. Der Kalender zeigt alles aus allen Bereichen und
  * führt mit einem Tipp dorthin. Die Bereiche sind die bisherigen Seiten (eingebettet, ohne eigene Leisten); sie bleiben
- * geladen und wechseln sofort. Unterpunkte als Chips, Unter-Unterpunkte als zweite Reihe.
+ * geladen und wechseln sofort. Unterpunkte im Seitenmenü (Tablet: feste Spalte), nur Mobility behält Chips.
  * Adressen: #kalender, #training/rodeln/plan, #mobility/atmung, #schule/plan, #mehr, #bibel/lesen, #notizen, #u=<alte Adresse>. */
 (function () {
   "use strict";
   var BASE = "/" + (location.pathname.split("/")[1] || "") + "/";
   var KEY = "sg-app-v1";
   var $ = function (id) { return document.getElementById(id); };
-  var stage = $("stage"), chipsEl = $("chips"), titleEl = $("title"), actsEl = $("acts"), navEl = $("nav"), backEl = $("back"), fab = $("fab");
+  var stage = $("stage"), chipsEl = $("chips"), titleEl = $("title"), actsEl = $("acts"), navEl = $("nav"), backEl = $("back"), fab = $("fab"),
+    menuEl = $("menu"), pathEl = $("path"), drawerEl = $("drawer"), dwPn = $("dwpn"), topEl = document.querySelector(".top");
 
   /* ---------- Symbole ---------- */
   var P = {
@@ -17,7 +18,7 @@
     stretch: '<circle cx="12" cy="4.5" r="2"/><path d="M12 7v6l-4 7M12 13l4 7M5 10l7-1 7 1"/>',
     school: '<path d="M2.5 9l9.5-5 9.5 5-9.5 5z"/><path d="M6.5 11.2v4.8c0 1.5 2.5 3 5.5 3s5.5-1.5 5.5-3v-4.8"/>',
     more: '<rect x="4" y="4" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="2"/>',
-    search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>', plus: '<path d="M12 5v14M5 12h14"/>', back: '<path d="M20 12H5M11 5l-7 7 7 7"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>', menu: '<path d="M4 7h16M4 12h16M4 17h16"/>', plus: '<path d="M12 5v14M5 12h14"/>', back: '<path d="M20 12H5M11 5l-7 7 7 7"/>',
     chev: '<path d="M9 5l7 7-7 7"/>', chevl: '<path d="M15 5l-7 7 7 7"/>', check: '<path d="M4 6.5l1.8 1.8L9 5M4 12.5l1.8 1.8L9 11M4 18.5l1.8 1.8L9 17M12.5 7h7.5M12.5 13h7.5M12.5 19h7.5"/>',
     note: '<path d="M5 3.5h10l4 4v13H5z"/><path d="M15 3.5v4h4M8.5 12h7M8.5 16h5"/>', book: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5"/>',
     wind: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>', coffee: '<path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16M8 3v3M11 3v3"/>',
@@ -41,22 +42,24 @@
 
   /* ---------- Ziele und Unterpunkte ----------
    * p = Seite (Pfad unter /planer/), h = Sprungadresse der Seite, s = Unterbereich in deren (ausgeblendeter) Leiste,
-   * sel = Knopf, der den Unterbereich wählt (X = s), kids = zweite Chip-Reihe */
+   * sel = Knopf, der den Unterbereich wählt (X = s), kids = Untereinträge, nav = "drawer" (Seitenmenü) oder "chips",
+   * c = Bereichsfarbe, foot = Einträge unten im Seitenmenü [Ziel, Text, Symbol] */
   var MODNAV = "nav [data-tab='X'],nav [data-go='X'],nav [data-v='X']";
   var V = {
     kalender: { t: "Kalender", tab: "kalender", native: "kalender" },
-    training: { t: "Training", tab: "training", secs: [
+    training: { t: "Training", tab: "training", nav: "drawer", c: "var(--c-training)", foot: [["tset", "Training einstellen", "gear"]], secs: [
       { id: "heute", t: "Heute", p: "training/", h: "heute" },
-      { id: "lauf", t: "Laufen & Kraft", p: "training/", h: "lauf" },
+      { id: "lauf", t: "Laufen", p: "training/", h: "lauf" },
+      { id: "kraft", t: "Kraft", p: "training/", h: "kraft" },
       { id: "rodeln", t: "Rodeln", p: "training/bahnplan/", sel: MODNAV, kids: [{ id: "plan", t: "Kurvenbuch", s: "plan" }, { id: "bahnen", t: "Bahnen", s: "bahnen" }, { id: "laeufe", t: "Läufe & Zeiten", s: "laeufe" }, { id: "buch", t: "Drucken", s: "buch" }] },
       { id: "auswertung", t: "Auswertung", p: "training/", kids: [{ id: "fitness", t: "Fitness", h: "fitness" }, { id: "analyse", t: "Analyse", h: "daten" }] },
       { id: "wissen", t: "Sportwissenschaft", p: "wissen/", kids: [{ id: "lesen", t: "Lesen", h: "lesen" }, { id: "karten", t: "Karteikarten", h: "karten" }, { id: "quiz", t: "Quiz", h: "quiz" }, { id: "suche", t: "Suche", h: "suche" }] }
     ] },
-    mobility: { t: "Mobility", tab: "mobility", secs: [
+    mobility: { t: "Mobility", tab: "mobility", nav: "chips", secs: [
       { id: "mobility", t: "Mobility", p: "training/mobility/", sel: MODNAV, kids: [{ id: "heute", t: "Tagesblock", s: "heute" }, { id: "wettkampf", t: "Wettkampf", s: "wettkampf" }, { id: "uebungen", t: "Übungen", s: "uebungen" }, { id: "fortschritt", t: "Fortschritt", s: "fortschritt" }] },
       { id: "atmung", t: "Atmung & HRV", p: "training/atmung/", sel: MODNAV, kids: [{ id: "heute", t: "Heute", s: "today" }, { id: "hrv", t: "Üben & HRV messen", s: "train" }, { id: "woche", t: "Woche", s: "week" }, { id: "verlauf", t: "Verlauf", s: "log" }, { id: "plan", t: "12-Wochen-Plan", s: "plan" }] }
     ] },
-    schule: { t: "Schule", tab: "schule", secs: [
+    schule: { t: "Schule", tab: "schule", nav: "drawer", c: "var(--c-schule)", secs: [
       { id: "heute", t: "Schultag", p: "schule/", sel: ".tab[data-v='X']", s: "heute" },
       { id: "plan", t: "Stundenplan", p: "schule/", sel: ".tab[data-v='X']", s: "plan" },
       { id: "aufgaben", t: "Aufgaben & Prüfungen", p: "schule/", sel: ".tab[data-v='X']", s: "aufgaben" },
@@ -67,10 +70,10 @@
     // über „Mehr“ erreichbar (Zurück führt dorthin)
     aufgaben: { t: "Aufgaben", tab: "mehr", up: "mehr", secs: [{ id: "alle", t: "Aufgaben", p: "", h: "tasks" }] },
     notizen: { t: "Notizen", tab: "mehr", up: "mehr", native: "notizen" },
-    bibel: { t: "Bibel", tab: "mehr", up: "mehr", secs: [
+    bibel: { t: "Bibel", tab: "mehr", up: "mehr", nav: "drawer", c: "var(--c-bibel)", secs: [
       { id: "heute", t: "Heute", p: "bibel/", h: "heute" }, { id: "lesen", t: "Weiterlesen", p: "bibel/", h: "lesen" },
       { id: "bibliothek", t: "Bibliothek", p: "bibel/", h: "bibliothek" }, { id: "meine", t: "Meine Bibel", p: "bibel/", h: "meinebibel" }, { id: "einst", t: "Einstellungen", p: "bibel/", h: "mehr" }] },
-    pause: { t: "Pause", tab: "mehr", up: "mehr", secs: [
+    pause: { t: "Pause", tab: "mehr", up: "mehr", nav: "drawer", c: "var(--c-atmung)", secs: [
       { id: "ablenken", t: "Ablenken", p: "pause/", sel: "#nav .tab[data-t='X']", s: "ablenken" }, { id: "wissen", t: "Wissen", p: "pause/", sel: "#nav .tab[data-t='X']", s: "wissen" },
       { id: "quiz", t: "Quiz", p: "pause/", sel: "#nav .tab[data-t='X']", s: "quiz" }, { id: "verlauf", t: "Verlauf", p: "pause/", sel: "#nav .tab[data-t='X']", s: "kalender" },
       { id: "einst", t: "Einstellungen", p: "pause/", sel: "#nav .tab[data-t='X']", s: "einst" }] },
@@ -111,7 +114,13 @@
   }
   // Unterbereich in der Seite wählen: Sprungadresse setzen oder Knopf ihrer Leiste drücken (sobald geladen)
   function apply(f, spec, fresh) {
-    if (spec.h && !fresh) { try { f.contentWindow.location.replace(BASE + f.dataset.p + "#" + spec.h); } catch (e) {} }
+    if (spec.h && !fresh) {
+      try {
+        // gleiche Adresse löst kein hashchange aus – die Seite kann aber inzwischen woanders stehen (eigene Knöpfe)
+        if (f.contentWindow.location.hash === "#" + spec.h) f.contentWindow.dispatchEvent(new HashChangeEvent("hashchange"));
+        else f.contentWindow.location.replace(BASE + f.dataset.p + "#" + spec.h);
+      } catch (e) {}
+    }
     if (spec.s && spec.sel) {
       var sel = spec.sel.replace(/X/g, spec.s), n = 0;
       (function tryIt() {
@@ -133,6 +142,9 @@
     titleEl.textContent = v.t;
     document.title = v.t + " · Planer";
     backEl.hidden = !v.up; backEl.innerHTML = ico("back");
+    var dw = hasDw(v);
+    menuEl.hidden = !dw; pathEl.hidden = !dw; topEl.classList.toggle("hasmenu", dw); document.body.classList.toggle("hasdw", dw);
+    if (!dw && drawerOpen) closeDrawer();
     // Navigation
     Array.prototype.forEach.call(navEl.children, function (b) { b.classList.toggle("on", b.dataset.tab === v.tab); });
     // Kopf-Aktionen
@@ -141,7 +153,7 @@
     fab.innerHTML = ico("plus");
     if ($("tomonth")) { if (cur.v === "kalender") setTimeout(toMonthBtn, 50); else $("tomonth").classList.remove("on"); }
     if (v.native) {
-      chipsEl.innerHTML = ""; stage.classList.remove("lined");
+      chipsEl.innerHTML = ""; stage.classList.remove("lined"); dwPn.innerHTML = "";
       var n = $("n-" + v.native); show(n); $("load").classList.remove("on");
       if (v.native === "kalender") renderCal(); else if (v.native === "mehr") renderMehr(); else renderNotes();
       return;
@@ -149,10 +161,12 @@
     var s = secOf(v, cur.s || M.sec[cur.v]), k = kidOf(s, cur.k || M.kid[cur.v + "/" + s.id]);
     cur.s = s.id; cur.k = k ? k.id : null;
     M.sec[cur.v] = s.id; if (k) M.kid[cur.v + "/" + s.id] = k.id; saveM();
-    // Chips
+    // Seitenmenü (Pfadzeile unter dem Titel) oder Chips (Mobility)
+    if (dw) { pathEl.textContent = s.t + (k ? " · " + k.t : ""); pathEl.setAttribute("aria-label", "Bereichsmenü öffnen, aktuell " + pathEl.textContent); renderDrawer(v, s, k); }
+    else dwPn.innerHTML = "";
     var h = "";
-    if (v.secs.length > 1) h += '<div class="crow">' + v.secs.map(function (x) { return '<button class="chip' + (x.id === s.id ? " on" : "") + '" data-sec="' + x.id + '">' + esc(x.t) + "</button>"; }).join("") + "</div>";
-    if (s.kids) h += '<div class="crow sub">' + s.kids.map(function (x) { return '<button class="chip' + (k && x.id === k.id ? " on" : "") + '" data-kid="' + x.id + '">' + esc(x.t) + "</button>"; }).join("") + "</div>";
+    if (!dw && v.secs.length > 1) h += '<div class="crow">' + v.secs.map(function (x) { return '<button class="chip' + (x.id === s.id ? " on" : "") + '" data-sec="' + x.id + '">' + esc(x.t) + "</button>"; }).join("") + "</div>";
+    if (s.kids && !dw) h += '<div class="crow sub">' + s.kids.map(function (x) { return '<button class="chip' + (k && x.id === k.id ? " on" : "") + '" data-kid="' + x.id + '">' + esc(x.t) + "</button>"; }).join("") + "</div>";
     chipsEl.innerHTML = h; stage.classList.toggle("lined", !!h);
     // gewählten Chip sichtbar machen – nur die Chip-Reihe scrollen, nie die Seite
     Array.prototype.forEach.call(chipsEl.querySelectorAll(".chip.on"), function (c) { var r = c.parentNode; if (c.offsetLeft + c.offsetWidth > r.scrollLeft + r.clientWidth || c.offsetLeft < r.scrollLeft) r.scrollLeft = c.offsetLeft - 16; });
@@ -187,12 +201,18 @@
     cur = { v: V[p[0]] ? p[0] : "kalender", s: p[1] || null, k: p[2] || null };
     render();
   }
-  addEventListener("popstate", function () { if (sheetOpen) { closeSheet(true); return; } fromHash(); });
+  // Zurück: erst das Seitenmenü zu, dann das Blatt, erst dann wird navigiert
+  addEventListener("popstate", function () {
+    if (drawerOpen) { closeDrawer(null, true); return; }
+    if (dwAfter) { var a = dwAfter; dwAfter = null; a(); return; }
+    if (sheetOpen) { closeSheet(true); return; }
+    fromHash();
+  });
   navEl.addEventListener("click", function (e) {
     var b = e.target.closest("[data-tab]"); if (!b) return;
     var t = b.dataset.tab;
     if (t === "kalender" && cur.v !== "kalender" && history.state && history.state.app && history.length > 1 && pushedFromCal) { history.back(); return; }
-    if (t === cur.v) { if (t === "kalender") { setSel(today()); renderCal(); $("n-kalender").scrollTop = 0; } return; }
+    if (t === cur.v) { if (t === "kalender") { setSel(today()); renderCal(); $("n-kalender").scrollTop = 0; } else if (hasDw(V[t])) openDrawer(); return; }
     pushedFromCal = cur.v === "kalender";
     go(t, null, null, { push: cur.v === "kalender" });
   });
@@ -203,6 +223,77 @@
     if (a) go(cur.v, a.dataset.sec, null, { push: false });
     else if (b) go(cur.v, cur.s, b.dataset.kid, { push: false });
   });
+
+  /* ---------- Seitenmenü ----------
+   * Öffnet nur über das Symbol, die Pfadzeile oder einen zweiten Tipp auf den aktiven Tab (kein Wischen vom Rand – das ist
+   * die Zurück-Geste von Android). Beim Öffnen entsteht ein Verlaufseintrag, Zurück schließt es also zuerst.
+   * Ab 900 px steht es fest als Spalte neben der Navigation. */
+  var drawerOpen = false, drawerAt = 0, dwAfter = null, dwExp = null, wideMQ = matchMedia("(min-width: 900px)");
+  function hasDw(v) { return !!(v && v.nav === "drawer" && v.secs && v.secs.length > 1); }
+  function renderDrawer(v, s, k) {
+    var h = '<div class="dw-h">' + esc(v.t) + "</div>";
+    h += v.secs.map(function (x) {
+      var on = x.id === s.id, ex = !!x.kids && (dwExp == null ? on : dwExp === x.id);
+      return '<div class="dw-g' + (ex ? " ex" : "") + '"><div class="dw-r"><button class="dw-it' + (on ? " on" : "") + '" data-sec="' + x.id + '"' + (on && !x.kids ? ' aria-current="page"' : "") + ">" + esc(x.t) + "</button>" +
+        (x.kids ? '<button class="dw-x" data-exp="' + x.id + '" aria-expanded="' + ex + '" aria-label="Unterpunkte von ' + esc(x.t) + '">' + ico("chev") + "</button></div>" +
+          '<div class="dw-kids">' + x.kids.map(function (y) { var kon = on && k && y.id === k.id; return '<button class="dw-it sub' + (kon ? " on" : "") + '" data-sec="' + x.id + '" data-kid="' + y.id + '"' + (kon ? ' aria-current="page"' : "") + (ex ? "" : ' tabindex="-1"') + ">" + esc(y.t) + "</button>"; }).join("") + "</div>" : "</div>") + "</div>";
+    }).join("");
+    var ft = (v.foot || []).concat(v.up ? [[v.up, "Zurück zu " + V[v.up].t, "back"]] : []);
+    if (ft.length) h += '<div class="dw-ft">' + ft.map(function (f) { return '<button class="dw-it" data-dgo="' + f[0] + '">' + ico(f[2]) + esc(f[1]) + "</button>"; }).join("") + "</div>";
+    dwPn.innerHTML = h; dwPn.style.setProperty("--c", v.c || "var(--acc)");
+    if (wideMQ.matches) { dwPn.setAttribute("role", "navigation"); dwPn.removeAttribute("aria-modal"); } else { dwPn.setAttribute("role", "dialog"); dwPn.setAttribute("aria-modal", "true"); }
+  }
+  function dwFocus() { var a = dwPn.querySelector(".dw-it.sub.on") || dwPn.querySelector(".dw-it.on") || dwPn.querySelector(".dw-it"); if (a) a.focus({ preventScroll: true }); }
+  function openDrawer() {
+    var v = V[cur.v]; if (!hasDw(v)) return;
+    if (wideMQ.matches) return dwFocus();
+    if (drawerOpen) return;
+    dwExp = null; renderDrawer(v, secOf(v, cur.s), kidOf(secOf(v, cur.s), cur.k));
+    drawerOpen = true; drawerAt = Date.now(); dwAfter = null;
+    history.pushState({ app: 1, drawer: 1 }, "", location.hash);
+    drawerEl.classList.add("on"); menuEl.setAttribute("aria-expanded", "true");
+    setTimeout(dwFocus, 30);
+  }
+  // after = Navigation nach dem Schließen (erst wenn der Verlaufseintrag des Menüs weg ist, sonst landet sie im falschen Eintrag)
+  function closeDrawer(after, fromPop) {
+    if (!drawerOpen) { if (after) after(); return; }
+    drawerOpen = false; drawerEl.classList.remove("on"); menuEl.setAttribute("aria-expanded", "false");
+    if (!menuEl.hidden) menuEl.focus({ preventScroll: true });
+    if (!fromPop && history.state && history.state.drawer) { dwAfter = after || function () {}; history.back(); }
+    else if (after) after();
+  }
+  menuEl.innerHTML = ico("menu");
+  menuEl.addEventListener("click", openDrawer);
+  pathEl.addEventListener("click", openDrawer);
+  drawerEl.addEventListener("click", function (e) {
+    if (e.target === drawerEl) { if (Date.now() - drawerAt > 350) closeDrawer(); return; }
+    var x = e.target.closest("[data-exp]"), b = e.target.closest("[data-sec],[data-dgo]");
+    if (x) {
+      var id = x.dataset.exp, open = x.getAttribute("aria-expanded") === "true", v = V[cur.v];
+      dwExp = open ? "" : id; renderDrawer(v, secOf(v, cur.s), kidOf(secOf(v, cur.s), cur.k));
+      var nx = dwPn.querySelector('[data-exp="' + id + '"]'); if (nx) nx.focus({ preventScroll: true });
+      return;
+    }
+    if (!b) return;
+    var v0 = cur.v, sec = b.dataset.sec, kid = b.dataset.kid || null, to = b.dataset.dgo;
+    closeDrawer(function () {
+      if (to && to === V[v0].up) { if (history.state && history.state.app && history.length > 1) history.back(); else go(to); }
+      else if (to) go(to, null, null, { push: true });
+      else go(v0, sec, kid, { push: false });
+    });
+  });
+  // nach links wischen schließt
+  (function () {
+    var x0 = 0, y0 = 0, on = false;
+    dwPn.addEventListener("touchstart", function (e) { if (!drawerOpen) return; on = true; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+    dwPn.addEventListener("touchmove", function (e) {
+      if (!on) return; var dx = e.touches[0].clientX - x0, dy = e.touches[0].clientY - y0;
+      if (dx < -50 && Math.abs(dx) > Math.abs(dy) * 1.5) { on = false; closeDrawer(); }
+    }, { passive: true });
+    dwPn.addEventListener("touchend", function () { on = false; }, { passive: true });
+  })();
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && drawerOpen) closeDrawer(); });
+  (wideMQ.addEventListener ? wideMQ.addEventListener.bind(wideMQ, "change") : wideMQ.addListener.bind(wideMQ))(function () { if (drawerOpen) closeDrawer(); if (!V[cur.v].native) render(); });
 
   /* ---------- Sprünge aus den Bereichen (Links, Befehle, Module) ---------- */
   // alte und interne Adressen → Ziel der Hülle
@@ -220,7 +311,7 @@
     }
     if (p === "training/") {
       if (h0 === "mobility" || h0 === "atmung" || h0 === "bahnplan") return openModule(h0, h1);
-      if (h0 === "lauf") return go("training", "lauf");
+      if (h0 === "lauf" || h0 === "kraft") return go("training", h0);
       if (h0 === "fitness") return go("training", "auswertung", "fitness");
       if (h0 === "daten") return go("training", "auswertung", "analyse");
       if (h0 === "einst") return go("tset", null, null, { push: true });
@@ -248,7 +339,7 @@
     if (appId === "bibel") return openUrl("bibel/#" + hash);
     return openUrl("#" + hash);
   }
-  window.SGShell = { openUrl: openUrl, openApp: openApp, openModule: openModule, go: go };
+  window.SGShell = { openUrl: openUrl, openApp: openApp, openModule: openModule, go: go, V: V };
 
   /* ---------- Kalender (Start) ---------- */
   var calSel = today(), calMonth = calSel.slice(0, 8) + "01", CD = null;

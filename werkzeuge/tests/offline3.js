@@ -55,22 +55,35 @@ const navOk = p => p.evaluate(() => { const n = document.getElementById('nav').g
     log(r && r.ok() && /Rodeltraining/.test(await p.textContent('#n-kalender')) && !errs.length, 'Hülle und Kalender offline' + (errs.length ? ' ' + errs.join('|') : ''));
     // jedes Ziel, jeder Unterpunkt: Seite sichtbar, keine Fehler, alle Eingabefelder bedienbar
     let total = 0;
-    for (const t of ['training', 'mobility', 'schule']) {
-      await p.click('#nav [data-tab=' + t + ']'); await p.waitForTimeout(500);
-      const secs = await p.$$eval('#chips .crow:first-child [data-sec]', l => l.map(x => x.dataset.sec));
-      for (const s of secs) {
-        await p.click('#chips [data-sec="' + s + '"]'); await p.waitForTimeout(1500);
-        const kids = await p.$$eval('#chips [data-kid]', l => l.map(x => x.dataset.kid));
+    // Auswahl wie von Hand: Seitenmenü (Training, Schule, Bibel, Pause) oder Chips (Mobility)
+    const pick = async (s, k) => {
+      if (await p.isVisible('#menu')) {
+        await p.click('#menu'); await p.waitForTimeout(300);
+        if (k && !await p.isVisible('#dwpn [data-sec="' + s + '"][data-kid="' + k + '"]')) await p.click('#dwpn [data-exp="' + s + '"]');
+        await p.click(k ? '#dwpn [data-sec="' + s + '"][data-kid="' + k + '"]' : '#dwpn .dw-r [data-sec="' + s + '"]');
+      } else {
+        if (await p.isVisible('#chips [data-sec="' + s + '"]')) { await p.click('#chips [data-sec="' + s + '"]'); await p.waitForTimeout(600); }
+        if (k) await p.click('#chips [data-kid="' + k + '"]');
+      }
+      await p.waitForTimeout(1500);
+    };
+    for (const t of ['training', 'mobility', 'schule', 'bibel', 'pause']) {
+      if (t === 'bibel' || t === 'pause') { await p.click('#nav [data-tab=mehr]'); await p.waitForTimeout(400); await p.click('#n-mehr [data-m=' + t + ']'); }
+      else await p.click('#nav [data-tab=' + t + ']');
+      await p.waitForTimeout(800);
+      const V = await p.evaluate(t => SGShell.V[t].secs.map(s => [s.id, (s.kids || []).map(k => k.id)]), t);
+      for (const [s, kids] of V) {
         for (const k of (kids.length ? kids : [null])) {
           errs.length = 0;
-          if (k) { await p.click('#chips [data-kid="' + k + '"]'); await p.waitForTimeout(1200); }
+          await pick(s, k);
           const path = await p.evaluate(() => document.querySelector('#stage iframe.on').dataset.p);
           const f = p.frames().find(x => x.url().replace(/[?#].*$/, '') === U + path);
           const txt = f ? await f.evaluate(() => document.body.innerText.length).catch(() => 0) : 0;
           const fl = f ? await fillAll(f, false).catch(() => ({ n: 0, bad: ['?'] })) : { n: 0, bad: ['keine Seite'] };
           total += fl.n;
+          const hashOk = (await p.evaluate(() => location.hash)) === '#' + t + '/' + s + (k ? '/' + k : '');
           if (!await navOk(p)) navBad.push(t + '/' + s + (k ? '/' + k : ''));
-          log(txt > 20 && !errs.length && !fl.bad.length, 'Offline: ' + t + ' › ' + s + (k ? ' › ' + k : '') + ' (' + fl.n + ' Felder)' + (errs.length ? ' Fehler: ' + errs.join('|') : '') + (fl.bad.length ? ' nicht: ' + fl.bad.join(',') : '') + (txt > 20 ? '' : ' leer'));
+          log(txt > 20 && hashOk && !errs.length && !fl.bad.length, 'Offline: ' + t + ' › ' + s + (k ? ' › ' + k : '') + ' (' + fl.n + ' Felder)' + (hashOk ? '' : ' falsche Adresse') + (errs.length ? ' Fehler: ' + errs.join('|') : '') + (fl.bad.length ? ' nicht: ' + fl.bad.join(',') : '') + (txt > 20 ? '' : ' leer'));
         }
       }
     }

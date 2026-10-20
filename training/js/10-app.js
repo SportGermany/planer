@@ -1649,6 +1649,7 @@ function finishWorkout(){
    ============================================================ */
 function switchTab(name){
   S.screen = name;
+  $("s-lauf").removeAttribute("data-part");
   Array.prototype.forEach.call(document.querySelectorAll(".screen"), function(s){
     s.classList.toggle("active", s.id === "s-" + name);
   });
@@ -2067,11 +2068,15 @@ switchTab("heute");
    URL-Hash direkt zum gewünschten Tab, z. B. beim Antippen von
    "Kalender" im langen Drücken auf das App-Icon. */
 (function(){
-  var validTabs = ["heute","kalender","lauf","daten","fitness","einst"];
+  var validTabs = ["heute","kalender","lauf","kraft","daten","fitness","einst"];
   function applyHashNav(){
     var href = location.href;
     var hashTab = href.indexOf("#") >= 0 ? href.slice(href.indexOf("#")+1) : "";
-    if (validTabs.indexOf(hashTab) >= 0){ switchTab(hashTab); S.shortcutNav = true; }
+    if (validTabs.indexOf(hashTab) < 0) return;
+    // #lauf und #kraft sind zwei Ausschnitte derselben Seite (Ein- und Ausblenden über data-sec, siehe CSS)
+    var part = hashTab === "lauf" || hashTab === "kraft" ? hashTab : "";
+    switchTab(part ? "lauf" : hashTab); S.shortcutNav = true;
+    if (part) $("s-lauf").setAttribute("data-part", part);
   }
   // Direkt versuchen; zusätzlich auf "hashchange" reagieren, falls der
   // Browser den Hash bei dieser Navigation erst nachträglich setzt

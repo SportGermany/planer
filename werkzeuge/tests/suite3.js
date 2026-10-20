@@ -27,7 +27,7 @@ async function test(name, fn) {
 }
 const wait = (p, ms) => p.waitForTimeout(ms);
 const state = p => p.evaluate(() => ({ hash: location.hash, title: document.getElementById('title').textContent, tab: (document.querySelector('#nav .on') || {}).dataset?.tab,
-  chips: [...document.querySelectorAll('#chips .chip.on')].map(c => c.textContent), frame: (document.querySelector('#stage iframe.on') || {}).dataset?.p ?? null }));
+  chips: [...document.querySelectorAll('#chips .chip.on')].map(c => c.textContent), path: (document.getElementById('path') || {}).textContent, frame: (document.querySelector('#stage iframe.on') || {}).dataset?.p ?? null }));
 // sichtbare eingebettete Seite
 const frameOf = (p, path) => p.frames().find(f => f.url().replace(/[?#].*$/, '') === U + path);
 async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
@@ -78,35 +78,140 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
   });
 
   /* ---------- S: Hülle ---------- */
-  await test('S Alle Ziele und jeder Unterpunkt öffnen die richtige Seite', async () => {
-    const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
+  // Wischen/Langdruck auf einem Element (Touch-Ereignisse wie am Handy)
+  const touch = (p, sel, dx, dy, ms) => p.evaluate(([sel, dx, dy, ms]) => new Promise(res => {
+    const g = document.querySelector(sel), r = g.getBoundingClientRect(), x0 = r.left + r.width / 2, y0 = r.top + Math.min(r.height / 2, 120);
+    const tgt = document.elementFromPoint(x0, y0) || g, t = (x, y) => new Touch({ identifier: 1, target: tgt, clientX: x, clientY: y });
+    tgt.dispatchEvent(new TouchEvent('touchstart', { touches: [t(x0, y0)], changedTouches: [t(x0, y0)], bubbles: true }));
+    setTimeout(() => { if (dx || dy) tgt.dispatchEvent(new TouchEvent('touchmove', { touches: [t(x0 + dx, y0 + dy)], changedTouches: [t(x0 + dx, y0 + dy)], bubbles: true }));
+      tgt.dispatchEvent(new TouchEvent('touchend', { touches: [], changedTouches: [t(x0 + dx, y0 + dy)], bubbles: true })); res(); }, ms || 30);
+  }), [sel, dx, dy, ms]);
+  // Ist in der sichtbaren Seite der Unterbereich aus V aktiv? (Sprungadresse h oder Knopf sel)
+  const activeOk = p => p.evaluate(() => {
+    const m = location.hash.slice(1).split('/'), v = SGShell.V[m[0]], s = v.secs.find(x => x.id === m[1]) || v.secs[0], k = s.kids ? (s.kids.find(x => x.id === m[2]) || s.kids[0]) : null;
+    const f = document.querySelector('#stage iframe.on'); if (!f) return 'keine Seite';
+    if (f.dataset.p !== s.p) return 'Seite ' + f.dataset.p + ' statt ' + s.p;
+    const d = f.contentDocument, h = (k && k.h) || s.h, sv = (k && k.s) || s.s;
+    if (!d || !d.body) return 'nicht geladen';
+    if (sv && s.sel) { const el = d.querySelector(s.sel.replace(/X/g, sv)); return el && (el.classList.contains('on') || el.classList.contains('active')) ? '' : 'Knopf ' + sv + ' nicht aktiv'; }
+    if (s.p === 'training/') { const scr = h === 'kraft' ? 'lauf' : h === 'daten' ? 'daten' : h, el = d.getElementById('s-' + scr);
+      if (!el || !el.classList.contains('active')) return 'Training ' + h + ' nicht aktiv';
+      if ((h === 'lauf' || h === 'kraft') && el.getAttribute('data-part') !== h) return 'Ausschnitt ' + el.getAttribute('data-part');
+      if (h === 'kraft' && d.querySelector('#s-lauf [data-sec=runtrack]').offsetParent) return 'Kraft zeigt Lauf';
+      if (h === 'lauf' && d.querySelector('#s-lauf [data-sec=gym]').offsetParent) return 'Laufen zeigt Gym';
+      return ''; }
+    if (s.p === 'bibel/') { const t = h === 'lesen' ? 'heute' : h, el = d.getElementById('view-' + t); return el && el.classList.contains('active') ? '' : 'Bibel ' + h; }
+    if (s.p === 'wissen/') { const el = d.querySelector('.tabs button.on'); return el && el.dataset.t === h ? '' : 'Wissen ' + h + ' / ' + (el && el.dataset.t); }
+    return '';
+  });
+  const dwOpen = p => p.evaluate(() => document.getElementById('drawer').classList.contains('on'));
+  await test('S Seitenmenü: jeder Pfad (Ziel, Eintrag, Untereintrag) öffnet die richtige Seite und den Unterbereich', async () => {
+    const c = await ctxFor({ viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true }), p = await c.newPage(), e = watch(p);
     await open(p, '#kalender');
-    const bad = [];
-    for (const t of ['training', 'mobility', 'schule']) {
-      await p.click(`#nav [data-tab=${t}]`); await wait(p, 600);
-      const secs = await p.$$eval('#chips .crow:first-child [data-sec]', l => l.map(x => x.dataset.sec));
-      for (const s of secs) {
-        await p.click(`#chips [data-sec="${s}"]`); await wait(p, 1500);
-        const kids = await p.$$eval('#chips [data-kid]', l => l.map(x => x.dataset.kid));
-        for (const k of (kids.length ? kids : [null])) {
-          if (k) { await p.click(`#chips [data-kid="${k}"]`); await wait(p, 900); }
-          const st = await state(p);
-          if (!st.frame && st.frame !== '') bad.push(t + '/' + s + '/' + k + ' keine Seite');
-          if (st.hash !== '#' + t + '/' + s + (k ? '/' + k : '')) bad.push(t + '/' + s + '/' + k + ' Adresse ' + st.hash);
-        }
+    const bad = []; let n = 0;
+    for (const t of ['training', 'schule', 'bibel', 'pause']) {
+      await p.goto(APP + '#' + t); await wait(p, 1500);
+      assert(!(await p.$$('#chips .chip')).length, 'Chips in ' + t);
+      const V = await p.evaluate(t => SGShell.V[t].secs.map(s => [s.id, (s.kids || []).map(k => k.id)]), t);
+      for (const [sid, kids] of V) for (const kid of (kids.length ? kids : [null])) {
+        await p.click('#menu'); await wait(p, 300);
+        if (!await dwOpen(p)) { bad.push(t + ': Menü geht nicht auf'); continue; }
+        if (kid) {
+          if (!await p.isVisible(`#dwpn [data-sec="${sid}"][data-kid="${kid}"]`)) await p.click(`#dwpn [data-exp="${sid}"]`);
+          await p.click(`#dwpn [data-sec="${sid}"][data-kid="${kid}"]`);
+        } else await p.click(`#dwpn .dw-r [data-sec="${sid}"]`);
+        await wait(p, 1400); n++;
+        const st = await state(p), want = '#' + t + '/' + sid + (kid ? '/' + kid : '');
+        if (await dwOpen(p)) bad.push(want + ' Menü bleibt offen');
+        if (st.hash !== want) bad.push(want + ' Adresse ' + st.hash);
+        let a = await activeOk(p); if (a) { await wait(p, 1500); a = await activeOk(p); }
+        if (a) bad.push(want + ': ' + a);
+        const path = await p.textContent('#path');
+        if (!path.startsWith(await p.textContent(`#dwpn .dw-r [data-sec="${sid}"]`))) bad.push(want + ' Pfadzeile ' + path);
       }
     }
-    // Unterbereiche wirklich gewählt: Mobility › Wettkampf, Atmung › Verlauf, Schule › Stundenplan, Rodeln › Läufe
-    const vis = async (path, sel) => { const f = frameOf(p, path); return f && f.evaluate(s => { const el = document.querySelector(s); return !!el && el.classList.contains('on'); }, sel); };
-    await p.goto(APP + '#mobility/mobility/wettkampf'); await wait(p, 2500);
-    if (!await vis('training/mobility/', "nav [data-tab='wettkampf']")) bad.push('Mobility Wettkampf nicht gewählt');
-    await p.goto(APP + '#mobility/atmung/verlauf'); await wait(p, 2500);
-    if (!await vis('training/atmung/', "nav [data-go='log']")) bad.push('Atmung Verlauf nicht gewählt');
-    await p.goto(APP + '#training/rodeln/laeufe'); await wait(p, 2500);
-    if (!await vis('training/bahnplan/', "nav [data-v='laeufe']")) bad.push('Rodeln Läufe nicht gewählt');
+    // Ende des Menüs: Training einstellen, Zurück zu Mehr
+    await p.goto(APP + '#training/heute'); await wait(p, 1200); await p.click('#menu'); await wait(p, 300);
+    await p.click('#dwpn [data-dgo=tset]'); await wait(p, 1500);
+    if ((await state(p)).hash !== '#tset') bad.push('Training einstellen → ' + (await state(p)).hash);
+    await p.goto(APP + '#mehr'); await wait(p, 800); await p.click('#n-mehr [data-m=bibel]'); await wait(p, 1500);
+    await p.click('#menu'); await wait(p, 300); await p.click('#dwpn [data-dgo=mehr]'); await wait(p, 800);
+    if ((await state(p)).hash !== '#mehr') bad.push('Zurück zu Mehr → ' + (await state(p)).hash);
+    // Mobility behält die Chips
+    await p.goto(APP + '#mobility/atmung/verlauf'); await wait(p, 2000);
+    if (await p.isVisible('#menu') || (await p.$$('#chips .chip')).length < 5) bad.push('Mobility ohne Chips');
+    await p.click('#chips [data-kid=woche]'); await wait(p, 1200);
+    if ((await state(p)).hash !== '#mobility/atmung/woche' || await activeOk(p)) bad.push('Mobility-Chip ' + (await activeOk(p)));
+    assert(n >= 25, 'nur ' + n + ' Pfade');
     assert(!bad.length, bad.join('; '));
     assert(!e.length, e.join(' | ')); await c.close();
   });
+  await test('S Seitenmenü öffnen/schließen: Symbol, Pfadzeile, Tab, Hintergrund, Wischen, Escape; Zurück schließt zuerst', async () => {
+    const c = await ctxFor({ viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true }), p = await c.newPage(), e = watch(p);
+    await open(p, '#kalender');
+    assert(!await p.isVisible('#menu'), 'Symbol im Kalender');
+    await p.click('#nav [data-tab=training]'); await wait(p, 1200);
+    const h0 = (await state(p)).hash;
+    assert(!await dwOpen(p), 'öffnet von selbst');
+    // Symbol 44×44 links, Pfadzeile darunter
+    const r = await p.evaluate(() => { const m = document.getElementById('menu').getBoundingClientRect(), t = document.getElementById('title').getBoundingClientRect(), q = document.getElementById('path').getBoundingClientRect(); return [m.width, m.height, m.left, t.left, q.top - t.bottom]; });
+    assert(r[0] >= 44 && r[1] >= 44 && r[2] < r[3] && r[4] >= -2, 'Kopf ' + r);
+    await p.click('#menu'); await wait(p, 300); assert(await dwOpen(p), 'Symbol');
+    assert(await p.evaluate(() => document.activeElement && document.activeElement.classList.contains('on')), 'Fokus auf aktivem Eintrag');
+    // Zurück: erst Menü zu, Seite bleibt
+    await p.goBack(); await wait(p, 400);
+    assert(!await dwOpen(p) && (await state(p)).hash === h0, 'Zurück schließt Menü: ' + (await state(p)).hash);
+    assert(await p.evaluate(() => document.activeElement === document.getElementById('menu')), 'Fokus zurück aufs Symbol');
+    await p.click('#path'); await wait(p, 450); assert(await dwOpen(p), 'Pfadzeile');
+    await p.mouse.click(350, 400); await wait(p, 400); assert(!await dwOpen(p), 'Hintergrund');
+    await p.click('#nav [data-tab=training]'); await wait(p, 300); assert(await dwOpen(p), 'Tab nochmal');
+    await touch(p, '#dwpn', -120, 4, 80); await wait(p, 400); assert(!await dwOpen(p), 'Wischen nach links');
+    await p.click('#menu'); await wait(p, 300); await p.keyboard.press('Escape'); await wait(p, 400); assert(!await dwOpen(p), 'Escape');
+    // kein Öffnen durch Wischen vom Rand
+    await touch(p, '#stage', 200, 0, 80); await wait(p, 300); assert(!await dwOpen(p), 'Randwischen öffnet');
+    assert((await state(p)).hash === h0, 'Adresse verändert ' + (await state(p)).hash);
+    // Zurück-Reihenfolge Menü → Seite: Training wurde vom Kalender aus geöffnet
+    await p.click('#menu'); await wait(p, 300);
+    await p.click('#dwpn .dw-r [data-sec=kraft]'); await wait(p, 900);
+    assert((await state(p)).hash === '#training/kraft', 'Kraft ' + (await state(p)).hash);
+    await p.click('#menu'); await wait(p, 300);
+    await p.goBack(); await wait(p, 400); assert(!await dwOpen(p) && (await state(p)).hash === '#training/kraft', 'erst Menü zu');
+    await p.goBack(); await wait(p, 600); assert((await state(p)).tab === 'kalender', 'dann Seite zurück: ' + (await state(p)).hash);
+    // Untereinträge: nur einer offen, aktiver aufgeklappt
+    await p.goto(APP + '#training/rodeln/bahnen'); await wait(p, 1500); await p.click('#menu'); await wait(p, 300);
+    let ex = await p.$$eval('#dwpn .dw-g.ex .dw-r [data-sec]', l => l.map(x => x.dataset.sec));
+    assert(ex.join() === 'rodeln', 'aufgeklappt ' + ex);
+    await p.click('#dwpn [data-exp=auswertung]'); await wait(p, 150);
+    ex = await p.$$eval('#dwpn .dw-g.ex .dw-r [data-sec]', l => l.map(x => x.dataset.sec));
+    assert(ex.join() === 'auswertung', 'nur einer ' + ex);
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  for (const [lab, opt, zoom] of [['360×640', { viewport: { width: 360, height: 640 }, isMobile: true, hasTouch: true }, 1], ['360×800 Schrift 130 %', { viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true }, 1.3],
+    ['800×1280', { viewport: { width: 800, height: 1280 }, hasTouch: true }, 1], ['1280×800', TAB, 1], ['1280×800 Schrift 130 %', TAB, 1.3]]) {
+    await test(`S Seitenmenü passt: ${lab}`, async () => {
+      const c = await ctxFor(opt), p = await c.newPage(), e = watch(p);
+      await open(p, '#schule/aufgaben');
+      if (zoom !== 1) { await p.evaluate(z => { document.documentElement.style.zoom = z; }, zoom); await wait(p, 300); }
+      const wide = opt.viewport.width / zoom >= 900;
+      if (!wide) { await p.click('#menu'); await wait(p, 350); }
+      const r = await p.evaluate(() => {
+        const pn = document.getElementById('dwpn').getBoundingClientRect(), it = [...document.querySelectorAll('#dwpn .dw-it')].filter(x => x.offsetParent).map(x => x.getBoundingClientRect().height),
+          st = document.getElementById('stage').getBoundingClientRect(), last = [...document.querySelectorAll('#dwpn .dw-it')].pop().getBoundingClientRect();
+        return { w: pn.width, left: pn.left, minH: Math.min(...it), stLeft: st.left, menu: !!document.getElementById('menu').offsetParent, over: document.documentElement.scrollWidth - innerWidth,
+          title: (t => t.scrollWidth <= t.clientWidth + 1)(document.getElementById('title')), lastIn: last.bottom <= innerHeight + 1 || document.getElementById('dwpn').scrollHeight > document.getElementById('dwpn').clientHeight };
+      });
+      ['w', 'left', 'minH', 'stLeft'].forEach(k => { r[k] /= zoom; });
+      if (wide) assert(Math.abs(r.w - 260) < 2 && r.left >= 91 && r.stLeft >= 350 && !r.menu, 'feste Spalte ' + JSON.stringify(r));
+      else assert(r.w <= Math.min(opt.viewport.width / zoom * 0.86, 320) + 1 && r.left === 0 && r.menu, 'Menü ' + JSON.stringify(r));
+      assert(r.minH >= 55.5, 'Einträge zu niedrig ' + r.minH);
+      assert(r.over <= 1 && r.title && r.lastIn, 'Überlauf ' + JSON.stringify(r));
+      // Eintrag wählen klappt in jeder Größe
+      await p.click('#dwpn .dw-r [data-sec=plan]'); await wait(p, 1200);
+      assert((await state(p)).hash === '#schule/plan' && !(await activeOk(p)), 'Wahl ' + (await state(p)).hash);
+      assert(!await dwOpen(p), 'Menü bleibt offen');
+      assert(!e.length, e.join(' | ')); await c.close();
+    });
+  }
   await test('S Eingebettete Seiten ohne eigene Leisten, Hülle ohne Überlauf', async () => {
     const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
     await open(p, '#training/heute');
@@ -119,14 +224,6 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     }
     assert(!e.length, e.join(' | ')); await c.close();
   });
-  // Wischen/Langdruck auf einem Element (Touch-Ereignisse wie am Handy)
-  const touch = (p, sel, dx, dy, ms) => p.evaluate(([sel, dx, dy, ms]) => new Promise(res => {
-    const g = document.querySelector(sel), r = g.getBoundingClientRect(), x0 = r.left + r.width / 2, y0 = r.top + Math.min(r.height / 2, 120);
-    const tgt = document.elementFromPoint(x0, y0) || g, t = (x, y) => new Touch({ identifier: 1, target: tgt, clientX: x, clientY: y });
-    tgt.dispatchEvent(new TouchEvent('touchstart', { touches: [t(x0, y0)], changedTouches: [t(x0, y0)], bubbles: true }));
-    setTimeout(() => { if (dx || dy) tgt.dispatchEvent(new TouchEvent('touchmove', { touches: [t(x0 + dx, y0 + dy)], changedTouches: [t(x0 + dx, y0 + dy)], bubbles: true }));
-      tgt.dispatchEvent(new TouchEvent('touchend', { touches: [], changedTouches: [t(x0 + dx, y0 + dy)], bubbles: true })); res(); }, ms || 30);
-  }), [sel, dx, dy, ms]);
   await test('K Kalender: Reihenfolge Wochenleiste · Tagesplan · Monat, auf 360×800 ohne Scrollen sichtbar', async () => {
     const c = await ctxFor({ viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true }), p = await c.newPage(), e = watch(p);
     await open(p, '#kalender');

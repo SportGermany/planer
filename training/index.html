@@ -50,6 +50,13 @@
 
   /* ---------- Kopfzeile ---------- */
   .top{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:16px; }
+  /* Laufen und Kraft: zwei Ausschnitte von „Laufen & Kraft“ (Adresse #lauf / #kraft) */
+  #s-lauf[data-part="lauf"] [data-sec="stretch"], #s-lauf[data-part="lauf"] [data-sec="rodeln"], #s-lauf[data-part="lauf"] [data-sec="gym"],
+  #s-lauf[data-part="lauf"] [data-sec="rodelnhistory"], #s-lauf[data-part="lauf"] [data-sec="gymhistory"], #s-lauf[data-part="lauf"] [data-sec="stretchhistory"],
+  #s-lauf[data-part="lauf"] [data-sec="cooldownstatus"],
+  #s-lauf[data-part="kraft"] [data-sec="runtrack"], #s-lauf[data-part="kraft"] [data-sec="distance"], #s-lauf[data-part="kraft"] [data-sec="sportlog"],
+  #s-lauf[data-part="kraft"] [data-sec="runstats"], #s-lauf[data-part="kraft"] [data-sec="nextrunday"], #s-lauf[data-part="kraft"] [data-sec="favoritesport"],
+  #s-lauf[data-part="kraft"] .sec-label.manual{ display:none !important; }
   .top h1{ font-size:22px; font-weight:660; letter-spacing:-.02em; margin:0 0 3px; }
   .top p{ margin:0; font-size:13px; color:var(--text-dim); }
   .streak-chip{
@@ -1362,7 +1369,7 @@
     <button class="btn accent block" id="btnRunTrackStart">🏃 Lauf starten</button>
   </div>
 
-  <div class="sec-label" style="order:4">Manuell erfassen</div>
+  <div class="sec-label manual" style="order:4">Manuell erfassen</div>
   <div id="runBlocks" data-sec="distance">
   <div class="card">
     <div class="card-h"><h2>Distanz wählen</h2></div>

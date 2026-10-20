@@ -49,6 +49,33 @@ Offen/notiert: H5 „Starten“ ist ein `span` im Zeilenknopf (für Screenreader
 Tests: suite3 53/53, offline3 44/44, apk, upd, bahnplan-1/-2, schnell 68/68 grün.
 
 
+### Phase 2 – Seitenmenü statt Chips (in Arbeit)
+Plan: Baustein in `app/js/1-app.js` + `app/index.html`, gespeist aus `V` (neues Feld `nav`: "drawer" für Training, Schule,
+Bibel, Pause; "chips" für Mobility). Adressen, `apply()`, `sg-app-v1` bleiben. Training: „Laufen & Kraft“ wird zu
+zwei Einträgen „Laufen“ (#lauf) und „Kraft“ (#kraft) – Ausschnitte derselben Seite über `data-part` an `#s-lauf`
+(CSS blendet per `data-sec` aus, nichts kopiert, #lauf bleibt gültig).
+
+Umgesetzt:
+- Kopf: Menü-Symbol (44 px) links, Titel, darunter Pfadzeile („Rodeln · Kurvenbuch“, Tipp öffnet). Zurück-Pfeil bei
+  Unterseiten von „Mehr“ ganz links, Symbol daneben.
+- Seitenmenü: min(86 %, 320 px), Einträge 56 px, aktive Pille in Bereichsfarbe, Untereinträge klappen (nur einer),
+  Ende: „Training einstellen“ / „Zurück zu Mehr“. Öffnen: Symbol, Pfadzeile, zweiter Tipp auf aktiven Tab.
+  Schließen: Hintergrund, Eintrag, Wischen nach links, Escape, Android-Zurück (eigener Verlaufseintrag; Navigation
+  erst nachdem der Eintrag weg ist – sonst landet sie im falschen Verlaufseintrag). Kein Öffnen vom Bildrand.
+- Tablet ab 900 px: feste Spalte 260 px neben der Leiste, Symbol entfällt.
+- `apply()`: gleiche Adresse löst in der Seite jetzt trotzdem `hashchange` aus.
+
+Fehler und Ursachen:
+| Fehler | Ursache | Lösung |
+|---|---|---|
+| Kraft zeigte alles | `training-suite.js` behandelt Sprungadressen selbst, löscht die Adresse und klickt den Tab (vor `10-app.js`) | #kraft auch dort, setzt `data-part` |
+| Menü bei Schrift 130 % breiter als Bildschirm (Test mit CSS-Zoom) | `86vw` wird mitgezoomt | `86%` vom festen Behälter |
+| Emulator-Lauf 3.6.0 abgebrochen | Android-Speicherverwaltung (lmkd) beendete erst Google-Dienste, dann die App, nach dem 10. Bereich – kein Fehler der App im Protokoll | Lauf einmal neu gestartet (Ergebnis unten) |
+
+Tests: suite3 59/59 (neu: jeder Pfad aus V über das Menü inkl. aktivem Unterbereich, Öffnen/Schließen/Zurück-Reihenfolge,
+Größen 360×640, 360×800 @130 %, 800×1280, 1280×800, 1280×800 @130 %), offline3 55/55 (Menüweg durch Training, Mobility,
+Schule, Bibel, Pause), apk.js, upd.js, schnell 68/68.
+
 ## 3.5.0 – erste veröffentlichte Android-App
 
 Secret `APK_PASSWORT` vom Nutzer eingetragen (Passwort bekam er als PDF, weil er die .txt nicht öffnen konnte).

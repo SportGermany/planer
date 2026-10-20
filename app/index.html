@@ -32,8 +32,14 @@ button, input, textarea, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 /* ---------- Kopf ---------- */
 .top { grid-area: top; display: flex; align-items: center; gap: 4px; height: calc(58px + var(--top)); padding: var(--top) 8px 0 18px; }
-.top h1 { flex: 1; min-width: 0; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top .ttl { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.top.hasmenu { padding-left: 6px; }
+.top.hasmenu .ttl { margin-left: 2px; }
+.top.hasmenu h1 { font-size: 20px; line-height: 1.2; }
+.path { align-self: flex-start; max-width: 100%; border: 0; background: none; padding: 0; margin: 1px 0 0; min-height: 20px; color: var(--muted); font-size: 13px; font-weight: 600; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top h1 { min-width: 0; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .top .back { margin-left: -10px; }
+.top.hasmenu .back { margin-left: 0; }
 .ib { width: 44px; height: 44px; border: 0; border-radius: 50%; background: none; display: inline-flex; align-items: center; justify-content: center; flex: none; position: relative; }
 .ib svg { width: 24px; height: 24px; }
 .ib:active, .ib:hover { background: var(--s2); }
@@ -75,6 +81,38 @@ button { cursor: pointer; }
   @media (max-height: 440px) { .nav { gap: 2px; padding-top: calc(8px + var(--top)); } .nav button { height: 56px; } }
   .native { padding: 8px 32px 40px; }
   .native > .wrap { max-width: 860px; margin: 0 auto; }
+}
+/* ---------- Seitenmenü (Handy: von links, Tablet ab 900 px: feste Spalte) ---------- */
+.drawer { position: fixed; inset: 0; z-index: 850; background: rgba(0,0,0,.45); visibility: hidden; opacity: 0; transition: opacity .22s, visibility 0s .22s; }
+.drawer.on { visibility: visible; opacity: 1; transition: opacity .22s; }
+.dw-pn { position: absolute; top: 0; bottom: 0; left: 0; width: min(86%, 320px); background: var(--s1); overflow-y: auto; overscroll-behavior: contain; border-radius: 0 24px 24px 0; outline: none;
+  padding: calc(12px + var(--top)) 12px calc(16px + var(--bot)) calc(12px + var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));
+  transform: translateX(-100%); transition: transform .22s cubic-bezier(.2,.8,.2,1); box-shadow: 4px 0 24px rgba(0,0,0,.35); }
+.drawer.on .dw-pn { transform: none; }
+@media (prefers-reduced-motion: reduce) { .drawer, .drawer.on, .dw-pn { transition: none; } }
+.dw-h { margin: 10px 16px 10px; font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: .02em; }
+.dw-r { display: flex; align-items: center; gap: 2px; }
+.dw-it { flex: 1; min-width: 0; width: 100%; min-height: 56px; display: flex; align-items: center; gap: 12px; border: 0; background: none; border-radius: 28px; padding: 0 18px; text-align: left; font-size: 15.5px; font-weight: 600; color: var(--ink); }
+.dw-it svg { width: 22px; height: 22px; flex: none; color: var(--muted); }
+.dw-it:active, .dw-it:hover { background: var(--s2); }
+.dw-it.on, .dw-it.on:hover { background: color-mix(in srgb, var(--c, var(--acc)) 26%, transparent); }
+.dw-it:focus-visible, .dw-x:focus-visible, .path:focus-visible, .ib:focus-visible { outline: 2px solid var(--acc); outline-offset: -2px; }
+.dw-x { width: 44px; height: 44px; flex: none; border: 0; border-radius: 50%; background: none; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+.dw-x svg { width: 20px; height: 20px; transition: transform .2s; transform: rotate(90deg); }
+.dw-g.ex .dw-x svg { transform: rotate(-90deg); }
+.dw-kids { display: none; padding: 2px 0 6px; }
+.dw-g.ex .dw-kids { display: block; }
+.dw-it.sub { padding-left: 36px; font-size: 14.5px; font-weight: 550; color: var(--muted); }
+.dw-it.sub.on { color: var(--ink); background: var(--s2); box-shadow: inset 3px 0 0 var(--c, var(--acc)); }
+.dw-ft { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+@media (min-width: 900px) {
+  body.hasdw { grid-template-columns: 92px 260px minmax(0, 1fr); grid-template-areas: "nav dw top" "nav dw chips" "nav dw stage"; }
+  body > .drawer { display: none; }
+  body.hasdw > .drawer { display: block; grid-area: dw; position: relative; inset: auto; z-index: auto; visibility: visible; opacity: 1; background: none; transition: none; min-height: 0; }
+  body.hasdw .dw-pn { position: absolute; inset: 0; width: auto; transform: none; transition: none; border-radius: 0; box-shadow: none; border-right: 1px solid var(--line); padding: calc(16px + var(--top)) 10px 16px; }
+  .top .menu { display: none !important; }
+  .top.hasmenu { padding-left: 24px; }
+  .path { pointer-events: none; }
 }
 /* ---------- Bausteine ---------- */
 .grp { margin: 0 0 22px; }
@@ -240,7 +278,7 @@ button { cursor: pointer; }
 <!-- verbund-design:end -->
 </head>
 <body>
-<header class="top"><button class="ib back" id="back" aria-label="Zurück" hidden></button><h1 id="title">Kalender</h1><span id="acts"></span></header>
+<header class="top"><button class="ib back" id="back" aria-label="Zurück" hidden></button><button class="ib menu" id="menu" aria-label="Bereichsmenü öffnen" aria-expanded="false" aria-controls="dwpn" hidden></button><div class="ttl"><h1 id="title">Kalender</h1><button class="path" id="path" hidden></button></div><span id="acts"></span></header>
 <div class="chips" id="chips"></div>
 <main id="stage">
   <section class="native" id="n-kalender"><div class="wrap"></div></section>
@@ -251,6 +289,7 @@ button { cursor: pointer; }
   <button class="fab" id="fab" aria-label="Neu"></button>
 </main>
 <nav class="nav" id="nav" aria-label="Bereiche"></nav>
+<div class="drawer" id="drawer"><div class="dw-pn" id="dwpn" role="dialog" aria-modal="true" aria-label="Bereichsmenü"></div></div>
 <div class="sheet" id="sheet"><div class="pn"></div></div>
 <div class="snack" id="snack"></div>
 <script src="js/1-app.js?v=3.6.0"></script>
