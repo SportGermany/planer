@@ -216,6 +216,8 @@
   addEventListener("popstate", function () {
     // Reihenfolge: Suche (liegt ganz oben) → Seitenmenü → Blatt → Navigation
     if (window.SGShellSearch && SGShellSearch.isOpen()) { closeSearch(true); return; }
+    if (shAfter) { var sh = shAfter; shAfter = null; sh(); return; }   // Blatt der Hülle ist zu, jetzt das Nächste öffnen
+    if (C() && C().panelOpen && C().panelOpen() && !(history.state && history.state.vp)) { C().closePanel(true); return; }   // Blatt des Verbunds (Termin, Design, Cloud)
     if (sxAfter) { var sa = sxAfter; sxAfter = null; sa(); return; }
     if (drawerOpen) { closeDrawer(null, true); return; }
     if (dwAfter) { var a = dwAfter; dwAfter = null; a(); return; }
@@ -668,10 +670,11 @@
     if (own) h += sRow("edit", "edit", "Bearbeiten", "Zeit, Wiederholung, Erinnerung", "var(--muted)");
     if (!A.to && !own) h += sRow("day", "cal", "Im Kalender öffnen", "", "var(--muted)");
     sheet(h, function (act) {
-      closeSheet();
-      if (act === "open") A.to(e);
-      else if (act === "edit") C().editEvent(e.id, e.date);
-      else if (act === "day") C().open(e.date);
+      closeSheet(false, function () {
+        if (act === "open") A.to(e);
+        else if (act === "edit") C().editEvent(e.id, e.date);
+        else if (act === "day") C().open(e.date);
+      });
     });
   }
   // Termin aus dem Handykalender (nur Android-App): ändern oder löschen schreibt direkt in den Kalender des Handys
@@ -714,11 +717,11 @@
       sRow("notiz", "note", "Notiz", "Idee festhalten, optional mit Erinnerung", "var(--c-notiz)") +
       sRow("woche", "wand", "Trainingswoche planen", "Training, Laufen, Mobility, Atmung, Lernen", "var(--c-training)") +
       (std ? sRow("std", "ok", "Standardwoche übernehmen", "Mit einem Tipp", "var(--c-training)") : ""), function (act) {
-      if (act === "termin") { closeSheet(); C().newEvent(calSel); }
+      if (act === "termin") closeSheet(false, function () { C().newEvent(calSel); });
       else if (act === "aufgabe") taskSheet();
       else if (act === "notiz") noteSheet(null, calSel);
-      else if (act === "woche") { closeSheet(); C().weekPlan(); }
-      else if (act === "std") { closeSheet(); C().weekPlanStd(); }
+      else if (act === "woche") closeSheet(false, function () { C().weekPlan(); });
+      else if (act === "std") closeSheet(false, function () { C().weekPlanStd(); });
     });
   }
   function taskSheet(pre) {
@@ -1164,16 +1167,19 @@
 
   /* ---------- Blatt von unten, Hinweis ---------- */
   var sheetEl = $("sheet"), sheetOpen = false, sheetCb = null;
-  var sheetAt = 0;
+  var sheetAt = 0, shAfter = null;
   function sheet(html, cb) {
     sheetEl.querySelector(".pn").innerHTML = '<div class="hd"></div>' + html; sheetCb = cb;
     if (drawerOpen) { drawerOpen = false; drawerEl.classList.remove("on"); menuEl.setAttribute("aria-expanded", "false"); dwInert(false); history.replaceState({ app: 1, sheet: 1 }, "", location.hash); sheetOpen = true; sheetAt = Date.now(); }
     if (!sheetOpen) { history.pushState({ app: 1, sheet: 1 }, "", location.hash); sheetOpen = true; sheetAt = Date.now(); }
     sheetEl.classList.add("on");
   }
-  function closeSheet(fromPop) {
-    if (!sheetOpen) return; sheetOpen = false; sheetEl.classList.remove("on");
-    if (!fromPop && history.state && history.state.sheet) history.back();
+  // after: läuft erst, wenn der Verlaufseintrag des Blatts wirklich weg ist – sonst schließt das späte „Zurück“
+  // ein gleich danach geöffnetes Blatt des Verbunds (Termin) wieder
+  function closeSheet(fromPop, after) {
+    if (!sheetOpen) { if (after) after(); return; } sheetOpen = false; sheetEl.classList.remove("on");
+    if (!fromPop && history.state && history.state.sheet) { if (after) shAfter = after; history.back(); }
+    else if (after) after();
   }
   sheetEl.addEventListener("click", function (e) {
     // ein Tipp, der noch vom Öffnen stammt (Doppeltipp, Loslassen nach langem Druck), schließt nicht gleich wieder
@@ -1244,11 +1250,11 @@
   /* Befehlskatalog: [Gruppe, Titel, Stichwörter, Ausführen, Zustand?, Bedingung?] */
   function sxCommands() {
     var c = C(), L = [], nat = !!window.SGNative;
-    function add(g, t, kw, run, st, show) { if (show === false) return; L.push({ kind: "befehle", g: g, t: t, kw: kw || "", run: run, st: st || "", key: "c:" + t }); }
+    function add(g, t, kw, run, st, show, id) { if (show === false) return; L.push({ kind: "befehle", g: g, t: t, kw: kw || "", run: run, st: st || "", key: "c:" + (id || t) }); }
     var t0 = today();
     add("Kalender", "Heute", "kalender start tag briefing", function () { toDay(t0); });
     add("Kalender", "Morgen", "kalender tag", function () { toDay(plus(t0, 1)); });
-    add("Kalender", "Monatskalender", "monat monatsübersicht übersicht alle apps", function () { go("kalender"); setTimeout(function () { $("tomonth").click(); }, 80); });
+    add("Kalender", "Monatskalender", "monat monatsübersicht übersicht alle aller apps", function () { go("kalender"); setTimeout(function () { $("tomonth").click(); }, 80); });
     add("Kalender", "Woche planen", "wochenplanung planen training", function () { c.weekPlan(); });
     add("Kalender", "Nächste Woche planen", "wochenplanung", function () { var d = parse(t0); c.weekPlan("", plus(t0, 7 - ((d.getDay() + 6) % 7))); });
     add("Kalender", "Standardwoche übernehmen", "standard woche", function () { c.weekPlanStd(); });
@@ -1302,18 +1308,18 @@
     add("Wissen und Bibel", "Pause starten", "pause ablenken", function () { go("pause", null, null, { push: true }); });
     if (window.SGTheme) {
       window.SGTheme.list.forEach(function (th) { add("Design", "Design: " + th.name, "farbwelt thema " + (th.info || ""), function () { window.SGTheme.set(th.id); snack("Design: " + th.name); }); });
-      add("Design", "Glaseffekt " + (window.SGTheme.glass() ? "ausschalten" : "einschalten"), "glas design", function () { window.SGTheme.setGlass(!window.SGTheme.glass()); });
+      add("Design", "Glaseffekt " + (window.SGTheme.glass() ? "ausschalten" : "einschalten"), "glas design", function () { window.SGTheme.setGlass(!window.SGTheme.glass()); }, "", true, "glas");
     }
     add("Design", "Design wählen", "farbwelt", function () { c.openDesign(); });
     var cl = cloudState(), cst = c && c.status ? c.status() : {};
-    add("Daten", cst.connected ? "Cloud jetzt sichern" : "Cloud-Sicherung einrichten", "sync synchronisieren github", function () { if (cst.connected && c.sync) { c.sync(); snack("Sichere …"); } else c.openSync(); }, cst.connected ? "zuletzt " + cl.val : "");
+    add("Daten", cst.connected ? "Cloud jetzt sichern" : "Cloud-Sicherung einrichten", "sync synchronisieren github", function () { if (cst.connected && c.sync) { c.sync(); snack("Sichere …"); } else c.openSync(); }, cst.connected ? "zuletzt " + cl.val : "", true, "cloud");
     add("Daten", "Frühere Stände zurückholen", "sicherung wiederherstellen cloud", function () { c.openSync(); });
     add("Daten", "Alles als Datei sichern", "backup sicherung datei", function () { moveOut("backup"); });
     add("Daten", "Sicherung einspielen", "wiederherstellen datei", function () { moveInSheet("restore"); });
     add("Daten", nat ? "Daten aus Chrome übernehmen" : "In die Android-App umziehen", "umzug apk", function () { if (nat) moveInSheet(false); else moveOut("umzug"); });
     add("Daten", "Kalender als .ics exportieren", "export ics datei", function () { var x = c.phone && c.phone.ics ? c.phone.ics(c.phone.pending("alle")) : ""; if (!x) return; var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([x], { type: "text/calendar" })); a.download = "planer-kalender.ics"; document.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); }, 1000); });
     add("Daten", nat ? "Handykalender jetzt abgleichen" : "Handykalender", "handy kalender abgleich", function () { if (nat && c.handy && c.handy.state().on) { c.handy.sync(true); snack("Gleiche ab …"); } else phoneSheet(); });
-    if (nat && c.erinnern && c.erinnern.available()) { var on = c.erinnern.state().on; add("Daten", "Erinnerungen " + (on ? "ausschalten" : "einschalten"), "benachrichtigung", function () { if (on) { c.erinnern.disable(); snack("Erinnerungen aus"); } else remindSheet(); }); }
+    if (nat && c.erinnern && c.erinnern.available()) { var on = c.erinnern.state().on; add("Daten", "Erinnerungen " + (on ? "ausschalten" : "einschalten"), "benachrichtigung", function () { if (on) { c.erinnern.disable(); snack("Erinnerungen aus"); } else remindSheet(); }, "", true, "erinnern"); }
     add("Daten", "Erinnerungen als Benachrichtigung erlauben", "benachrichtigung", function () { if (c.askNotify) c.askNotify(); }, "", !nat && "Notification" in window && Notification.permission === "default");
     add("Daten", "Planer als App installieren", "startbildschirm installieren", function () { if (window.SGInstallEvt) window.SGInstallEvt.prompt(); else if (c.install) c.install(); }, "", !nat && !(c.installed && c.installed()));
     add("Über die App", "Version aktualisieren", "update version neu", function () { if (window.SGUpdate) window.SGUpdate.check(function (x) { snack(x); }); }, window.SGVersion || "");
@@ -1438,41 +1444,48 @@
   }
   function rowHTML(it, q, i) {
     var g = SXG[it.kind] || SXG.befehle;
-    return '<div class="sxr" role="option" data-i="' + i + '"><button class="sxm" data-i="' + i + '" style="--c:' + (it.c || g[2]) + '"><span class="ic">' + ico(it.ic || (it.kind === "befehle" ? "chev" : g[1])) + '</span><span class="tx"><b' + (it.done ? ' class="done"' : "") + ">" + hl(it.t, q) + "</b>" +
+    return '<div class="sxr" data-i="' + i + '"><button class="sxm" data-i="' + i + '" style="--c:' + (it.c || g[2]) + '"><span class="ic">' + ico(it.ic || (it.kind === "befehle" ? "chev" : g[1])) + '</span><span class="tx"><b' + (it.done ? ' class="done"' : "") + ">" + hl(it.t, q) + "</b>" +
       (it.st || it.g ? "<small>" + esc([it.g, it.st].filter(Boolean).join(" · ")) + "</small>" : "") + "</span></button>" +
       (it.task ? '<button class="sxa" data-tk="' + i + '" aria-label="' + (it.task.done ? "Wieder offen" : "Erledigt") + '">' + ico(it.task.done ? "check" : "ok") + "</button>" : it.e ? '<button class="sxa" data-cal="' + i + '" aria-label="Im Kalender öffnen">' + ico("cal") + "</button>" : '<span class="sxa-c">' + ico("chev") + "</span>") + "</div>";
   }
+  function prepAll(list) { list.forEach(function (it) { if (!it.p) it.p = window.SGSuche.prep(it.t, ((it.g || "") + " " + (it.kw || "") + " " + (it.x || "")).trim()); }); return list; }
+  function sxCmds() { if (!sx.cmds) sx.cmds = prepAll(sxCommands()); return sx.cmds; }
   function sxSearch() {
     var q = sx.q.trim(), f = sx.f, list = [], quick = null, mode = q[0];
     var body = sxEl.querySelector(".sxb"), live = sxEl.querySelector(".sxl"), qprev = sxEl.querySelector(".sxq");
-    sx.items = [];
+    var keep = sx.items[sx.sel] && sx.items[sx.sel].key;
+    sx.items = []; sx.quick = null; sx.pending = false;
     if (!q) { qprev.innerHTML = ""; return sxEmpty(); }
     if (mode === "?") { qprev.innerHTML = ""; return sxHelp(); }
     var S = window.SGSuche, cnt = (sxStore().count || {});
-    function rank(it, words, base) { var sc = S.score(words, it.t, ((it.g || "") + " " + (it.kw || "") + " " + (it.x || "")).trim()); if (!sc) return 0; sc += base || 0; sc += Math.min(30, (cnt[it.key] || 0) * 6);
-      if (it.date) { var dd = Math.abs((parse(it.date) - parse(today())) / 864e5); sc += dd === 0 ? 25 : dd < 8 ? 12 : dd > 120 ? -10 : 0; } if (it.done) sc -= 30; return sc; }
+    var tk = parse(today());
+    function rank(it, qw, base) { var r = S.scoreP(qw, it.p), sc = r.s; if (!sc) return 0; it.fz = r.fz; sc += base || 0; sc += Math.min(30, (cnt[it.key] || 0) * 6);
+      if (it.date) { var dd = Math.abs((parse(it.date) - tk) / 864e5); sc += dd === 0 ? 25 : dd < 8 ? 12 : dd > 120 ? -10 : 0; } if (it.done) sc -= 30; return Math.max(1, sc); }
     if (mode === "@") {
       var d = sxAtDate(q.slice(1)); qprev.innerHTML = "";
       if (d) list.push({ kind: "termine", t: "Kalender: " + fmtDay(d) + " öffnen", st: "Tag im Kalender", key: "at", sc: 999, run: function () { toDay(d); } });
     } else if (mode === "/") {
-      var qq = q.slice(1).trim(); qprev.innerHTML = "";
-      sxCommands().forEach(function (it) { var sc = qq ? rank(it, qq) : 1; if (sc) { it.sc = sc; list.push(it); } });
+      var qq = S.words(q.slice(1)); qprev.innerHTML = "";
+      sxCmds().forEach(function (it) { var sc = qq.length ? rank(it, qq) : 1; if (sc) { it.sc = sc; list.push(it); } });
     } else {
       // Bibelstelle („Joh 3,16“) zuerst
       var br = window.SGBibelstelle && window.SGBibelstelle.parse(q);
       if (br) list.push({ kind: "bibel", t: br.ref, st: "Bibelstelle öffnen", ic: "book", key: "br:" + br.ref, sc: 1000, run: function () { openUrl("bibel/#stelle=" + br.b + "." + br.c + (br.v ? "." + br.v : "")); } });
-      quick = sxQuick(q);
+      // eine erkannte Bibelstelle („Römer 8:28“) ist kein Termin
+      quick = br ? null : sxQuick(q);
       qprev.innerHTML = quick ? quickHTML(quick) : ""; sx.quick = quick;
       if (mode === "+") { sx.items = []; body.innerHTML = ""; live.textContent = "Neuer Eintrag"; return; }
-      if (!sx.content) sx.content = sxContent();
-      var cmdBase = f === "befehle" ? 0 : 5;
-      sxCommands().forEach(function (it) { var sc = rank(it, q, cmdBase); if (sc) { it.sc = sc; list.push(it); } });
-      sx.content.forEach(function (it) { var sc = rank(it, q); if (sc) { it.sc = sc; list.push(it); } });
+      if (!sx.content) sx.content = prepAll(sxContent());
+      var qw = S.words(q), cmdBase = f === "befehle" ? 0 : 5;
+      sxCmds().forEach(function (it) { var sc = rank(it, qw, cmdBase); if (sc) { it.sc = sc; list.push(it); } });
+      sx.content.forEach(function (it) { var sc = rank(it, qw); if (sc) { it.sc = sc; list.push(it); } });
+      // unscharfe Treffer (Tippfehler) nur, wenn es nichts Genaues gibt
+      if (list.some(function (it) { return !it.fz; })) list = list.filter(function (it) { return !it.fz; });
       // Ergebnisse aus dem Hintergrund kommen nach und werden dann eingereiht
       if (sx.wis && sx.wis.q === q) list = list.concat(sx.wis.list);
-      else if (q.length >= 3 && (f === "alles" || f === "wissen")) sxWissen(q, function (res) { if (sx && sx.q.trim() === q) { sx.wis = { q: q, list: res }; sxSearch(); } });
+      else if (q.length >= 3 && (f === "alles" || f === "wissen")) { sx.pending = true; sxWissen(q, function (res) { if (sx && sx.q.trim() === q) { sx.wis = { q: q, list: res }; sxSearch(); } }); }
       if (sx.bib && sx.bib.q === q) list = list.concat(sx.bib.list.map(function (x) { x.sc = 5; return x; }));
-      else if (q.length >= 3 && (f === "alles" || f === "bibel") || f === "bibel" && q.length >= 2) sxBibel(q, function (res) { if (sx && sx.q.trim() === q) { sx.bib = { q: q, list: res }; sxSearch(); } });
+      else if (q.length >= 3 && (f === "alles" || f === "bibel") || f === "bibel" && q.length >= 2) { sx.pending = true; sxBibel(q, function (res) { if (sx && sx.q.trim() === q) { sx.bib = { q: q, list: res }; sxSearch(); } }); }
     }
     if (f !== "alles") list = list.filter(function (it) { return it.kind === f; });
     list.sort(function (a, b) { return b.sc - a.sc; });
@@ -1483,21 +1496,21 @@
     var h = "", n = 0;
     order.forEach(function (k) {
       var all = groups[k], show = f === "alles" && !sx.open[k] ? all.slice(0, 3) : all.slice(0, 80);
-      h += '<div class="sxg"><header><span>' + SXG[k][0] + "</span>" + (all.length > show.length ? '<button class="lnk" data-more="' + k + '">Alle ' + all.length + " anzeigen</button>" : "") + "</header>";
+      h += '<div class="sxg" role="group" aria-label="' + SXG[k][0] + '"><header><span>' + SXG[k][0] + "</span>" + (all.length > show.length ? '<button class="lnk" data-more="' + k + '">Alle ' + all.length + " anzeigen</button>" : "") + "</header>";
       show.forEach(function (it) { sx.items.push(it); h += rowHTML(it, mode === "/" || mode === "@" ? q.slice(1) : q, sx.items.length - 1); n++; });
       h += "</div>";
     });
     if (!list.length && !quick) h = '<p class="sxe">Nichts gefunden. Tipp: mit „+“ vorne wird es ein neuer Eintrag, „?“ zeigt Beispiele.</p>';
-    if (!list.length && !quick && q.length >= 2 && mode !== "/" && mode !== "@") {
-      h += '<div class="sxg"><div class="cells">' + '<button class="row" data-qa="as-aufgabe" style="--c:var(--c-aufgabe)"><span class="ic">' + ico("check") + '</span><span class="tx"><b>Aufgabe anlegen: ' + esc(q) + "</b></span></button></div></div>";
-      sx.quick = { kind: "aufgabe", title: q.charAt(0).toUpperCase() + q.slice(1), date: null };
-    }
+    if (!list.length && !quick && q.length >= 2 && mode !== "/" && mode !== "@" && !sx.pending)
+      h += '<div class="sxg"><div class="cells"><button class="row" data-new="' + esc(q) + '" style="--c:var(--c-aufgabe)"><span class="ic">' + ico("check") + '</span><span class="tx"><b>Aufgabe anlegen: ' + esc(q) + "</b><small>öffnet das Blatt zum Prüfen</small></span></button></div></div>";
     body.innerHTML = h;
     live.textContent = (list.length ? list.length + (list.length === 1 ? " Treffer" : " Treffer") : "Keine Treffer") + (quick ? ", Vorschau: neuer Eintrag" : "");
     sx.sel = 0;
+    if (keep) sx.items.some(function (it, i) { if (it.key === keep) { sx.sel = i; return true; } });
+    if (sx.sel) Array.prototype.forEach.call(sxEl.querySelectorAll(".sxr"), function (r) { r.classList.toggle("on", +r.dataset.i === sx.sel); });
   }
   function sxEmpty() {
-    var o = sxStore(), body = sxEl.querySelector(".sxb"), h = "", cmds = sxCommands(), byKey = {};
+    var o = sxStore(), body = sxEl.querySelector(".sxb"), h = "", cmds = sxCmds(), byKey = {};
     cmds.forEach(function (x) { byKey[x.key] = x; });
     if (o.recent && o.recent.length) h += '<div class="sxg"><header><span>Zuletzt</span><button class="lnk" data-clear="1">Löschen</button></header><div class="sxchips">' +
       o.recent.map(function (r, i) { return '<button class="chip" data-recent="' + i + '">' + esc(r.q || r.l) + "</button>"; }).join("") + "</div></div>";
@@ -1523,16 +1536,25 @@
     if (!sxEl) {
       sxEl = document.createElement("div"); sxEl.id = "sx"; sxEl.className = "sx"; sxEl.setAttribute("role", "dialog"); sxEl.setAttribute("aria-modal", "true"); sxEl.setAttribute("aria-label", "Suche");
       sxEl.innerHTML = '<div class="sxh"><button class="ib" data-x="1" aria-label="Suche schließen">' + ico("back") + '</button><div class="sxi">' + ico("search") +
-        '<input type="search" id="sxq" placeholder="Suchen, Befehl oder „Zahnarzt morgen 15 Uhr“" autocomplete="off" autocapitalize="sentences" spellcheck="false" enterkeyhint="search" aria-label="Suchen" role="combobox" aria-controls="sxbody" aria-expanded="true">' +
+        '<input type="search" id="sxq" placeholder="Suchen, Befehl oder „Zahnarzt morgen 15 Uhr“" autocomplete="off" autocapitalize="sentences" spellcheck="false" enterkeyhint="search" aria-label="Suchen" aria-controls="sxbody">' +
         '<button class="ib sxc" data-clr="1" aria-label="Eingabe löschen" hidden>✕</button></div></div>' +
-        '<div class="sxf" role="tablist" aria-label="Bereich">' + SXF.map(function (x) { return '<button class="chip" role="tab" data-f="' + x[0] + '">' + x[1] + "</button>"; }).join("") + "</div>" +
-        '<div class="sxl" aria-live="polite"></div><div class="sxbody" id="sxbody"><div class="sxq"></div><div class="sxb" role="listbox"></div></div>';
+        '<div class="sxf" role="group" aria-label="Bereich">' + SXF.map(function (x) { return '<button class="chip" data-f="' + x[0] + '">' + x[1] + "</button>"; }).join("") + "</div>" +
+        '<div class="sxl" aria-live="polite"></div><div class="sxbody" id="sxbody"><div class="sxq"></div><div class="sxb"></div></div>';
       document.body.appendChild(sxEl);
       var inp = sxEl.querySelector("#sxq"), tmr = 0;
-      inp.addEventListener("input", function () { sxEl.querySelector(".sxc").hidden = !inp.value; if (sx) sx.q = inp.value; clearTimeout(tmr); tmr = setTimeout(function () { if (sx) { sx.open = {}; sxSearch(); } }, 100); });
+      inp.addEventListener("input", function () { sxEl.querySelector(".sxc").hidden = !inp.value; if (sx) sx.q = inp.value; clearTimeout(tmr); tmr = setTimeout(function () { if (sx) { sx.open = {}; try { sxSearch(); } catch (x) { sxFail(x); } } }, 100); });
       inp.addEventListener("keydown", function (e) {
         if (!sx) return;
-        if (e.key === "Enter") { e.preventDefault(); clearTimeout(tmr); sx.q = inp.value; if (!sx.items.length && !sx.quick) sxSearch(); if (sx.quick && (sx.q.trim()[0] === "+" || sx.quick.explicit || sx.quick.date || sx.quick.time || !sx.items.length)) return sxSaveQuick(sx.quick); sxRun(sx.items[sx.sel || 0], sx.q); }
+        if (e.key === "Enter") {
+          e.preventDefault(); clearTimeout(tmr); sx.q = inp.value; sx.open = {};
+          try { sxSearch(); } catch (x) { return sxFail(x); }
+          var q = sx.q.trim(), top = sx.items[sx.sel || 0];
+          if (!q || q[0] === "?") return;                       // leer oder Hilfe: Enter tut nichts
+          if (sx.quick && q[0] === "+") return sxSaveQuick(sx.quick);
+          // ein sehr guter Treffer (Bibelstelle, ganzer Befehlsname) geht vor; sonst die Vorschau
+          if (top && (top.sc >= 200 || !sx.quick)) return sxRun(top, sx.q);
+          if (sx.quick) return sxSaveQuick(sx.quick);
+        }
         else if (e.key === "Escape") { e.preventDefault(); closeSearch(); }
         else if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); var n = sx.items.length; if (!n) return; sx.sel = (sx.sel + (e.key === "ArrowDown" ? 1 : n - 1)) % n; Array.prototype.forEach.call(sxEl.querySelectorAll(".sxr"), function (r) { r.classList.toggle("on", +r.dataset.i === sx.sel); }); }
       });
@@ -1545,7 +1567,8 @@
         if (t.dataset.clear) { var o = sxStore(); o.recent = []; sxSave(o); return sxSearch(); }
         if (t.dataset.recent != null) { var r = (sxStore().recent || [])[+t.dataset.recent]; if (r) { inp.value = r.q || r.l; sx.q = inp.value; sxSearch(); } return; }
         if (t.dataset.ins != null) { inp.value = t.dataset.ins; sx.q = inp.value; sxEl.querySelector(".sxc").hidden = false; sxSearch(); return inp.focus(); }
-        if (t.dataset.cmd) { var cm = sxCommands().find(function (x) { return x.key === t.dataset.cmd; }); return sxRun(cm, ""); }
+        if (t.dataset.cmd) { var cm = sxCmds().find(function (x) { return x.key === t.dataset.cmd; }); return sxRun(cm, ""); }
+        if (t.dataset.new != null) { var nq = t.dataset.new; return closeSearch(false, function () { go("kalender"); taskSheet({ title: nq.charAt(0).toUpperCase() + nq.slice(1), due: "" }); }); }
         if (t.dataset.qa) { var how = t.dataset.qa.replace(/^as-/, ""); if (t.dataset.qa === "save") return sxSaveQuick(sx.quick); if (t.dataset.qa === "edit") return sxEditQuick(sx.quick); return sxEditQuick(Object.assign({}, sx.quick, { kind: how }), how); }
         if (t.dataset.tk != null) { var it = sx.items[+t.dataset.tk]; C().tasks.update(it.task.id, { done: !it.task.done }); it.task.done = !it.task.done; it.done = it.task.done; sx.content = null; snack(it.done ? "Erledigt" : "Wieder offen"); return sxSearch(); }
         if (t.dataset.cal != null) { var ev = sx.items[+t.dataset.cal]; sxRemember({ l: ev.t, q: sx.q }, ev.key); return closeSearch(false, function () { toDay(ev.date); }); }
@@ -1559,23 +1582,32 @@
         sxEl.querySelector(".sxq").innerHTML = quickHTML(sx.quick);
       });
       if (window.visualViewport) { visualViewport.addEventListener("resize", sxFit); visualViewport.addEventListener("scroll", sxFit); }
-      C().onChange(function () { if (sx) { sx.content = null; } });
+      C().onChange(function () { if (!sx) return; sx.content = null; sx.cmds = null; clearTimeout(sx.ct); sx.ct = setTimeout(function () { if (sx && document.activeElement !== null) { try { sxSearch(); } catch (x) {} } }, 300); });
     }
-    var from = cur.v;
-    sx = { q: text || "", f: "alles", items: [], sel: 0, open: {}, from: from, content: null, bib: null, wis: null };
+    if (sx) { var i0 = sxEl.querySelector("#sxq"); if (text != null) { i0.value = text; sx.q = text; sxSearch(); } i0.focus(); return; }
+    var from = cur.v; sxFrom = document.activeElement;
+    sx = { q: text || "", f: "alles", items: [], sel: 0, open: {}, from: from, content: null, cmds: null, bib: null, wis: null, quick: null };
     sxSetF();
     var inp2 = sxEl.querySelector("#sxq"); inp2.value = sx.q; sxEl.querySelector(".sxc").hidden = !sx.q;
-    sxEl.classList.add("on"); sxFit();
+    sxEl.classList.add("on"); sxFit(); sxInert(true);
     if (drawerOpen) closeDrawer();
     history.pushState({ app: 1, sx: 1 }, "", location.hash);
     sxSearch();
     setTimeout(function () { inp2.focus(); }, 30);
   }
-  function sxSetF() { Array.prototype.forEach.call(sxEl.querySelectorAll(".sxf [data-f]"), function (b) { var on = b.dataset.f === sx.f; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); }); }
+  function sxSetF() { Array.prototype.forEach.call(sxEl.querySelectorAll(".sxf [data-f]"), function (b) { var on = b.dataset.f === sx.f; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); }); }
+  var sxFrom = null;
+  function sxInert(on) { [topEl, chipsEl, stage, navEl].forEach(function (x) { if (on) x.setAttribute("inert", ""); else x.removeAttribute("inert"); }); }
+  // Fehler in der Suche: zurück zur alten Befehlspalette (ganz schließen, Verlauf aufräumen)
+  function sxFail(x) {
+    diag("Suche: " + (x && x.message)); var q = sx ? sx.q : "";
+    closeSearch(false, function () { var c = C(); c.setPalette(null); c.palette(q); });
+  }
   // after: Aktion nach dem Schließen – erst wenn der Verlaufseintrag der Suche weg ist (sonst landet die Navigation im falschen Eintrag)
   function closeSearch(fromPop, after) {
     if (!sx) { if (after) after(); return; } sx = null; sxJob++;
-    sxEl.classList.remove("on"); sxEl.querySelector("#sxq").blur();
+    sxEl.classList.remove("on"); sxEl.querySelector("#sxq").blur(); sxInert(false);
+    var back = sxFrom && sxFrom.isConnected && !sxFrom.closest("[inert]") ? sxFrom : actsEl.querySelector("[data-act=search]"); if (back && !after) back.focus({ preventScroll: true });
     if (!fromPop && history.state && history.state.sx) { sxAfter = after || function () {}; history.back(); }
     else if (after) after();
   }
@@ -1591,7 +1623,7 @@
     if (!C()) return setTimeout(start, 30);
     C().onChange(function () { clearTimeout(refresh.t); refresh.t = setTimeout(refresh, 100); });
     // neue Vollbild-Suche statt der Befehlspalette (fällt sie aus, bleibt die alte als Rückfall)
-    if (C().setPalette && window.SGSuche) C().setPalette(function (text) { try { openSearch(text); } catch (e) { diag("Suche: " + e.message); C().setPalette(null); C().palette(text); } });
+    if (C().setPalette && window.SGSuche) C().setPalette(function (text) { try { openSearch(text); } catch (e) { if (sx) sxFail(e); else { diag("Suche: " + e.message); C().setPalette(null); C().palette(text); } } });
     if (location.hash.length > 1) fromHash(); else { history.replaceState({ app: 1 }, "", "#kalender"); render(); }
     if (window.SGNative && !localStorage.getItem("sg-umzug-v1")) setTimeout(function () { moveInSheet(true); }, 600);
     else if (window.SGNative && !localStorage.getItem("sg-apk-setup")) setTimeout(setupSheet, 900);

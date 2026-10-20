@@ -6,14 +6,18 @@ var BIB = null, BIBN = null, bibL = null, WI = null, wiL = null;
 function words(q) { return self.SGSuche.words(q); }
 function bibel(d) {
   bibL = bibL || fetch("../../bibel/elb1905.json").then(function (r) { return r.json(); }).then(function (j) {
-    BIB = j.books; BIBN = BIB.map(function (b) { return b[2].map(function (vs) { return vs.map(self.SGSuche.norm); }); });
+    BIB = j.books; BIBN = BIB.map(function (b) { return b[2].map(function (vs) { return vs.map(function (v) { return " " + self.SGSuche.norm(v) + " "; }); }); });
   });
   return bibL.then(function () {
-    var nq = self.SGSuche.norm(d.q), out = [];
-    if (nq) for (var bi = 0; bi < BIBN.length && out.length < 60; bi++)
+    // alle Wörter müssen vorkommen, jeweils als Wortanfang („gnade friede“, nicht „img“ in „heimgesucht“)
+    var qw = words(d.q).map(function (w) { return " " + w; }), out = [];
+    if (qw.length) for (var bi = 0; bi < BIBN.length && out.length < 60; bi++)
       for (var ci = 0; ci < BIBN[bi].length && out.length < 60; ci++)
-        for (var vi = 0; vi < BIBN[bi][ci].length && out.length < 60; vi++)
-          if (BIBN[bi][ci][vi].indexOf(nq) >= 0) out.push([bi, ci + 1, vi + 1, BIB[bi][0], BIB[bi][2][ci][vi]]);
+        for (var vi = 0; vi < BIBN[bi][ci].length && out.length < 60; vi++) {
+          var v = BIBN[bi][ci][vi], ok = true;
+          for (var k = 0; k < qw.length && ok; k++) ok = v.indexOf(qw[k]) >= 0;
+          if (ok) out.push([bi, ci + 1, vi + 1, BIB[bi][0], BIB[bi][2][ci][vi]]);
+        }
     return out;
   });
 }

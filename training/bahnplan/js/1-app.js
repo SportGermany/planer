@@ -628,7 +628,8 @@ async function openWiki(q) {
   const cat = catOf(t), w = q ? { q, kw: "", files: [] } : (cat && cat.w) || { q: t.name + " " + (t.ort || "") + " luge track", kw: "", files: [] };
   openSheet(sheetHead("Plan von Wikipedia") + `<input class="search" id="wikiQ" placeholder="Suchbegriff, z. B. Bahnname" value="${esc(w.q)}" autocomplete="off"><div id="wikiRes"><div class="empty">Suche auf Wikipedia und Wikimedia Commons …</div></div>`);
   $("wikiQ").onkeydown = e => { if (e.key === "Enter") openWiki($("wikiQ").value.trim()); };
-  try { wikiList = await wikiCandidates(w); }
+  // ohne Netz gar nicht erst fragen (sonst meldet der Browser fehlgeschlagene Anfragen)
+  try { if (!navigator.onLine) throw new Error("offline"); wikiList = await wikiCandidates(w); }
   catch (e) { if ($("wikiRes")) $("wikiRes").innerHTML = `<div class="empty">Wikipedia ist gerade nicht erreichbar. Mit Internet erneut versuchen – oder ein eigenes Bild wählen.</div><div class="btns"><button class="btn" data-a="img">Eigenes Bild</button></div>`; return; }
   if (!$("wikiRes")) return;
   $("wikiRes").innerHTML = wikiList.length ? `<p class="gfoot" style="margin:0 4px 10px">Tippe auf den Streckenplan, den du verwenden willst. Er wird als PNG gespeichert.</p><div class="wgrid">` +

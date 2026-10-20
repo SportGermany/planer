@@ -679,6 +679,52 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(await p.evaluate(() => SharedCalendar.notes.list().some(n => /Kurve 9 früher einlenken/.test(n.text))), 'Notiz');
     assert(!e.length, e.join(' | ')); await c.close();
   });
+  await test('P6 Prüfbefunde: echtes Tippen + sofort Enter, Vorschau zurückgesetzt, Befehlsname geht vor, leer/Filter legt nichts an, Verlauf', async () => {
+    const c = await ctxFor(Object.assign({ timezoneId: 'Europe/Berlin' }, SMALL)), p = await c.newPage(), e = watch(p), bad = [];
+    await p.clock.install({ time: new Date('2026-10-20T10:00:00+02:00') });
+    await open(p, '#kalender');
+    const evs = () => p.evaluate(() => SharedCalendar.list().map(x => x.title + '|' + x.date + '|' + x.time));
+    const tasks = () => p.evaluate(() => SharedCalendar.tasks.list().length);
+    // echtes Tippen, Enter ohne Pause
+    await sxOpen(p); await p.keyboard.type('Zahnarzt morgen 15 Uhr', { delay: 15 }); await p.keyboard.press('Enter'); await wait(p, 400);
+    if (!(await evs()).includes('Zahnarzt|2026-10-21|15:00')) bad.push('Tippen+Enter: ' + (await evs()).slice(-2));
+    // Vorschau von vorher wirkt nicht mehr: „/glas“ schaltet den Glaseffekt, legt keinen Termin an
+    const n0 = (await evs()).length, glas0 = await p.evaluate(() => window.SGTheme.glass());
+    await sxOpen(p); await p.keyboard.type('Kino morgen 20 Uhr', { delay: 10 }); await wait(p, 300);
+    await p.fill('#sxq', ''); await p.keyboard.type('/glas', { delay: 10 }); await p.keyboard.press('Enter'); await wait(p, 400);
+    if ((await evs()).length !== n0 || await p.evaluate(() => window.SGTheme.glass()) === glas0) bad.push('/glas nach Vorschau');
+    // ganzer Befehlsname geht vor der Vorschau; Bibelstelle ist kein Termin
+    const t0 = await tasks();
+    await sxOpen(p); await p.keyboard.type('Bibel heute lesen', { delay: 10 }); await p.keyboard.press('Enter'); await wait(p, 900);
+    if (await tasks() !== t0 || !/^#bibel/.test((await state(p)).hash)) bad.push('Bibel heute lesen → ' + (await state(p)).hash);
+    await p.goto(APP + '#kalender'); await wait(p, 1200);
+    await sxOpen(p); await p.keyboard.type('Römer 8:28', { delay: 10 }); await p.keyboard.press('Enter'); await wait(p, 900);
+    if ((await evs()).some(x => /^Römer/.test(x))) bad.push('Römer 8:28 wurde Termin');
+    await p.goto(APP + '#kalender'); await wait(p, 1200);
+    // leeres Feld: Enter tut nichts; Filter „Bibel“ ohne Treffer legt keine Aufgabe an
+    await sxOpen(p); await p.keyboard.press('Enter'); await wait(p, 300);
+    if (!(await p.isVisible('#sx.on')) || (await state(p)).hash !== '#kalender') bad.push('leer Enter');
+    await p.click('#sx .sxf [data-f=bibel]'); await p.keyboard.type('Zahnarzt', { delay: 10 }); await p.keyboard.press('Enter'); await wait(p, 400);
+    if (await tasks() !== t0) bad.push('Filter Bibel legte Aufgabe an');
+    await p.keyboard.press('Escape'); await wait(p, 300);
+    // Strg K zweimal: nur ein Verlaufseintrag; Esc räumt ihn wieder ab
+    const L0 = await p.evaluate(() => history.length);
+    await p.keyboard.press('Control+k'); await wait(p, 200); await p.keyboard.press('Control+k'); await wait(p, 200);
+    if (await p.evaluate(() => history.length) - L0 > 1) bad.push('Strg K doppelt im Verlauf');
+    await p.keyboard.press('Escape'); await wait(p, 300);
+    if (await p.evaluate(() => history.state && history.state.sx)) bad.push('Suchen-Eintrag bleibt');
+    // „Bearbeiten“ öffnet das Terminblatt; Zurück schließt es, die Seite bleibt
+    await sxOpen(p); await p.keyboard.type('Arzt morgen 9 Uhr', { delay: 10 }); await wait(p, 300); await p.click('#sx [data-qa=edit]'); await wait(p, 600);
+    if (!(await p.evaluate(() => SharedCalendar.panelOpen()))) bad.push('Blatt nicht offen');
+    await p.goBack(); await wait(p, 500);
+    if (await p.evaluate(() => SharedCalendar.panelOpen()) || (await state(p)).hash !== '#kalender') bad.push('Zurück schließt Blatt nicht: ' + (await state(p)).hash);
+    // Bibeltext: alle Wörter; Jud 5 = Judas 1,5
+    await sxOpen(p); await sxType(p, 'gnade friede', 3500);
+    if (!(await sxRows(p)).some(g => g.g === 'Bibel' && g.rows.length)) bad.push('gnade friede ohne Treffer');
+    await sxType(p, 'Jud 5'); if ((await sxRows(p))[0]?.rows[0] !== 'Judas 1,5') bad.push('Jud 5');
+    assert(!bad.length, bad.join(' | '));
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
   await test('P6 Suche: kein alter Befehl verloren, Filter, Zurück schließt zuerst, Strg K, offline, flüssig', async () => {
     const c = await ctxFor(SMALL), p = await c.newPage(), e = watch(p), bad = [];
     await open(p, '#training/heute');
@@ -836,10 +882,10 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     await p.setViewportSize({ width: 412, height: 915 }); await wait(p, 400);
     assert(!(await p.$('#mgrid.wide')), 'schmal');
     // S5/H1: Uhrzeit maskiert, Eintrag ohne Titel
-    await p.evaluate(() => { const k = new Date().toISOString().slice(0, 10); const n = SharedCalendar.add({ title: 'x', date: k, time: '<b>x', app: 'Kalender' }); SharedCalendar.update(n.id, { title: '' }); }); await wait(p, 400);
+    await p.evaluate(() => { const t = new Date(), k = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'); const n = SharedCalendar.add({ title: 'x', date: k, time: '<b>x', app: 'Kalender' }); SharedCalendar.update(n.id, { title: '' }); }); await wait(p, 400);
     assert(!(await p.$('#dayplan .tm b')) && /\(ohne Titel\)/.test(await p.textContent('#dayplan')), 'maskiert/ohne Titel');
     // S8: viele Einträge → gleich hohe Zellen
-    await p.evaluate(() => { const k = new Date().toISOString().slice(0, 8); for (let i = 0; i < 200; i++) SharedCalendar.add({ title: 'Viel ' + i, date: k + String(1 + i % 28).padStart(2, '0'), time: '10:00', app: 'Kalender' }); }); await wait(p, 600);
+    await p.evaluate(() => { const t = new Date(), k = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-'; for (let i = 0; i < 200; i++) SharedCalendar.add({ title: 'Viel ' + i, date: k + String(1 + i % 28).padStart(2, '0'), time: '10:00', app: 'Kalender' }); }); await wait(p, 600);
     const hs = await p.evaluate(() => [...new Set([...document.querySelectorAll('#mgrid .mc')].map(b => Math.round(b.getBoundingClientRect().height)))]);
     assert(hs.length === 1 && hs[0] >= 64 && hs[0] <= 76, 'Zellhöhen ' + hs);
     assert(!e.length, e.join(' | ')); await c.close();

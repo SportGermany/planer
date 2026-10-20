@@ -898,7 +898,17 @@ function bibleHash(){
     if(!ch) return;
     const list = CHUNKS_BY_CH[ch.ref] || [], v = +p[2] || 1;
     const chunk = list.find(r => r.verses.some(x => x[0] === v)) || list[0];
-    if(chunk){ tab("heute"); openOverlay(chunk); }
+    if(chunk){
+      tab("heute"); openOverlay(chunk);
+      // gesuchten Vers markieren und hinscrollen (ohne scrollIntoView – das verschiebt in der App die ganze Hülle)
+      setTimeout(() => {
+        const sup = document.querySelector('#passageOverlayContent .vnum[data-num="' + v + '"]'), el = sup && sup.closest(".v");
+        if(!el) return;
+        el.classList.add("jump");
+        let sc = el.parentElement; while(sc && sc !== document.body && sc.scrollHeight <= sc.clientHeight + 1) sc = sc.parentElement;
+        if(sc && sc !== document.body) sc.scrollTop += el.getBoundingClientRect().top - sc.getBoundingClientRect().top - 80;
+      }, 80);
+    }
   }
 }
 window.addEventListener("hashchange", bibleHash);

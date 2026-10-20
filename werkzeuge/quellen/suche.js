@@ -32,35 +32,39 @@
   }
   function allowed(len) { return len >= 9 ? 2 : len >= 5 ? 1 : 0; }
   // Wert eines Suchworts gegen eine Wortliste: 6 ganzes Wort, 4 Wortanfang, 2 Teilwort, 1 unscharf, 0 kein Treffer
-  function wordHit(q, ws) {
-    var best = 0, k = allowed(q.length);
+  function wordHit(q, ws, noFuzzy) {
+    var best = 0, k = noFuzzy ? 0 : allowed(q.length);
     for (var i = 0; i < ws.length; i++) {
       var w = ws[i];
       if (w === q) return 6;
       if (w.indexOf(q) === 0) { best = Math.max(best, 4); continue; }
       if (q.length >= 3 && w.indexOf(q) > 0) { best = Math.max(best, 2); continue; }
-      if (k && best < 1) {
-        // ganzes Wort oder gleich langer Wortanfang (Tippfehler mitten im Tippen)
+      if (k && best < 1 && w[0] === q[0]) {
+        // ganzes Wort oder gleich langer Wortanfang (Tippfehler mitten im Tippen); der erste Buchstabe muss stimmen
         if (dist(q, w, k) <= k || (w.length > q.length && dist(q, w.slice(0, q.length), k) <= k)) best = 1;
       }
     }
     return best;
   }
-  /* Bewertung eines Eintrags: title (wichtig), text (Zusatz: Notiz, Stichwörter). 0 = kein Treffer. */
-  function score(query, title, text) {
-    var q = words(query); if (!q.length) return 0;
-    var nt = norm(title), tw = nt ? nt.split(" ") : [], xw = text ? words(text) : [], nq = q.join(" ");
-    var s = 0;
+  /* Vorbereiten (einmal je Eintrag): vereinheitlichter Titel und Wortlisten – die Suche je Taste rechnet nur noch damit */
+  function prep(title, text) { var nt = norm(title); return { nt: nt, tw: nt ? nt.split(" ") : [], xw: text ? words(text) : [] }; }
+  /* Bewertung mit vorbereiteten Daten: q = Suchwörter, p = prep(). Ergebnis { s: Wert (0 = kein Treffer), fz: nur unscharf getroffen } */
+  function scoreP(q, p) {
+    if (!q.length) return { s: 0, fz: false };
+    var s = 0, fz = false, nq = q.join(" ");
     for (var i = 0; i < q.length; i++) {
-      var h = wordHit(q[i], tw);
-      if (h) { s += h * 10; continue; }
-      var x = xw.length ? wordHit(q[i], xw) : 0;
-      if (!x) return 0;
+      var h = wordHit(q[i], p.tw);
+      if (h) { s += h * 10; if (h === 1) fz = true; continue; }
+      // Zusatztext (Notiz, Stichwörter) ohne Tippfehler-Spielraum – sonst zu viele Fehltreffer
+      var x = p.xw.length ? wordHit(q[i], p.xw, true) : 0;
+      if (!x) return { s: 0, fz: false };
       s += x * 3;
     }
-    if (nt === nq) s += 200; else if (nt.indexOf(nq) === 0) s += 100; else if ((" " + nt).indexOf(" " + nq) >= 0) s += 40;
-    return s;
+    if (p.nt === nq) s += 200; else if (p.nt.indexOf(nq) === 0) s += 100; else if ((" " + p.nt).indexOf(" " + nq) >= 0) s += 40;
+    return { s: s, fz: fz };
   }
+  /* Bewertung eines Eintrags: title (wichtig), text (Zusatz: Notiz, Stichwörter). 0 = kein Treffer. */
+  function score(query, title, text) { return scoreP(words(query), prep(title, text)).s; }
   /* Bereiche [Anfang, Ende) im Originaltext, die zu Suchwörtern passen (Wortanfänge und Teilwörter) – fürs Hervorheben */
   function marks(title, query) {
     var q = words(query).filter(function (w) { return w.length >= 1; }); if (!q.length) return [];
@@ -76,7 +80,7 @@
     out.forEach(function (r) { var l = merged[merged.length - 1]; if (l && r[0] <= l[1]) l[1] = Math.max(l[1], r[1]); else merged.push(r.slice()); });
     return merged;
   }
-  var api = { norm: norm, words: words, dist: dist, score: score, marks: marks, wordHit: wordHit };
+  var api = { norm: norm, words: words, dist: dist, score: score, scoreP: scoreP, prep: prep, marks: marks, wordHit: wordHit };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.SGSuche = api;
 })(typeof window !== "undefined" ? window : this);

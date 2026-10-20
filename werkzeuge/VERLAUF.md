@@ -233,7 +233,7 @@ Prüfung Phase 5 (Prüf-Agent, 16 Befunde):
 | H15 | Schalter „Seitenmenü automatisch“ auf dem Tablet wirkungslos | dort ausgeblendet |
 | H16 | Sportwissenschaft ohne %, Erinnerungen-Zeile | % wieder da; Erinnerungen nur, wenn die APK sie kann (wie vorher) |
 
-### Phase 6 – Suche und Befehle neu (in Arbeit)
+### Phase 6 – Suche und Befehle neu (erledigt)
 Umgesetzt (Abschnitt „Suche (Vollbild)“ in app/js/1-app.js, CSS in app/index.html):
 - Vollbild-Suche statt Palette (`SharedCalendar.setPalette`): Lupe, `#befehle`, Strg K, Suchfeld in Mehr öffnen sie; fällt sie aus, bleibt die alte Palette.
   Zurück-Pfeil, Feld mit Löschen-Knopf, Trefferzahl für Vorlesen (aria-live), Filter-Chips umbrechend, Höhe über visualViewport,
@@ -255,6 +255,33 @@ Fehler und Ursachen:
 | Bibeltext: 60 ms Hauptthread beim ersten Suchen | 4,4 MB JSON auf dem Hauptthread eingelesen | Worker `app/js/suche-worker.js` lädt und durchsucht Bibel und Buch |
 | Messung zeigte weiter lange Aufgaben | das Vorladen der Training-Seite (3,5 s nach Start) lief in die Messung | Test misst nach dem Vorladen; Suche selbst: keine Aufgabe > 50 ms |
 | „Monatsübersicht“ und „Planer als App installieren“ fehlten im neuen Katalog | beim Neuaufbau vergessen | ergänzt; Test vergleicht mit dem alten Katalog |
+
+Prüfung Phase 6 (Prüf-Agent, 17 Befunde):
+| # | Befund | Lösung |
+|---|---|---|
+| F1 | Enter in den 100 ms nach dem letzten Zeichen speicherte den vorigen Stand („Zahnarzt 15 Uh“) | Enter sucht immer zuerst mit dem aktuellen Text; Test tippt echt und drückt sofort Enter |
+| F2 | Vorschau blieb nach „/“, „@“, „?“, leer stehen – Enter speicherte alten Termin | Vorschau wird bei jedem Suchlauf zurückgesetzt |
+| F3 | Befehlsname mit Datum-Wort („Bibel heute lesen“) wurde Aufgabe, „Römer 8:28“ Termin | sehr guter Treffer (ganzer Name, Bibelstelle) geht vor; Bibelstelle unterdrückt die Vorschau |
+| S4 | Enter im leeren Feld führte „Häufig“ aus | leer/Hilfe: Enter tut nichts |
+| S5 | ohne Treffer legte Enter sofort eine Aufgabe an (auch während Worker noch suchte) | nie automatisch ohne „+“; Zeile „Aufgabe anlegen“ öffnet das Blatt zum Prüfen, erst wenn nichts mehr aussteht |
+| S6 | Strg K bei offener Suche: zweiter Verlaufseintrag | offene Suche wird nur fokussiert |
+| S7 | „Bearbeiten“ → Verbund-Blatt ohne Verlaufseintrag, Zurück verließ die Seite | Blatt hat eigenen Eintrag (`vp`); Hülle schließt es bei Zurück zuerst; neu geöffnet im selben Schritt bleibt offen |
+| S8 | Rückfall auf alte Palette ließ die kaputte Suche offen; verzögerte Fehler ohne Rückfall | `sxFail` schließt sauber und öffnet die alte Palette, auch aus dem verzögerten Lauf |
+| S9 | 4000 Termine + 1500 Aufgaben: 60–100 ms je Taste | Wortlisten einmal vorbereitet (`SGSuche.prep/scoreP`), Befehle je Öffnen zwischengespeichert – gemessen keine Aufgabe > 50 ms |
+| S10 | Bibeltext nur als Wortfolge, Teilwörter („img“) | alle Wörter, jeweils Wortanfang |
+| H11 | Tippfehler-Fehltreffer („liebe“ → „Liegen“, „schule“ → „Schulter“) | unscharf nur im Titel, erster Buchstabe muss stimmen, unscharfe Treffer nur, wenn es nichts Genaues gibt |
+| H12 | „Joh 3,99“ angenommen, „Jud 5“ nicht, „am 5“ = Amos | Verse je Kapitel geprüft, Bücher mit einem Kapitel lesen die Zahl als Vers, Kurzformen wie „am/mi/ex“ klein nur mit Vers |
+| H13 | Stelle geöffnet, Vers nicht markiert | Vers markiert und hingescrollt (ohne scrollIntoView) |
+| H14 | Rollen falsch (option mit Knöpfen, combobox ohne activedescendant), Fokus nach Schließen weg, Hintergrund bedienbar | einfache Knopfliste mit Gruppen-Namen, Filter als Umschalter (aria-pressed), Fokus zurück auf die Lupe, Hintergrund inert |
+| H15 | „Häufig“ zählte nach wechselndem Titel | feste Schlüssel (glas, cloud, erinnern) |
+| H16 | Formular-Hinweis „Wiederholung im großen Kalender ändern“ veraltet; Serienende ging bei neuem Rhythmus verloren | Text entfernt, Serienende bleibt |
+| H17 | Datenänderung bei offener Suche zeigte alten Stand; Auswahl sprang | neu zeichnen nach Änderung, Auswahl über den Schlüssel gehalten |
+Nachtest nach den Befunden:
+| Fehler | Ursache | Lösung |
+|---|---|---|
+| „+ Eintrag › Termin“ und „Bearbeiten“ öffneten das Terminblatt, es ging sofort wieder zu | das Blatt der Hülle schließt mit `history.back()` (kommt später an); das neue Verbund-Blatt (S7) war dann schon offen und wurde vom späten Zurück geschlossen | `closeSheet(false, danach)`: das Nächste öffnet erst, wenn der Verlaufsschritt angekommen ist; die Hülle schließt das Verbund-Blatt nur, wenn dessen Eintrag verlassen wurde |
+| Test „Maskierung“ rot nach Mitternacht | Test rechnete „heute“ in UTC (`toISOString`), die App in Ortszeit – zwischen 0 und 2 Uhr verschiedene Tage | Test nimmt das Ortsdatum |
+| Bahnplan-Test: Ladefehler in der Konsole beim Schritt „ohne Netz“ | Test brach nur die Anfragen ab, der Browser war „online“ – die App fragte und der Browser meldete die Fehler | App fragt Wikipedia ohne Netz gar nicht erst; Test schaltet wirklich offline |
 
 ## 3.5.0 – erste veröffentlichte Android-App
 

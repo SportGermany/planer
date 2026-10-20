@@ -779,10 +779,17 @@
     mount();
     var d = date ? parse(date) : new Date();
     state.sel = iso(d); state.month = new Date(d.getFullYear(), d.getMonth(), 1);
+    if (!state.open && !EMBED) { try { history.pushState(Object.assign({}, history.state || {}, { vp: 1 }), "", location.hash); } catch (e) {} }
     state.edit = null; state.tab = tab || "cal"; state.open = true;
     render();
   }
-  function close() { state.open = false; state.edit = null; render(); }
+  // Das Blatt hat einen eigenen Verlaufseintrag: Android-Zurück schließt es zuerst (die Hülle fragt panelOpen/closePanel)
+  function close(fromPop) {
+    var was = state.open; state.open = false; state.edit = null; render();
+    if (was && !fromPop && history.state && history.state.vp) history.back();
+  }
+  // nur schließen, wenn der eigene Eintrag verlassen wurde (wurde das Blatt in diesem Schritt neu geöffnet, steht schon wieder vp)
+  window.addEventListener("popstate", function () { if (state.open && !(history.state && history.state.vp)) close(true); });
 
   function render(bg) {
     if (!root) return;
@@ -1100,7 +1107,7 @@
     h += "<label>Notiz</label><textarea name='note' maxlength='1000'>" + esc(e.note || "") + "</textarea>";
     h += "<label>Farbe</label><select name='color'><option value=''>Farbe der App</option>" +
       COLORS.map(function (c, i) { return "<option value='" + c + "'" + (e.color === c ? " selected" : "") + ">" + CNAMES[i] + "</option>"; }).join("") + "</select>";
-    if (!isNew) h += "<div class='m' style='margin-top:10px'>Angelegt in „" + esc(e.app) + "“" + (e.rep && e.rep.f ? " · wiederholt sich – Wiederholung im großen Kalender ändern" : "") + "</div>";
+    if (!isNew) h += "<div class='m' style='margin-top:10px'>Angelegt in „" + esc(e.app) + "“</div>";
     h += "<div class='act'>" + (isNew ? "" : "<button class='b d' data-a='del'>Löschen</button>") + "<span class='sp'></span><button class='b' data-a='back'>Abbrechen</button><button class='b p' data-a='save'>Speichern</button></div>";
     return h;
   }
@@ -1167,7 +1174,7 @@
       if (!v.title) { box.querySelector("[name=title]").focus(); return; }
       if (!/^\d{4}-\d{2}-\d{2}$/.test(v.date)) { box.querySelector("[name=date]").focus(); return; }
       var rp = box.querySelector("[name=rep]"), rv = rp ? rp.value : "", old = state.edit.rep || null;
-      v.rep = rv ? Object.assign({}, old && old.f === rv ? old : {}, { f: rv }) : null;
+      v.rep = rv ? Object.assign({}, old || {}, { f: rv }) : null;   // Ende der Serie (until) bleibt auch bei neuem Rhythmus
       if (state.edit.id) api.update(state.edit.id, v); else { var ne = api.add(v); if (ne && v.rep) api.update(ne.id, { rep: v.rep }); }
       state.sel = v.date; var d = parse(v.date); state.month = new Date(d.getFullYear(), d.getMonth(), 1);
       state.edit = null;
@@ -1789,6 +1796,8 @@
   api.setPalette = function (fn) { PAL_OVERRIDE = fn; };
   // für die Suche der Hülle: „App installieren“ (Browser), auch ohne Installations-Ereignis mit Anleitung
   api.install = function () { installNow(); };
+  api.panelOpen = function () { return !!state.open; };
+  api.closePanel = function (fromPop) { close(fromPop); };
   api.installed = function () { return standalone(); };
   api.weekPlan = function (view, mon) { if (EMBED) { try { return window.top.SharedCalendar.weekPlan(view, mon); } catch (e) {} } openWeekPlan(view, mon); };
   api.weekPlanned = function (mon) { return wpCfg().planned[mondayOf(mon)] || 0; };

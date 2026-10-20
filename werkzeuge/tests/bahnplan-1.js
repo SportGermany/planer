@@ -91,10 +91,11 @@ const U = 'http://localhost:8765';
     if (sz === 'p') { await p.emulateMedia({ media: 'print' }); await p.pdf({ path: 'bahnplan-druck.pdf', format: 'A4', printBackground: true }); await p.screenshot({ path: 'w-print.png', fullPage: true }); await p.emulateMedia({ media: 'screen' }); await p.locator('[data-popt=empty]').click(); }
     console.log(sz, 'Überlauf:', await p.evaluate(w => innerWidth - w + document.documentElement.scrollWidth - innerWidth, w));
     // eigene Bahn ohne Netz
-    await ctx.unroute(/wikipedia\.org|wikimedia\.org/); await mock(ctx, false);
+    await ctx.unroute(/wikipedia\.org|wikimedia\.org/); await mock(ctx, false); await ctx.setOffline(true);
     await p.locator('.tabs [data-v=bahnen]').click(); await p.locator('[data-a=add]').first().click();
     await p.locator('#cuName').fill('Naturbahn Test'); await p.locator('[data-a=custom]').click(); await p.waitForTimeout(800);
     console.log(sz, 'ohne Netz:', (await p.locator('#wikiRes').textContent()).slice(0, 50));
+    await ctx.setOffline(false);
     await p.locator('#sheetPane [data-a=close]').click(); await p.waitForTimeout(200);
     await p.locator('#imgIn').setInputFiles(require('os').tmpdir() + '/fakemap.png'); await p.waitForTimeout(800);
     console.log(sz, 'eigenes Bild:', await p.evaluate(() => [track().map.src, !!document.querySelector('.placebar')]).then(JSON.stringify));

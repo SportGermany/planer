@@ -65,5 +65,26 @@ t('Amos gültig', ref('Am 5,24'), 'Amos 5,24');
 t('Vers rückwärts', ref('Joh 3,16-10'), null);
 t('Mose ohne Zahl', ref('Mose 1'), null);
 t('Text drumherum', ref('lies Joh 3,16'), null);
+// Prüfbefunde Phase 6
+// unscharfe Treffer bleiben möglich, sind aber markiert – die Suche zeigt sie nur, wenn es nichts Genaues gibt
+t('liebe/Liegen nur unscharf', S.scoreP(S.words('liebe'), S.prep('Quadrizeps im Liegen')).fz, true);
+t('Fehltreffer laufen/kaufen', hit('laufen', 'Milch kaufen'), false);
+t('atmen/Athen nur unscharf', S.scoreP(S.words('atmen'), S.prep('Reise nach Athen')).fz, true);
+t('kein Tippfehler im Zusatztext', hit('strecke', 'Rodeln', 'strecken'), true);
+t('Tippfehler nicht im Zusatztext', hit('strekce', 'Rodeln', 'strecke'), false);
+t('unscharf markiert', S.scoreP(S.words('zahnartz'), S.prep('Zahnarzt')).fz, true);
+t('genau nicht unscharf', S.scoreP(S.words('zahn'), S.prep('Zahnarzt')).fz, false);
+t('Joh 3,99', ref('Joh 3,99'), null);
+t('Joh 3,36 letzter Vers', ref('Joh 3,36'), 'Johannes 3,36');
+t('Jud 5', ref('Jud 5'), 'Judas 1,5');
+t('Judas 1,5', ref('Judas 1,5'), 'Judas 1,5');
+t('Obadja 21 als Vers', ref('Obadja 21'), 'Obadja 1,21');
+t('am 5 klein', ref('am 5'), null);
+t('Am 5 groß', ref('Am 5'), 'Amos 5');
+t('mi 3 klein', ref('mi 3'), null);
+t('ex 3 klein', ref('ex 3'), null);
+t('ex 3,14 mit Vers', ref('ex 3,14'), '2. Mose 3,14');
+t('ps 23 klein', ref('ps 23'), 'Psalm 23');
+t('Bereich gekappt', ref('Ps 23,1-99'), 'Psalm 23,1–6');
 console.log(bad ? `${ok}/${ok + bad} Kern-Tests grün – FEHLER` : `${ok}/${ok} Kern-Tests grün`);
 process.exit(bad ? 1 : 0);
