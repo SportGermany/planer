@@ -5,8 +5,7 @@
   "android": {
     "backgroundColor": "#131313",
     "allowMixedContent": false,
-    "captureInput": false,
-    "webContentsDebuggingEnabled": false
+    "captureInput": false
   },
   "plugins": {
     "SystemBars": {
@@ -14,6 +13,7 @@
       "style": "DARK"
     },
     "LocalNotifications": {
+      "smallIcon": "ic_stat_planer",
       "iconColor": "#529cca"
     }
   },

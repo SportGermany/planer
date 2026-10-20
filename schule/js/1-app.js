@@ -191,7 +191,21 @@ let EVI = null;
 function persist() {
   EVI = null;
   try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { toast('Speichern nicht möglich – Browser-Speicher blockiert?'); }
+  clearTimeout(persist.t); persist.t = setTimeout(publishLessons, 800);
 }
+// Stundenplan für den Handykalender der Android-App: Schulstunden der nächsten Monate vorrechnen
+// (mit Ferien, Feiertagen und A/B-Woche – genau wie hier angezeigt). Liest der Verbund aus sg-stundenplan-v1.
+function publishLessons() {
+  try {
+    const from = addDays(todayStr(), -14), to = addDays(todayStr(), 180), out = [];
+    for (let d = from; d <= to; d = addDays(d, 1)) {
+      if (!isSchoolDay(d)) continue;
+      lessonsOn(d).forEach(l => { const p = period(l.period); if (!p) return; const s = subj(l.subject); out.push([d, p.s, p.e, s.name || s.short || 'Unterricht', l.room || '', l.period]); });
+    }
+    localStorage.setItem('sg-stundenplan-v1', JSON.stringify({ at: Date.now(), from, to, l: out }));
+  } catch (e) {}
+}
+setTimeout(publishLessons, 1500);
 function save() { persist(); local.dirty = true; saveLocal(); Sync.schedule(); scheduleReminders(); }
 function upsert(coll, item) {
   item.u = Date.now(); delete db.deleted[item.id];

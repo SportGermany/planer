@@ -25,6 +25,9 @@ jobs:
   apk:
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    outputs:
+      bauen: ${{ steps.ver.outputs.bauen }}
+      ver: ${{ steps.ver.outputs.ver }}
     env:
       APK_PASSWORT: ${{ secrets.APK_PASSWORT }}
       GH_TOKEN: ${{ github.token }}
@@ -77,12 +80,21 @@ jobs:
         working-directory: werkzeuge/apk/android
         run: |
           chmod +x gradlew
-          if [ -n "$PLANER_KEYSTORE" ]; then TASK=assembleRelease; else TASK=assembleDebug; echo "::warning::Secret APK_PASSWORT fehlt – es wird nur eine Test-APK gebaut (kein Release)."; fi
-          ./gradlew "$TASK" -PplanerVersion=${{ steps.ver.outputs.ver }} --no-daemon --stacktrace
-          mkdir -p "$RUNNER_TEMP/out"
-          if [ "$TASK" = assembleRelease ]; then cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/out/planer-${{ steps.ver.outputs.ver }}.apk";
+          TASKS=assembleDebug
+          if [ -n "$PLANER_KEYSTORE" ]; then TASKS="assembleDebug assembleRelease"; else echo "::warning::Secret APK_PASSWORT fehlt – es wird nur eine Test-APK gebaut (kein Release)."; fi
+          ./gradlew $TASKS -PplanerVersion=${{ steps.ver.outputs.ver }} --no-daemon --stacktrace
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/test"
+          cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/test/planer-test.apk"
+          if [ -n "$PLANER_KEYSTORE" ]; then cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/out/planer-${{ steps.ver.outputs.ver }}.apk";
           else cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/out/planer-${{ steps.ver.outputs.ver }}-test.apk"; fi
-          ls -la "$RUNNER_TEMP/out"
+          ls -la "$RUNNER_TEMP/out" "$RUNNER_TEMP/test"
+
+      - uses: actions/upload-artifact@v4
+        if: steps.ver.outputs.bauen == 'ja'
+        with:
+          name: planer-test-apk
+          path: ${{ runner.temp }}/test/planer-test.apk
+          retention-days: 7
 
       - name: Signatur prüfen
         if: steps.ver.outputs.bauen == 'ja' && env.PLANER_KEYSTORE != ''
@@ -93,14 +105,72 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: steps.ver.outputs.bauen == 'ja'
         with:
-          name: planer-apk-${{ steps.ver.outputs.ver }}
+          name: planer-apk
           path: ${{ runner.temp }}/out/*.apk
           retention-days: 30
 
-      - name: Release veröffentlichen
-        if: steps.ver.outputs.bauen == 'ja' && env.PLANER_KEYSTORE != ''
+
+  # Die echte App im Android-Emulator: Start, Leiste, alle Bereiche, Handykalender, Erinnerungen (werkzeuge/tests/emulator.js)
+  emulator:
+    needs: apk
+    if: needs.apk.outputs.bauen == 'ja'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: planer-test-apk
+          path: test
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Playwright (nur für adb/WebView, ohne Browser)
+        run: npm install --no-save --no-audit --no-fund playwright@1.63.0
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      - name: KVM freischalten
         run: |
-          VER=${{ steps.ver.outputs.ver }}
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Emulator starten und testen
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -timezone Europe/Berlin
+          script: |
+            adb install -r test/planer-test.apk
+            OUT=emu-out node werkzeuge/tests/emulator.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: emulator-ergebnis
+          path: emu-out
+          retention-days: 14
+
+  # Release erst, wenn der Emulator-Test bestanden ist
+  release:
+    needs: [apk, emulator]
+    if: needs.apk.outputs.bauen == 'ja'
+    runs-on: ubuntu-latest
+    env:
+      APK_PASSWORT: ${{ secrets.APK_PASSWORT }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: planer-apk
+          path: out
+      - name: Release veröffentlichen
+        if: env.APK_PASSWORT != ''
+        run: |
+          VER=${{ needs.apk.outputs.ver }}
           gh release delete "v$VER" --yes --cleanup-tag >/dev/null 2>&1 || true
           cat > "$RUNNER_TEMP/notes.md" <<NOTES
           Android-App **Planer $VER**
@@ -109,4 +179,4 @@ jobs:
           Beim ersten Mal fragt Android, ob Chrome bzw. „Eigene Dateien“ Apps installieren darf – erlauben.
           **Update:** einfach über die alte App installieren, die Daten bleiben. In der App: Mehr › Version › „Neue Version von GitHub holen“.
           NOTES
-          gh release create "v$VER" "$RUNNER_TEMP/out/planer-$VER.apk" --target "$GITHUB_SHA" --title "Planer $VER" --notes-file "$RUNNER_TEMP/notes.md"
+          gh release create "v$VER" "out/planer-$VER.apk" --target "$GITHUB_SHA" --title "Planer $VER" --notes-file "$RUNNER_TEMP/notes.md"

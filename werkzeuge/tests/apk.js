@@ -49,11 +49,12 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
     const img = await idb('bahnplan', 'img', 'map-test'), pdf = await idb('lernplan-dateien', 'files', 'doc1');
     const inbox = await new Promise(res => { const r = indexedDB.open('lernplan-dateien'); r.onsuccess = () => res(r.result.objectStoreNames.contains('inbox')); });
     return { ev: SharedCalendar.list().some(e => e.title === 'Rodeltraining'), note: SharedCalendar.notes.list().some(x => x.text === 'Notiz vor dem Umzug'),
-      img: img instanceof Blob && img.size === 7 && img.type === 'image/png', pdf: pdf instanceof Blob && pdf.name === 'Arbeitsblatt.pdf', inbox, flag: !!localStorage.getItem('sg-umzug-v1'), sheet: document.getElementById('sheet').classList.contains('on') };
+      img: img instanceof Blob && img.size === 7 && img.type === 'image/png', pdf: pdf instanceof Blob && pdf.name === 'Arbeitsblatt.pdf', inbox, flag: !!localStorage.getItem('sg-umzug-v1'), };
   });
   ok(got.ev && got.note && got.flag, 'Umzug: Termine und Notizen da');
   ok(got.img && got.pdf && got.inbox, 'Umzug: Bahnplan-Bild und Schul-Datei da, Ablage vollständig');
-  ok(!got.sheet, 'Nach dem Umzug kein Willkommen mehr');
+  ok(/Fast fertig/.test(await p.textContent('#sheet')), 'Nach dem Umzug: Handykalender und Erinnerungen anbieten (statt Willkommen)');
+  await p.click('#sheet [data-s=later]'); await p.waitForTimeout(300);
   // Seiten laufen mit den übernommenen Daten
   await p.evaluate(() => { location.hash = 'schule'; }); await p.waitForTimeout(2500);
   ok(await p.evaluate(() => /Mathematik|Schulaufgabe|Vokabeln/.test(document.querySelector('#stage iframe.on').contentDocument.body.innerText)), 'Schule zeigt die übernommenen Daten');
@@ -79,6 +80,62 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
   ok(/9\.9\.9|Download/.test(sn) && nav.some(u => /planer-9\.9\.9\.apk$/.test(u)), 'Update: neue Version auf GitHub gefunden, APK-Download geöffnet (' + sn.slice(0, 60) + ' | ' + nav.join(',') + ')');
   ok(await p.isVisible('#n-mehr [data-m=umzugin]') && !(await p.isVisible('#n-mehr [data-m=umzug]')), 'APK: Mehr › Daten aus Chrome übernehmen');
   ok(!errs.length, 'Keine Fehler ' + errs.join(' | '));
+
+  // 6) Handykalender und Erinnerungen (Android-Schnittstellen nachgestellt): „Neu anfangen“ → „Beides einschalten“
+  const FAKE2 = () => {
+    const T = window.top; if (T !== window) { window.Capacitor = T.Capacitor; return; }
+    const day = n => { const d = new Date(); d.setDate(d.getDate() + n); d.setHours(10, 0, 0, 0); return d.getTime(); };
+    const st = window.__sim = { cal: [], perm: 'prompt', own: -1, phone: [{ eventId: 501, calendarId: 1, title: 'Arzttermin', begin: day(2), end: day(2) + 3600e3, allDay: false, calendar: 'Mein Kalender', color: '#33AA55', recurring: false }], notes: [], removed: [], updated: [] };
+    window.Capacitor = { isNativePlatform: () => true, getPlatform: () => 'android', Plugins: {
+      Filesystem: { writeFile: o => Promise.resolve({ uri: 'file:///cache/' + o.path }) }, Share: { share: () => Promise.resolve({}) },
+      PlanerKalender: {
+        request: () => { st.perm = 'granted'; return Promise.resolve({ permission: 'granted', calendarId: st.own }); },
+        status: () => Promise.resolve({ permission: st.perm, calendarId: st.own }),
+        ensure: () => { if (st.own < 0) st.own = 77; return Promise.resolve({ calendarId: st.own }); },
+        calendars: () => Promise.resolve({ calendars: [{ id: 1, name: 'Mein Kalender', account: 'My calendar', color: '#33AA55', visible: true, own: false }, { id: 77, name: 'Planer', own: true }] }),
+        instances: () => Promise.resolve({ events: st.phone.slice() }),
+        write: o => { const before = st.cal.length; st.cal = o.events.slice(); return Promise.resolve({ added: o.events.length, changed: 0, removed: 0, calendarId: o.calendarId }); },
+        update: o => { st.updated.push(o); const e = st.phone.find(x => x.eventId === o.eventId); if (e && o.title) e.title = o.title; return Promise.resolve({ updated: 1 }); },
+        remove: o => { st.removed.push(o.eventId); st.phone = st.phone.filter(x => x.eventId !== o.eventId); return Promise.resolve({ removed: 1 }); } },
+      LocalNotifications: {
+        requestPermissions: () => Promise.resolve({ display: 'granted' }), checkExactNotificationSetting: () => Promise.resolve({ exact_alarm: 'granted' }),
+        getPending: () => Promise.resolve({ notifications: st.notes.map(n => ({ id: n.id })) }),
+        cancel: o => { const ids = o.notifications.map(n => n.id); st.notes = st.notes.filter(n => !ids.includes(n.id)); return Promise.resolve(); },
+        schedule: o => { st.notes = st.notes.concat(o.notifications); return Promise.resolve({ notifications: o.notifications.map(n => ({ id: n.id })) }); },
+        addListener: () => ({ remove() {} }) } } };
+  };
+  const n2 = await b.newContext(Object.assign({ timezoneId: 'Europe/Berlin' }, PH)); await n2.addInitScript(SEED); await n2.addInitScript(FAKE2);
+  const q = await n2.newPage(); const e2 = []; q.on('pageerror', e => e2.push(e.message));
+  await q.goto(APP); await q.waitForTimeout(2000);
+  await q.evaluate(() => { const d = new Date(); d.setDate(d.getDate() + 1); const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    SharedCalendar.add({ title: 'Krafttraining', date: k, time: '17:00', end: '18:00', app: 'Training', remind: 15 }); });
+  await q.click('#sheet [data-s=fresh]'); await q.waitForTimeout(400);
+  ok(/Fast fertig/.test(await q.textContent('#sheet')), 'Nach „Neu anfangen“: Handykalender und Erinnerungen anbieten');
+  // Stundenplan vorrechnen lassen (Schule einmal laden)
+  await q.click('#sheet [data-s=both]'); await q.waitForTimeout(500);
+  await q.evaluate(() => { location.hash = 'schule'; }); await q.waitForTimeout(3500);
+  await q.evaluate(() => SharedCalendar.handy.sync(true)); await q.waitForTimeout(300);
+  const sim = await q.evaluate(() => window.__sim);
+  const titles = sim.cal.map(e => e.title);
+  ok(titles.includes('Rodeltraining') && titles.includes('Krafttraining') && titles.some(t => /Schulaufgabe|Mathematik/.test(t)), 'Ins Handy: Termine, Wochenplanung, Schule (' + sim.cal.length + ' Einträge)');
+  ok(sim.cal.some(e => /Stundenplan/.test(e.description)), 'Ins Handy: Stundenplan (aus der Schul-Seite, mit Ferien/Feiertagen)');
+  ok(sim.cal.some(e => /Langsames Atmen|Morgenmessung/.test(e.title)), 'Ins Handy: Atemübungen');
+  ok(sim.cal.every(e => e.key && e.h && e.start < e.end) && new Set(sim.cal.map(e => e.key)).size === sim.cal.length, 'Jeder Eintrag mit eindeutigem Schlüssel und Prüfsumme');
+  ok(sim.cal.some(e => e.title === 'Krafttraining' && e.reminder === 15), 'Erinnerung des Termins geht mit ins Handy');
+  await q.evaluate(() => { location.hash = 'kalender'; }); await q.waitForTimeout(600);
+  const arzt = await q.evaluate(() => SharedCalendar.allItems(new Date().toISOString().slice(0, 10), '2099-01-01').find(e => e.title === 'Arzttermin'));
+  ok(arzt && arzt.app === 'Handy' && arzt.phone && arzt.phone.eventId === 501, 'Aus dem Handy: Termin erscheint in der App');
+  ok(sim.notes.some(n => /Krafttraining – jetzt starten/.test(n.title) && n.extra.go === 'training/heute') && sim.notes.some(n => n.title === 'Krafttraining' && /In 15 Min/.test(n.body)), 'Erinnerungen geplant: 15 Min. vorher und „jetzt starten“ (' + sim.notes.length + ')');
+  // Handytermin in der App ändern und löschen
+  const ok2 = await q.evaluate(async () => { await SharedCalendar.handy.update(501, { title: 'Arzttermin Dr. Weber' }); const a = SharedCalendar.allItems('2000-01-01', '2099-01-01').some(e => e.title === 'Arzttermin Dr. Weber');
+    await SharedCalendar.handy.remove(501); const b = !SharedCalendar.allItems('2000-01-01', '2099-01-01').some(e => /Arzttermin/.test(e.title)); return [a, b, window.__sim.removed]; });
+  ok(ok2[0] && ok2[1] && ok2[2].includes(501), 'Handytermin aus der App ändern und löschen');
+  // Mehr: Handykalender-Blatt in der APK
+  await q.evaluate(() => { location.hash = 'mehr'; }); await q.waitForTimeout(600);
+  await q.click('#n-mehr [data-m=handy]'); await q.waitForTimeout(300);
+  ok(/Mein Kalender/.test(await q.textContent('#sheet')) && await q.isVisible('#sheet [data-h=stunden]'), 'Mehr › Handykalender: Auswahl und Kalenderliste');
+  await q.click('#sheet [data-s=now]').catch(() => {}); await q.waitForTimeout(300);
+  ok(!e2.length, 'Keine Fehler ' + e2.join(' | '));
   await b.close();
   console.log(bad ? bad + ' FEHLER' : 'APK-Modus grün'); process.exit(bad ? 1 : 0);
 })();

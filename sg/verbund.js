@@ -173,8 +173,8 @@
   }
   function addMin(t, m) { var p = t.split(":"), x = Math.min(1439, +p[0] * 60 + +p[1] + m); return pad(Math.floor(x / 60)) + ":" + pad(x % 60); }
   function where(appId, hash) { var a = APPS.find(function (x) { return x.id === appId; }); return { link: appUrl(a) + hash, linkApp: appId, linkHash: hash }; }
-  function externalItems(from, to) {
-    var out = [];
+  function externalItems(from, to, noPhone) {
+    var out = noPhone ? [] : phoneItems(from, to);
     var db = jkey("schulkalender-bayern-v1");
     if (db) {
       var subj = function (id) { return (db.subjects || []).find(function (x) { return x.id === id; }) || {}; };
@@ -1941,6 +1941,189 @@
       return res;
     }
   };
+  /* ---------- Handykalender in der Android-App: echter Abgleich über den Kalender des Handys ----------
+   * Plugin „PlanerKalender“ (werkzeuge/apk/…/PlanerKalenderPlugin.java). App → Handy: eigener Kalender „Planer“, jeder Eintrag mit
+   * Schlüssel (id@datum) – nur Geändertes wird geschrieben, Entferntes gelöscht. Handy → App: Termine aller sichtbaren Kalender
+   * (außer „Planer“) landen im Zwischenspeicher HKEY und erscheinen überall im Kalender (app "Handy"). Nur in der Hülle (oberstes Fenster). */
+  var HKEY = "sg-handy-v1", HDAYS = [-30, 180];
+  function hState() {
+    var s = jkey(HKEY) || {};
+    s.opt = Object.assign({ termine: true, schule: true, stunden: true, atmung: true }, s.opt || {});
+    s.off = s.off || {}; s.cache = s.cache || { events: [] };
+    return s;
+  }
+  function hSave(s) { try { localStorage.setItem(HKEY, JSON.stringify(s)); } catch (e) {} }
+  function HP() { try { var C = window.top.Capacitor; return C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.PlanerKalender || null; } catch (e) { return null; } }
+  function dayMs(k, t) { var d = parse(k); if (t) { var p = t.split(":"); d.setHours(+p[0], +p[1], 0, 0); } return d.getTime(); }
+  function utcDay(k) { var p = k.split("-"); return Date.UTC(+p[0], +p[1] - 1, +p[2]); }
+  function strHash(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+  // Was die App ins Handy schreibt (einzelne Vorkommen im Zeitraum)
+  function hOut(opt) {
+    var from = iso(new Date(Date.now() + HDAYS[0] * 864e5)), to = iso(new Date(Date.now() + HDAYS[1] * 864e5)), out = [];
+    function add(x, desc) {
+      var ev = { key: (x.id || x.title) + "@" + x.date, title: x.title, description: desc };
+      if (x.time) { ev.start = dayMs(x.date, x.time); ev.end = x.end && x.end > x.time ? dayMs(x.date, x.end) : ev.start + 3600e3; ev.allDay = false; }
+      else { ev.start = utcDay(x.date); ev.end = ev.start + 864e5; ev.allDay = true; }
+      ev.reminder = x.remind == null || x.remind === "" ? -1 : +x.remind;
+      ev.h = strHash([ev.title, ev.start, ev.end, ev.description, ev.reminder].join("|"));
+      out.push(ev);
+    }
+    if (opt.termine) occurrences(from, to).forEach(function (e) { if (e.app !== "Handy") add(e, (e.note ? e.note + "\n" : "") + "Planer · " + e.app); });
+    var ext = []; try { ext = externalItems(from, to, true); } catch (x) {}
+    ext.forEach(function (x) {
+      if ((x.app === "Lernplan" && opt.schule) || (x.app === "Atmung" && opt.atmung)) add(x, (x.note ? x.note + "\n" : "") + "Planer · " + (x.app === "Lernplan" ? "Schule" : x.app));
+    });
+    if (opt.stunden) {
+      var sp = jkey("sg-stundenplan-v1");
+      if (sp && sp.l) sp.l.forEach(function (l) {
+        if (l[0] < from || l[0] > to) return;
+        add({ id: "st-" + l[5], title: l[3] + (l[4] ? " · " + l[4] : ""), date: l[0], time: l[1], end: l[2] }, "Planer · Stundenplan, " + l[5] + ". Stunde");
+      });
+    }
+    return out;
+  }
+  function phoneItems(from, to) {
+    var s = jkey(HKEY);
+    if (!s || !s.on || !s.cache || !HP()) return [];
+    var off = s.off || {};
+    return (s.cache.events || []).filter(function (e) { return e.date >= from && e.date <= to && !off[e.cal]; });
+  }
+  var hBusy = false, hAgain = false, hLastOut = "";
+  function hSync(force) {
+    var P = HP(), s = hState();
+    if (!P || !s.on || EMBED) return Promise.resolve(null);
+    if (hBusy) { hAgain = true; return Promise.resolve(null); }
+    hBusy = true;
+    var res = { added: 0, changed: 0, removed: 0, read: 0 };
+    return P.ensure({}).then(function (r) {
+      s.calId = r.calendarId;
+      var evs = hOut(s.opt), sig = strHash(JSON.stringify(s.opt) + evs.map(function (e) { return e.key + e.h; }).join(","));
+      if (!force && sig === hLastOut) return null;
+      return P.write({ calendarId: s.calId, events: evs, prune: true }).then(function (w) { hLastOut = sig; res.added = w.added; res.changed = w.changed; res.removed = w.removed; });
+    }).then(function () {
+      var from = Date.now() + HDAYS[0] * 864e5, to = Date.now() + HDAYS[1] * 864e5;
+      return Promise.all([P.instances({ from: from, to: to }), P.calendars({})]);
+    }).then(function (x) {
+      var list = (x[0].events || []).map(function (e) {
+        var b = new Date(e.begin), en = new Date(e.end), date, time = "", end = "";
+        if (e.allDay) { date = new Date(e.begin + new Date(e.begin).getTimezoneOffset() * 60000); date = iso(date); }
+        else { date = iso(b); time = pad(b.getHours()) + ":" + pad(b.getMinutes()); end = iso(en) === date ? pad(en.getHours()) + ":" + pad(en.getMinutes()) : ""; }
+        return { id: "hd-" + e.eventId + "-" + e.begin, title: e.title || "(ohne Titel)", date: date, time: time, end: end, app: "Handy", color: e.color, cal: String(e.calendarId), calName: e.calendar,
+          note: [e.location ? "Ort: " + e.location : "", e.description || ""].filter(Boolean).join("\n"), ro: "Handykalender", phone: { eventId: e.eventId, recurring: !!e.recurring, begin: e.begin, end: e.end, allDay: !!e.allDay } };
+      });
+      res.read = list.length;
+      var cals = (x[1].calendars || []).filter(function (c) { return !c.own; }).map(function (c) { return { id: String(c.id), name: c.name, account: c.account, color: c.color, visible: c.visible }; });
+      var before = JSON.stringify(s.cache.events || []);
+      s.cache = { at: Date.now(), events: list }; s.cals = cals; s.last = Date.now(); s.err = ""; s.lastRes = res;
+      hSave(s);
+      if (JSON.stringify(list) !== before) emit();
+      return res;
+    }).catch(function (e) {
+      s.err = String(e && (e.message || e.code) || e); hSave(s); return { error: s.err };
+    }).then(function (r) {
+      hBusy = false;
+      if (hAgain) { hAgain = false; setTimeout(function () { hSync(); }, 500); }
+      return r;
+    });
+  }
+  api.handy = {
+    available: function () { return !!HP(); },
+    state: hState,
+    // Abgleich einschalten: Zugriff erfragen, Kalender „Planer“ anlegen, abgleichen
+    enable: function () {
+      var P = HP(); if (!P) return Promise.resolve({ error: "nur in der Android-App" });
+      return P.request({}).then(function (r) {
+        if (r.permission !== "granted") return { error: "Zugriff auf den Kalender wurde nicht erlaubt" };
+        var s = hState(); s.on = true; hSave(s); return hSync(true);
+      });
+    },
+    disable: function () { var s = hState(); s.on = false; hSave(s); emit(); },
+    setOpt: function (k, v) { var s = hState(); s.opt[k] = !!v; hSave(s); return hSync(true); },
+    setCal: function (id, on) { var s = hState(); if (on) delete s.off[id]; else s.off[id] = 1; hSave(s); emit(); },
+    sync: hSync,
+    out: function () { return hOut(hState().opt); },
+    // Handytermin aus der App ändern/löschen
+    update: function (eventId, patch) { return HP().update(Object.assign({ eventId: eventId }, patch)).then(function () { return hSync(true); }); },
+    remove: function (eventId) { return HP().remove({ eventId: eventId }).then(function () { return hSync(true); }); }
+  };
+  // Abgleich: beim Start, beim Zurückkehren in die App und kurz nach jeder Änderung
+  if (!EMBED && HP()) {
+    setTimeout(function () { hSync(); }, 2500);
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) setTimeout(function () { hSync(); }, 800); });
+    var hT = null; api.onChange(function () { clearTimeout(hT); hT = setTimeout(function () { hSync(); }, 3000); });
+    window.addEventListener("storage", function (e) { if (e.key === "sg-stundenplan-v1" || e.key === "schulkalender-bayern-v1" || e.key === "pulsplan.v1") { clearTimeout(hT); hT = setTimeout(function () { hSync(); }, 3000); } });
+  }
+  /* ---------- Erinnerungen in der Android-App (echte Benachrichtigungen, auch bei geschlossener App) ----------
+   * Plugin LocalNotifications. Geplant werden die nächsten 14 Tage neu, sobald sich etwas ändert:
+   * Termine mit Erinnerung, Notizen mit Zeitpunkt und Erinnerung, geplante Trainings-/Mobility-Einheiten zur Startzeit.
+   * Antippen öffnet die passende Stelle in der Hülle (extra.go). Einstellungen in RKEY. Nur im obersten Fenster. */
+  var RKEY = "sg-erinnern-v1", RIDS = 9000;
+  function rState() { var s = jkey(RKEY) || {}; s.opt = Object.assign({ termine: true, training: true }, s.opt || {}); return s; }
+  function rSave(s) { try { localStorage.setItem(RKEY, JSON.stringify(s)); } catch (e) {} }
+  function LN() { try { var C = window.top.Capacitor; return C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.LocalNotifications || null; } catch (e) { return null; } }
+  function rId(key) { var h = 0; for (var i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0; return RIDS + Math.abs(h % 2000000000); }
+  function rPlan(opt) {
+    var now = Date.now(), from = iso(new Date()), to = iso(new Date(now + 14 * 864e5)), out = [];
+    function at(k, t) { var d = parse(k); var p = t.split(":"); d.setHours(+p[0], +p[1], 0, 0); return d.getTime(); }
+    occurrences(from, to).forEach(function (e) {
+      if (!e.time || e.app === "Handy") return;
+      var start = at(e.date, e.time), tr = /^(Training|Mobility|Rodeln)/.test(e.app || "");
+      if (opt.termine && e.remind != null && e.remind !== "") out.push({ key: "r-" + e.id + "@" + e.date, at: start - (+e.remind) * 60000, title: e.title, body: (+e.remind ? "In " + (+e.remind >= 60 ? (+e.remind / 60) + " Std." : (+e.remind) + " Min.") : "Jetzt") + " · " + e.time + " Uhr", go: tr ? (e.app === "Mobility" ? "mobility/mobility/heute" : "training/heute") : "kalender" });
+      if (opt.training && tr) out.push({ key: "t-" + e.id + "@" + e.date, at: start, title: e.title + " – jetzt starten", body: "Antippen, dann geht es los", go: e.app === "Mobility" ? "mobility/mobility/heute" : "training/heute" });
+    });
+    if (opt.termine) live("note").forEach(function (n) {
+      if (!n.at || n.done || !n.remind) return;
+      var t = new Date(n.at).getTime();
+      if (t > now && t < now + 14 * 864e5) out.push({ key: "n-" + n.id, at: t, title: "Notiz", body: n.text.split("\n")[0].slice(0, 120), go: "notizen" });
+    });
+    return out.filter(function (x) { return x.at > now + 5000; }).sort(function (a, b) { return a.at - b.at; }).slice(0, 60);
+  }
+  var rBusy = false, rLast = "";
+  function rSync(force) {
+    var L = LN(), s = rState();
+    if (!L || EMBED || !s.on) return Promise.resolve(null);
+    var plan = rPlan(s.opt), sig = JSON.stringify(plan);
+    if ((!force && sig === rLast) || rBusy) return Promise.resolve(null);
+    rBusy = true;
+    return L.getPending().then(function (p) {
+      var mine = (p.notifications || []).filter(function (n) { return n.id >= RIDS; }).map(function (n) { return { id: n.id }; });
+      return mine.length ? L.cancel({ notifications: mine }) : null;
+    }).then(function () {
+      if (!plan.length) return null;
+      return L.schedule({ notifications: plan.map(function (x) {
+        return { id: rId(x.key), title: x.title, body: x.body, schedule: { at: new Date(x.at), allowWhileIdle: true }, extra: { go: x.go }, smallIcon: "ic_stat_planer", iconColor: "#529cca" };
+      }) });
+    }).then(function () { rLast = sig; s.n = plan.length; s.last = Date.now(); s.err = ""; rSave(s); return { n: plan.length }; })
+      .catch(function (e) { s.err = String(e && e.message || e); rSave(s); return { error: s.err }; })
+      .then(function (r) { rBusy = false; return r; });
+  }
+  api.erinnern = {
+    available: function () { return !!LN(); },
+    state: rState,
+    enable: function () {
+      var L = LN(); if (!L) return Promise.resolve({ error: "nur in der Android-App" });
+      return L.requestPermissions().then(function (p) {
+        if (p.display !== "granted") return { error: "Benachrichtigungen wurden nicht erlaubt" };
+        var s = rState(); s.on = true; rSave(s);
+        return (L.checkExactNotificationSetting ? L.checkExactNotificationSetting() : Promise.resolve({ exact_alarm: "granted" })).catch(function () { return {}; }).then(function (x) {
+          return rSync(true).then(function (r) { return Object.assign({ exact: x && x.exact_alarm }, r); });
+        });
+      });
+    },
+    // Android 12+: „Wecker und Erinnerungen“ erlauben, damit Erinnerungen auf die Minute genau kommen
+    exactSettings: function () { var L = LN(); return L && L.changeExactNotificationSetting ? L.changeExactNotificationSetting() : Promise.resolve(null); },
+    disable: function () { var s = rState(); s.on = false; rSave(s); var L = LN(); if (L) L.getPending().then(function (p) { var m = (p.notifications || []).filter(function (n) { return n.id >= RIDS; }).map(function (n) { return { id: n.id }; }); if (m.length) L.cancel({ notifications: m }); }); },
+    setOpt: function (k, v) { var s = rState(); s.opt[k] = !!v; rSave(s); return rSync(true); },
+    plan: function () { return rPlan(rState().opt); },
+    sync: rSync
+  };
+  if (!EMBED && LN()) {
+    setTimeout(function () { rSync(); }, 3500);
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) setTimeout(function () { rSync(); }, 1200); });
+    var rT = null; api.onChange(function () { clearTimeout(rT); rT = setTimeout(function () { rSync(); }, 2500); });
+    // Benachrichtigung angetippt → passende Stelle öffnen
+    try { LN().addListener("localNotificationActionPerformed", function (a) { var g = a && a.notification && a.notification.extra && a.notification.extra.go; if (g) location.hash = g; }); } catch (e) {}
+  }
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && wp) closeWeekPlan(); else if (e.key === "Escape" && state.open) close(); });
   window.addEventListener("sg-theme", function () { if (root) render(true); });
   window.addEventListener("sg-theme-set", function () { schedulePush(); });

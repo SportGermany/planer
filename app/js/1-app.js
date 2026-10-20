@@ -370,8 +370,9 @@
   });
   // Eintrag antippen: Details und was man damit tun kann
   function evSheet(e) {
-    var a = area(e), A = AREA[a], own = !/^(lp|lc|pp|tb|ta|nt)-/.test(e.id || ""), d = parse(e.date);
+    var a = area(e), A = AREA[a], own = !/^(lp|lc|pp|tb|ta|nt|hd)-/.test(e.id || ""), d = parse(e.date);
     if (a === "notiz") return noteSheet(e.noteId);
+    if (e.phone) return handyEvSheet(e);
     var h = '<h3>' + esc(e.title) + '</h3><p class="s">' + WDL[d.getDay()] + ", " + d.getDate() + ". " + MO[d.getMonth()] + (e.time ? " · " + e.time + (e.end ? "–" + e.end : "") + " Uhr" : " · ganztägig") + " · " + esc(e.ro || A.label) + "</p>";
     if (e.note) h += '<p class="s" style="color:var(--ink);white-space:pre-wrap">' + esc(e.note) + "</p>";
     if (A.to) h += sRow("open", A.ic, a === "schule" ? "In Schule öffnen" : a === "atmung" ? "Atemübung öffnen" : a === "mobility" ? "Mobility starten" : "Training öffnen", "", A.c);
@@ -382,6 +383,36 @@
       if (act === "open") A.to(e);
       else if (act === "edit") C().editEvent(e.id, e.date);
       else if (act === "day") C().open(e.date);
+    });
+  }
+  // Termin aus dem Handykalender (nur Android-App): ändern oder löschen schreibt direkt in den Kalender des Handys
+  function handyEvSheet(e) {
+    var d = parse(e.date), H = C().handy;
+    sheet('<h3>' + esc(e.title) + '</h3><p class="s">' + WDL[d.getDay()] + ", " + d.getDate() + ". " + MO[d.getMonth()] + (e.time ? " · " + e.time + (e.end ? "–" + e.end : "") + " Uhr" : " · ganztägig") + " · Handy: " + esc(e.calName || "Kalender") + "</p>" +
+      (e.note ? '<p class="s" style="color:var(--ink);white-space:pre-wrap">' + esc(e.note) + "</p>" : "") +
+      sRow("edit", "edit", "Ändern", e.phone.recurring ? "Wiederholter Termin – gilt für alle Termine der Reihe" : "Titel, Tag, Uhrzeit", "var(--muted)") +
+      sRow("del", "trash", "Im Handy löschen", e.phone.recurring ? "Löscht die ganze Reihe" : "", "#e5484d"), function (act) {
+      if (act === "del") {
+        sheet('<h3>Termin löschen?</h3><p class="s">„' + esc(e.title) + '“ wird aus dem Kalender auf dem Handy gelöscht' + (e.phone.recurring ? " – mit allen Wiederholungen" : "") + '.</p><div class="btns"><button class="btn" data-s="no">Abbrechen</button><button class="btn p" data-s="yes">Löschen</button></div>', function (x) {
+          closeSheet(); if (x === "yes") H.remove(e.phone.eventId).then(function () { refresh(); snack("Im Handy gelöscht"); });
+        });
+      } else if (act === "edit") {
+        sheet('<h3>Termin ändern</h3><label class="f"><span>Titel</span><input type="text" id="hdt" value="' + esc(e.title) + '"></label>' +
+          '<label class="f"><span>Tag</span><input type="date" id="hdd" value="' + e.date + '"></label>' +
+          '<div style="display:flex;gap:8px;margin:0 16px"><label class="f" style="flex:1;margin:10px 0"><span>Von</span><input type="time" id="hds" value="' + (e.time || "") + '" style="width:100%;min-height:50px;border-radius:12px;border:1px solid var(--line);background:var(--bg);padding:12px;font-size:16px;color-scheme:dark"></label>' +
+          '<label class="f" style="flex:1;margin:10px 0"><span>Bis</span><input type="time" id="hde" value="' + (e.end || "") + '" style="width:100%;min-height:50px;border-radius:12px;border:1px solid var(--line);background:var(--bg);padding:12px;font-size:16px;color-scheme:dark"></label></div>' +
+          '<p class="s">Ohne Uhrzeit = ganztägig.</p><div class="btns"><button class="btn" data-s="no">Abbrechen</button><button class="btn p" data-s="ok">Speichern</button></div>', function (x) {
+          if (x !== "ok") return closeSheet();
+          var t = $("hdt").value.trim() || e.title, k = $("hdd").value || e.date, st = $("hds").value, en = $("hde").value, patch = { title: t };
+          if (st) {
+            var b = parse(k), f; b.setHours(+st.slice(0, 2), +st.slice(3, 5), 0, 0);
+            if (en && en > st) { f = parse(k); f.setHours(+en.slice(0, 2), +en.slice(3, 5), 0, 0); } else f = new Date(b.getTime() + 3600e3);
+            patch.start = b.getTime(); patch.end = f.getTime(); patch.allDay = false;
+          }
+          else { var p = k.split("-"), u = Date.UTC(+p[0], +p[1] - 1, +p[2]); patch.start = u; patch.end = u + 864e5; patch.allDay = true; }
+          closeSheet(); H.update(e.phone.eventId, patch).then(function () { calSel = k; refresh(); snack("Im Handy geändert"); });
+        });
+      }
     });
   }
   function sRow(act, ic, t, s, c) { return '<button class="row" data-s="' + act + '" style="--c:' + (c || "var(--acc)") + '"><span class="ic">' + ico(ic) + '</span><span class="tx"><b>' + esc(t) + "</b>" + (s ? "<small>" + esc(s) + "</small>" : "") + "</span></button>"; }
@@ -464,6 +495,7 @@
   function fmtDay(k) { var d = parse(k); return ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][d.getDay()] + " " + d.getDate() + "." + (d.getMonth() + 1) + "."; }
   function ago(t) { if (!t) return "noch nie"; var d = new Date(t); return (iso(d) === today() ? "heute" : fmtDay(iso(d))) + " " + pad(d.getHours()) + ":" + pad(d.getMinutes()); }
   function phoneSheet() {
+    if (C().handy && C().handy.available()) return handySheet();
     var c = C(), ph = c.phone, st = ph.state(), neu = ph.pending("neu"), alle = ph.pending("alle");
     sheet('<h3>Handykalender</h3><p class="s">Abgleich mit dem Kalender auf deinem Handy – ohne Konto, auch offline. Zuletzt ins Handy: ' + ago(st.last) + ' · aus dem Handy: ' + ago(st.lastIn) + '</p>' +
       '<div class="grp"><header><span>App → Handy</span></header><div class="cells">' +
@@ -484,6 +516,76 @@
     });
     Array.prototype.forEach.call(document.querySelectorAll("#sheet [data-o]"), function (x) { x.onchange = function () { ph.setOpt(x.dataset.o, x.checked); phoneSheet(); }; });
   }
+  // Android-App: echter Abgleich mit dem Kalender des Handys
+  function handySheet() {
+    var H = C().handy, s = H.state();
+    function chk(k, t, sub, on) { return '<label class="row" style="cursor:pointer"><span class="tx"><b>' + t + "</b>" + (sub ? "<small>" + sub + "</small>" : "") + '</span><input type="checkbox" ' + k + (on ? " checked" : "") + ' style="width:22px;height:22px"></label>'; }
+    if (!s.on) {
+      sheet('<h3>Handykalender</h3><p class="s">Die App gleicht sich mit dem Kalender auf deinem Handy ab – automatisch, in beide Richtungen, auch offline:</p>' +
+        '<p class="s">• Termine aus der App stehen im Handy in einem eigenen Kalender „Planer“ (ein- und ausblendbar, eigene Farbe).<br>• Termine aus deinen Handykalendern erscheinen in der App und lassen sich dort ändern oder löschen.</p>' +
+        '<p class="s">Android fragt gleich, ob die App auf den Kalender zugreifen darf.</p><div class="btns"><button class="btn p" data-s="on">Abgleich einschalten</button></div>' +
+        '<p class="s" style="margin-top:14px">Ohne Abgleich geht es weiter über Dateien: <a href="#" data-s="file" style="color:var(--acc)">Kalenderdatei öffnen</a></p>', function (act) {
+        if (act === "file") return pickFile();
+        if (act !== "on") return;
+        snack("Abgleich wird eingerichtet …");
+        H.enable().then(function (r) { if (r && r.error) snack(r.error); else { snack("Abgleich läuft – " + (r ? r.added + " Termine ins Handy, " + r.read + " aus dem Handy" : "fertig")); refresh(); } handySheet(); });
+      });
+      return;
+    }
+    var cals = s.cals || [], r = s.lastRes || {};
+    sheet('<h3>Handykalender</h3><p class="s">' + (s.err ? '<span style="color:#e5484d">Fehler: ' + esc(s.err) + "</span><br>" : "") + "Zuletzt abgeglichen: " + ago(s.last) + (s.last ? " · " + (s.cache.events || []).length + " Termine aus dem Handy" : "") + "</p>" +
+      '<div class="grp"><header><span>Ins Handy (Kalender „Planer“)</span></header><div class="cells">' +
+      chk('data-h="termine"', "Termine & Wochenplanung", "alles, was du in der App einträgst", s.opt.termine) +
+      chk('data-h="schule"', "Schule", "Prüfungen, Schultermine, Lehrgänge", s.opt.schule) +
+      chk('data-h="stunden"', "Stundenplan", "jede Schulstunde (ohne Ferien und Feiertage)", s.opt.stunden) +
+      chk('data-h="atmung"', "Atemübungen", "geplante Übungen aus Atmung & HRV", s.opt.atmung) + "</div></div>" +
+      (cals.length ? '<div class="grp"><header><span>Aus dem Handy anzeigen</span></header><div class="cells">' + cals.map(function (k) {
+        return chk('data-c="' + esc(k.id) + '"', '<i style="display:inline-block;width:10px;height:10px;border-radius:5px;background:' + esc(k.color) + ';margin-right:8px"></i>' + esc(k.name || "Kalender"), esc(k.account || ""), !s.off[k.id]);
+      }).join("") + "</div></div>" : "") +
+      '<div class="btns"><button class="btn" data-s="off">Abgleich aus</button><button class="btn p" data-s="now">Jetzt abgleichen</button></div>', function (act) {
+      if (act === "now") { snack("Gleiche ab …"); H.sync(true).then(function (x) { snack(x && x.error ? "Fehler: " + x.error : "Abgeglichen" + (x ? " – " + (x.added + x.changed) + " ins Handy, " + x.read + " aus dem Handy" : "")); refresh(); handySheet(); }); }
+      else if (act === "off") { H.disable(); refresh(); closeSheet(); snack("Abgleich aus – der Kalender „Planer“ bleibt im Handy, bis du ihn dort entfernst"); }
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("#sheet [data-h]"), function (x) { x.onchange = function () { H.setOpt(x.dataset.h, x.checked).then(function () { refresh(); }); }; });
+    Array.prototype.forEach.call(document.querySelectorAll("#sheet [data-c]"), function (x) { x.onchange = function () { H.setCal(x.dataset.c, x.checked); refresh(); }; });
+  }
+  // Android-App: Erinnerungen als echte Benachrichtigungen
+  function remindSheet() {
+    var R = C().erinnern, s = R.state();
+    function chk(k, t, sub, on) { return '<label class="row" style="cursor:pointer"><span class="tx"><b>' + t + "</b><small>" + sub + '</small></span><input type="checkbox" data-r="' + k + '"' + (on ? " checked" : "") + ' style="width:22px;height:22px"></label>'; }
+    sheet('<h3>Erinnerungen</h3><p class="s">' + (s.on ? "An · " + (s.n || 0) + " Erinnerungen in den nächsten 14 Tagen geplant" + (s.err ? '<br><span style="color:#e5484d">Fehler: ' + esc(s.err) + "</span>" : "") : "Benachrichtigungen kommen zur richtigen Zeit – auch wenn die App geschlossen ist und ohne Internet.") + "</p>" +
+      '<div class="grp"><div class="cells">' + chk("termine", "Termine & Notizen", "so viele Minuten vorher, wie beim Termin eingestellt; Notizen zum Zeitpunkt", s.opt.termine) +
+      chk("training", "Training & Mobility", "zur geplanten Uhrzeit – antippen startet die Einheit", s.opt.training) + "</div></div>" +
+      '<p class="s">Kommen Erinnerungen zu spät? Dann bei Android „Wecker und Erinnerungen“ für Planer erlauben: <a href="#" data-s="exact" style="color:var(--acc)">Einstellung öffnen</a></p>' +
+      '<div class="btns">' + (s.on ? '<button class="btn" data-s="off">Ausschalten</button>' : "") + '<button class="btn p" data-s="' + (s.on ? "x" : "on") + '">' + (s.on ? "Fertig" : "Einschalten") + "</button></div>", function (act) {
+      if (act === "on") R.enable().then(function (r) { snack(r && r.error ? r.error : "Erinnerungen an – " + (r && r.n || 0) + " geplant"); remindSheet(); renderMehr(); });
+      else if (act === "off") { R.disable(); closeSheet(); renderMehr(); snack("Erinnerungen aus"); }
+      else if (act === "exact") R.exactSettings();
+      else closeSheet();
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("#sheet [data-r]"), function (x) { x.onchange = function () { R.setOpt(x.dataset.r, x.checked).then(function () { renderMehr(); }); }; });
+  }
+  // Android-App, einmal nach Umzug bzw. „Neu anfangen“: Handykalender und Erinnerungen mit einem Tipp einschalten
+  function setupSheet() {
+    var c = C(); if (!c || !c.handy || !c.erinnern) return;
+    sheet('<h3>Fast fertig</h3><p class="s">Zwei Dinge kann nur die Android-App – beides läuft auch offline:</p>' +
+      sRow("hk", "cal", "Handykalender abgleichen", "App-Termine im Kalender „Planer“, Handytermine in der App", "var(--c-termin)") +
+      sRow("er", "bell", "Erinnerungen", "Termine, Notizen, Training – auch bei geschlossener App", "#e5a04b") +
+      '<div class="btns"><button class="btn" data-s="later">Später</button><button class="btn p" data-s="both">Beides einschalten</button></div><p class="s">Android fragt gleich nach den Berechtigungen. Ändern kannst du alles unter Mehr.</p>', function (act) {
+      try { localStorage.setItem("sg-apk-setup", String(Date.now())); } catch (e) {}
+      if (act === "later") return closeSheet();
+      if (act === "hk") return handySheet();
+      if (act === "er") return remindSheet();
+      if (act !== "both") return;
+      closeSheet(); snack("Wird eingerichtet …");
+      c.handy.enable().then(function (r) {
+        return c.erinnern.enable().then(function (q) {
+          snack([r && r.error ? r.error : "Handykalender verbunden", q && q.error ? q.error : "Erinnerungen an"].join(" · ")); refresh();
+        });
+      });
+    });
+  }
+
   function sendPhone(list) {
     var c = C(), text = c.phone.ics(list), name = "planer-termine-" + today() + ".ics";
     var file = null; try { file = new File([text], name, { type: "text/calendar" }); } catch (e) {}
@@ -615,7 +717,7 @@
       '1. In Chrome die Planer-App öffnen › Mehr › „In die Android-App umziehen“ › Datei speichern.<br>2. Hier „Umzugsdatei wählen“ antippen und die Datei aus „Downloads“ nehmen.</p>' +
       (first ? "" : '<p class="s">Achtung: Daten in dieser App werden durch die aus der Datei ersetzt.</p>') +
       '<div class="btns">' + (first ? '<button class="btn" data-s="fresh">Neu anfangen</button>' : "") + '<button class="btn p" data-s="pick">Umzugsdatei wählen</button></div>', function (act) {
-      if (act === "fresh") { localStorage.setItem("sg-umzug-v1", JSON.stringify({ at: Date.now(), fresh: true })); closeSheet(); return; }
+      if (act === "fresh") { localStorage.setItem("sg-umzug-v1", JSON.stringify({ at: Date.now(), fresh: true })); setupSheet(); return; }
       if (act !== "pick") return;
       var inp = document.createElement("input"); inp.type = "file"; inp.accept = ".json,application/json";
       inp.onchange = function () {
@@ -650,6 +752,7 @@
       r("sync", "cloud", "#5ac8fa", "Cloud-Sicherung", "Abgleich über GitHub – die App läuft immer offline", "") +
       r("tset", "gear", "var(--c-training)", "Training einstellen", "Ziele, Ruhetage, Erinnerungen, Daten", "") +
       (window.SGInstallEvt ? r("install", "download", "var(--muted)", "App installieren", "Auf den Startbildschirm", "") : "") +
+      (window.SGNative && c && c.erinnern ? r("erinnern", "bell", "#e5a04b", "Erinnerungen", c.erinnern.state().on ? "An – " + (c.erinnern.state().n || 0) + " geplant (14 Tage)" : "Aus – Benachrichtigungen auch bei geschlossener App", "") : "") +
       (window.SGNative ? r("umzugin", "download", "var(--c-training)", "Daten aus Chrome übernehmen", "Umzugsdatei aus der Chrome-App einlesen", "")
         : r("umzug", "phone", "var(--c-training)", "In die Android-App umziehen", "Alle Daten als Umzugsdatei für die APK", "")) +
       r("update", "download", "var(--muted)", "Version " + esc(window.SGVersion || ""), window.SGNative ? "Neue Version von GitHub holen" : "Version aktualisieren", "") + "</div></div>";
@@ -663,6 +766,7 @@
     else if (m === "design") c.openDesign();
     else if (m === "sync") c.openSync();
     else if (m === "install") { if (window.SGInstallEvt) window.SGInstallEvt.prompt(); }
+    else if (m === "erinnern") remindSheet();
     else if (m === "umzug") moveOut();
     else if (m === "umzugin") moveInSheet(false);
     else if (m === "update") { if (window.SGUpdate) window.SGUpdate.check(function (t) { snack(t); }); }
@@ -729,6 +833,7 @@
     C().onChange(function () { clearTimeout(refresh.t); refresh.t = setTimeout(refresh, 100); });
     if (location.hash.length > 1) fromHash(); else { history.replaceState({ app: 1 }, "", "#kalender"); render(); }
     if (window.SGNative && !localStorage.getItem("sg-umzug-v1")) setTimeout(function () { moveInSheet(true); }, 600);
+    else if (window.SGNative && !localStorage.getItem("sg-apk-setup")) setTimeout(setupSheet, 900);
     // im Leerlauf die wichtigsten Bereiche vorladen – dann wechseln sie sofort
     var pre = ["training/", "training/mobility/", "training/atmung/", "schule/"], i = 0;
     (function next() {

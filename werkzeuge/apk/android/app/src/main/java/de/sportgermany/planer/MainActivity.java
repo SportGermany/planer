@@ -20,6 +20,8 @@ public class MainActivity extends BridgeActivity {
             r.setIgnoreAssetPath(false);
             return r;
         });
+        // eigenes Plugin: Abgleich mit dem Kalender des Handys
+        registerPlugin(PlanerKalenderPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }
