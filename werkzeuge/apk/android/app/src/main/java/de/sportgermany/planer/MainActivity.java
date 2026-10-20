@@ -2,6 +2,7 @@ package de.sportgermany.planer;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
@@ -30,6 +31,15 @@ public class MainActivity extends BridgeActivity {
                         if (r != null) return r;
                     }
                     return super.shouldInterceptRequest(view, request);
+                }
+
+                // Stürzt der Seiten-Prozess ab (z. B. Speicher knapp), würde Android sonst die ganze App beenden –
+                // stattdessen die App neu aufbauen (die Daten liegen im Speicher und bleiben erhalten).
+                @Override
+                public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                    android.util.Log.w("Planer", "WebView-Prozess beendet (Absturz: " + detail.didCrash() + ") – App wird neu aufgebaut");
+                    runOnUiThread(() -> recreate());
+                    return true;
                 }
             }
         );

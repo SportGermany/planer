@@ -90,4 +90,12 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   fs.writeFileSync(OUT + '/ergebnis.txt', lines.join('\n') + '\n');
   await dev.close();
   console.log(bad ? bad + ' FEHLER' : 'Emulator-Test grün'); process.exit(bad ? 1 : 0);
-})().catch(e => { console.error(e); fs.writeFileSync(OUT + '/ergebnis.txt', lines.join('\n') + '\nABBRUCH: ' + e.message + '\n'); process.exit(1); });
+})().catch(e => {
+  console.error(e);
+  try {
+    const lc = execSync('adb logcat -d -t 3000', { encoding: 'utf8', maxBuffer: 1 << 25 }).split('\n').filter(l => /Planer|Capacitor|chromium|cr_|WebView|AndroidRuntime|FATAL|lowmemory|lmkd|ActivityManager|crash|renderer|sandboxed_process/i.test(l)).slice(-250).join('\n');
+    fs.writeFileSync(OUT + '/logcat-abbruch.txt', lc); console.log('--- logcat ---\n' + lc.split('\n').slice(-80).join('\n'));
+    execSync('adb exec-out screencap -p > ' + OUT + '/x-abbruch.png');
+  } catch (x) {}
+  fs.writeFileSync(OUT + '/ergebnis.txt', lines.join('\n') + '\nABBRUCH: ' + e.message + '\n'); process.exit(1);
+});
