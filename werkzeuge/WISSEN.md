@@ -66,6 +66,10 @@ planer/
   API u. a.: `allItems(from,to)`, `add/update/remove`, `tasks.*`, `notes.*`, `open(date)`, `newEvent(date)`, `editEvent(id,date)`,
   `weekPlan()`, `weekPlanStd()`, `weekPlanConfig()`, `palette()`, `openDesign()`, `openSync()`, `askNotify()`.
   `newEvent(date, vorgabe)` füllt das Terminblatt vor (title, time, end, remind, rep); das Blatt hat ein Feld Wiederholung.
+  Kalender (3.8.0): `occurrences()` rollt Serien (Wochentage, alle N Wochen, n-ter Wochentag) und mehrtägige Termine aus (je Tag `day`/`of`/`occ`/`lastDay`);
+  `allItems()` setzt `plan`/`st`/`auto` (geplante Einheiten, erledigt automatisch aus wk_log, Aktivitäten, Atem-Sitzungen – je Tag nie doppelt);
+  `planSet(eintrag, patch)` verschiebt/lässt aus/hakt ab (auch Atemübungen in pulsplan.v1) und gibt die Rückgängig-Funktion zurück;
+  `weekBalance(montag)`, `areaOf(e)`, `setSnack(fn)` (Rückgängig-Hinweis der Hülle). Serien ändern/löschen fragt „nur dieser / folgende / alle“.
   `setPalette(fn)` ersetzt die Suche – die Hülle setzt dort ihre Vollbild-Suche ein; `install()`/`installed()` für „App installieren“.
 - Suche der Hülle (nur `app/`): `schnell.js` (`SGQuick.parseQuick`, Schnelleingabe in einem Satz), `suche.js` (`SGSuche`:
   norm, score mit Tippfehlern, marks), `bibelstelle.js` (`SGBibelstelle.parse`, „Joh 3,16“ → Buch/Kapitel/Vers),
@@ -79,6 +83,7 @@ planer/
 | Schlüssel | Inhalt |
 | --- | --- |
 | `sg-shared-calendar-v1` | gemeinsame Termine `{v,events:[{id,title,date,time,end,app,rep,remind,wp,link…}]}` |
+| | neue optionale Felder (3.8.0): `endDate` (mehrtägig, letzter Tag), `star`, `area` (Bereich, Tabelle `AREAS` im Verbund; fehlt es, leitet `areaOf` aus `app` ab), `status` (`done`/`skip`/`open`) + `why`; `rep` zusätzlich `days` (Mo = 0), `iv`, `nth` (1–4, −1 = letzter). Einfache Regeln bleiben `w`/`2w` (ältere Geräte). `ex` = ausgelassene Tage einer Serie |
 | `sg-shared-tasks-v1` | Aufgaben |
 | `sg-notizen-v1` | Notizen `{text,at,remind,done}` |
 | `sg-wochenplan-v1` | Wochenplanung: Einstellungen, `last`, `std` (Standardwoche), `planned` |
@@ -155,9 +160,9 @@ Neu exportieren (Docs-Export als Markdown) → `wissen/buch.md` ersetzen → Bui
 ```
 cd werkzeuge/tests && npm install          # Playwright (Browser: SG_CHROME, Standard /opt/pw-browsers/…)
 cd <Ordner über planer> && python3 -m http.server 8765 &      # App unter http://localhost:8765/planer/
-node werkzeuge/tests/suite3.js [Filter]   # Gesamt-Suite (Stand 3.2.0: 47 Tests)
+node werkzeuge/tests/suite3.js [Filter]   # Gesamt-Suite (Stand 3.8.0: 89 Tests; Filter „P7“ = Kalender-Phase 7, nutzt stand-3.5.0.js als alte Daten)
 node werkzeuge/tests/offline3.js          # Offline wie installiert: einmal online, Server aus, alles prüfen (42 Prüfungen)
-node werkzeuge/tests/bahnplan-1.js / bahnplan-2.js   # Bahnplan (ERR_FAILED-Meldungen = absichtlich gesperrte Wikipedia)
+node werkzeuge/tests/bahnplan-1.js / bahnplan-2.js   # Bahnplan (Wikipedia nachgestellt; „ohne Netz“ schaltet den Browser wirklich offline)
 node werkzeuge/tests/upd.js               # echter Update-Weg in der Hülle (baut kurz 9.9.8, danach wieder zurück)
 node werkzeuge/tests/schnell.js           # Schnelleingabe parseQuick (ohne Browser)
 node werkzeuge/tests/suche-kern.js        # Such-Kern und Bibelstellen (ohne Browser)

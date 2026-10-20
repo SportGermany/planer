@@ -126,32 +126,55 @@
     });
     return list.sort(function (a, b) { return (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")); });
   }
-  // Wiederholungen ausrollen: rep = { f: "d" | "w" | "2w" | "m" | "y", until }, ex = ausgelassene Tage.
-  function occurrences(from, to) {
+  /* Wiederholungen ausrollen: rep = { f: "d" | "w" | "2w" | "m" | "y", until, days, iv, nth }, ex = ausgelassene Tage.
+   * days = Wochentage (Mo = 0) bei wöchentlich, iv = alle N Wochen (bzw. Tage), nth = n-ter Wochentag im Monat (1–4, -1 = letzter).
+   * Mehrtägig (endDate): je Tag ein Eintrag mit day/of („Tag 2 von 4“) und occ = erster Tag dieses Vorkommens.
+   * Uhrzeit nur am ersten Tag (time), Ende nur am letzten (end). */
+  function wdx(k) { return (parse(k).getDay() + 6) % 7; }
+  function spanOf(e) { return e.endDate && e.endDate > e.date ? Math.round((parse(e.endDate) - parse(e.date)) / 864e5) : 0; }
+  // n-ter Wochentag (wd, Mo = 0) im Monat von d; n = -1: der letzte
+  function nthDay(y, m, wd, n) {
+    if (n > 0) { var f = new Date(y, m, 1), off = (wd - (f.getDay() + 6) % 7 + 7) % 7; var d = new Date(y, m, 1 + off + (n - 1) * 7); return d.getMonth() === m ? d : null; }
+    var l = new Date(y, m + 1, 0); return new Date(y, m, l.getDate() - ((l.getDay() + 6) % 7 - wd + 7) % 7);
+  }
+  // Anfangstage einer Serie im Zeitraum (ohne Ausnahmen); bis zum Ende des Zeitraums, nicht fest begrenzt
+  function repStarts(e, from, to) {
+    var r = e.rep, f = r.f, out = [], until = r.until && r.until < to ? r.until : to, s0 = parse(e.date);
+    if (until < e.date) return out;
+    function push(k) { if (k >= from && k <= until && k >= e.date) out.push(k); }
+    if (f === "w" || f === "2w") {
+      var iv = Math.max(1, +r.iv || (f === "2w" ? 2 : 1)), days = r.days && r.days.length ? r.days : [wdx(e.date)], m0 = mondayOf(e.date);
+      var w = Math.max(0, Math.floor((parse(from) - parse(m0)) / 864e5 / 7 / iv) - 1);
+      for (; ; w++) { var m = plusDays(m0, w * 7 * iv); if (m > until) break; days.forEach(function (d) { push(plusDays(m, +d)); }); }
+    } else if (f === "d") {
+      var st = Math.max(1, +r.iv || 1), skip = Math.max(0, Math.floor((parse(from) - s0) / 864e5 / st) - 1);
+      for (var i = skip; ; i++) { var k = iso(new Date(s0.getFullYear(), s0.getMonth(), s0.getDate() + i * st)); if (k > until) break; push(k); }
+    } else {
+      var wd = wdx(e.date), y0 = s0.getFullYear(), mo = s0.getMonth(), j0 = f === "m" ? Math.max(0, (parse(from).getFullYear() - y0) * 12 + parse(from).getMonth() - mo - 1) : 0;
+      for (var j = j0; j < j0 + 1200; j++) {
+        var dm;
+        if (f === "m" && r.nth) { dm = nthDay(y0, mo + j, wd, +r.nth); if (!dm) { if (iso(new Date(y0, mo + j, 1)) > until) break; continue; } }
+        else dm = f === "m" ? new Date(y0, mo + j, s0.getDate()) : new Date(y0 + j, mo, s0.getDate());
+        if (iso(dm) > until) break;
+        if (r.nth || dm.getDate() === s0.getDate()) push(iso(dm)); // 31. gibt es nicht in jedem Monat: dann auslassen
+      }
+    }
+    return out;
+  }
+  function occurrences(from, to, list) {
     var out = [];
-    live().forEach(function (e) {
-      var f = e.rep && e.rep.f;
-      if (!f) { if (e.date >= from && e.date <= to) out.push(e); return; }
-      var until = e.rep.until && e.rep.until < to ? e.rep.until : to, ex = e.ex || [];
-      var s0 = parse(e.date), step = { d: 1, w: 7, "2w": 14 }[f];
-      function push(d) {
-        var k = iso(d);
-        if (k >= from && k <= until && k >= e.date && ex.indexOf(k) < 0) out.push(Object.assign({}, e, { date: k, sid: e.id, start: e.date }));
-      }
-      if (step) {
-        // bis zum Ende des Zeitraums (nicht fest begrenzt – sonst fehlen tägliche Serien in fernen Monaten)
-        var skip = Math.max(0, Math.floor((parse(from) - s0) / 864e5 / step) - 1), last = skip + Math.ceil((parse(until) - parse(from)) / 864e5 / step) + 3;
-        for (var i = skip; i < last; i++) {
-          var d = new Date(s0.getFullYear(), s0.getMonth(), s0.getDate() + i * step);
-          if (iso(d) > until) break; push(d);
+    (list || live()).forEach(function (e) {
+      var span = spanOf(e), f = e.rep && e.rep.f, ex = e.ex || [], from0 = span ? plusDays(from, -span) : from;
+      var starts = f ? repStarts(e, from0, to).filter(function (k) { return ex.indexOf(k) < 0; }) : e.date >= from0 && e.date <= to ? [e.date] : [];
+      starts.sort().forEach(function (k) {
+        if (!span) { if (k >= from) out.push(f ? Object.assign({}, e, { date: k, sid: e.id, start: e.date, occ: k }) : e); return; }
+        for (var i = 0; i <= span; i++) {
+          var d = plusDays(k, i); if (d < from || d > to) continue;
+          var x = Object.assign({}, e, { date: d, occ: k, day: i + 1, of: span + 1, lastDay: plusDays(k, span), time: i ? "" : e.time || "", end: i < span ? "" : e.end || "", orig: { time: e.time || "", end: e.end || "" } });
+          if (f) { x.sid = e.id; x.start = e.date; }
+          out.push(x);
         }
-      } else {
-        for (var j = 0; j < 1200; j++) {
-          var dm = f === "m" ? new Date(s0.getFullYear(), s0.getMonth() + j, s0.getDate()) : new Date(s0.getFullYear() + j, s0.getMonth(), s0.getDate());
-          if (iso(dm) > until) break;
-          if (dm.getDate() === s0.getDate()) push(dm); // 31. gibt es nicht in jedem Monat: dann auslassen
-        }
-      }
+      });
     });
     return out.sort(function (a, b) { return (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")); });
   }
@@ -203,7 +226,7 @@
     var pp = jkey("pulsplan.v1");
     if (pp && pp.entries) pp.entries.forEach(function (e) {
       if (!e.date || e.date < from || e.date > to) return;
-      out.push(Object.assign({ id: "pp-" + e.id, title: e.type || "Atemübung", date: e.date, time: e.time || "", end: e.time ? addMin(e.time, +e.dur || 10) : "", app: "Atmung", note: e.note || "", ro: "Atmung & HRV" }, where("training", "#atmung")));
+      out.push(Object.assign({ id: "pp-" + e.id, title: e.type || "Atemübung", date: e.date, time: e.time || "", end: e.time ? addMin(e.time, +e.dur || 10) : "", app: "Atmung", note: e.note || "", ro: "Atmung & HRV", status: e.status || "", why: e.why || "" }, where("training", "#atmung")));
     });
     // Training: erledigte Einheiten und Aktivitäten
     var log = jkey("wk_log") || {}, acts = jkey("wk_activities") || [];
@@ -227,9 +250,86 @@
     });
   }
   function allItems(from, to) {
-    return occurrences(from, to).concat(externalItems(from, to), noteItems(from, to)).sort(function (a, b) {
+    return withStatus(occurrences(from, to).concat(externalItems(from, to), noteItems(from, to))).sort(function (a, b) {
       return (a.date + (a.time || "~")).localeCompare(b.date + (b.time || "~"));
     });
+  }
+  /* ---------- Bereiche: eine Tabelle für alle (Feld area am Eintrag) ----------
+   * Alte Einträge haben nur den Text app; areaOf leitet den Bereich daraus tolerant ab, Unbekanntes wird „Termin“. */
+  var AREAS = [["notiz", "Notiz", /^Notiz$/], ["schule", "Schule", /Lernplan|Schule/], ["atmung", "Atmung", /Atmung|Pulsplan/],
+    ["mobility", "Mobility", /Mobility/], ["training", "Training", /Training|Trainingsblog|Rodeln/], ["termin", "Termin", null]];
+  function areaOf(e) {
+    if (e && e.area && AREAS.some(function (a) { return a[0] === e.area; })) return e.area;
+    var app = (e && e.app) || "", hit = AREAS.find(function (a) { return a[2] && a[2].test(app); });
+    return hit ? hit[0] : "termin";
+  }
+  // einmalig beim Start: fehlendes area nachtragen (ohne Änderungszeit – kein Abgleich nötig, andere Geräte leiten es gleich ab)
+  function areaFill() {
+    if (EMBED) return;
+    var d = load(), n = 0;
+    d.events.forEach(function (e) { if (!e.area && !e.deleted) { e.area = areaOf(e); n++; } });
+    if (n) save(d, true);
+  }
+  /* ---------- Status geplanter Einheiten: erledigt (✓) oder ausgelassen ----------
+   * Planbar sind eigene Termine aus Training, Mobility, Atmung, Schule und die Atemübungen aus Atmung & HRV.
+   * Ausdrücklich gesetzt (status) gilt zuerst. Sonst automatisch erledigt aus dem, was wirklich gemacht wurde:
+   * Trainingstagebuch (wk_log) und Aktivitäten, Mobility-Aktivitäten, Atem-Sitzungen – je Tag höchstens so viele Einheiten,
+   * wie es dort gibt (nie doppelt). Die Zeile „✓ Training erledigt“ entfällt dann, der geplante Eintrag trägt das ✓. */
+  var PLAN_AREAS = { training: 1, mobility: 1, atmung: 1, schule: 1 };
+  function withStatus(list) {
+    var log = jkey("wk_log") || {}, pp = jkey("pulsplan.v1") || {}, have = {}, slots = {}, drop = {};
+    list.forEach(function (x) {
+      if (/^ta-/.test(x.id)) { var a = x.app === "Mobility" ? "mobility" : "training"; have[a + "@" + x.date] = (have[a + "@" + x.date] || 0) + 1; }
+      x.plan = !x.ro || /^pp-/.test(x.id) ? PLAN_AREAS[areaOf(x)] === 1 && !x.phone && !(x.of > 1) && !(x.rep && x.rep.f) : false;   // Serien und mehrtägige: über „Bearbeiten“
+      if (!x.plan) return;
+      x.st = x.status === "done" || x.status === "skip" ? x.status : "";
+      var k = areaOf(x) + "@" + x.date; (slots[k] = slots[k] || []).push(x);
+    });
+    Object.keys(log).forEach(function (k) { var l = log[k]; if (l && l.done && l.type !== "rest") have["training@" + k] = Math.max(have["training@" + k] || 0, 1); });
+    (pp.sessions || []).forEach(function (s) { if (s && s.date) have["atmung@" + s.date] = (have["atmung@" + s.date] || 0) + 1; });
+    Object.keys(slots).forEach(function (k) {
+      var n = have[k] || 0, xs = slots[k].sort(function (a, b) { return (a.time || "").localeCompare(b.time || ""); });
+      xs.forEach(function (x) { if (x.st === "done") n--; });
+      xs.forEach(function (x) { if (!x.st && x.status !== "open" && n > 0) { x.st = "done"; x.auto = true; n--; if (k.indexOf("training@") === 0) drop["tb-" + x.date] = 1; } });
+    });
+    return list.filter(function (x) { return !drop[x.id]; });
+  }
+  // Wochenbilanz (Training und Mobility): geplant, erledigt, ausgelassen
+  function weekBalance(mon) {
+    var r = { n: 0, done: 0, skip: 0 };
+    allItems(mon, plusDays(mon, 6)).forEach(function (x) {
+      if (!x.plan || (areaOf(x) !== "training" && areaOf(x) !== "mobility")) return;
+      r.n++; if (x.st === "done") r.done++; else if (x.st === "skip") r.skip++;
+    });
+    return r;
+  }
+  function mins(t) { var p = String(t || "0:0").split(":"); return +p[0] * 60 + +p[1]; }
+  /* Einen geplanten Eintrag verschieben, auslassen oder abhaken – nur diesen (nie die Standardwoche).
+   * x: Eintrag aus allItems, patch: { date, time, status, why }. Ergebnis: Funktion zum Rückgängigmachen. */
+  function planSet(x, patch) {
+    var keys = ["date", "time", "end", "status", "why"], p = Object.assign({}, patch);
+    if (p.time && x.time && x.end) p.end = addMin(p.time, Math.max(5, mins(x.end) - mins(x.time)));
+    if (/^pp-/.test(x.id)) {
+      var raw = null; try { raw = JSON.parse(localStorage.getItem("pulsplan.v1") || "null"); } catch (e) {}
+      var en = raw && (raw.entries || []).find(function (y) { return "pp-" + y.id === x.id; });
+      if (!en) return null;
+      var prev = {}; ["date", "time", "status", "why"].forEach(function (k) { prev[k] = en[k] === undefined ? null : en[k]; });
+      var put = function (v) {
+        var r2 = null; try { r2 = JSON.parse(localStorage.getItem("pulsplan.v1") || "null"); } catch (e) {}
+        var e2 = r2 && (r2.entries || []).find(function (y) { return y.id === en.id; }); if (!e2) return;
+        Object.keys(v).forEach(function (k) { if (k === "end") return; if (v[k] == null) delete e2[k]; else e2[k] = v[k]; });
+        try { localStorage.setItem("pulsplan.v1", JSON.stringify(r2)); } catch (e) {}
+        if (chan) try { chan.postMessage("changed"); } catch (e) {}
+        emit(); schedulePush();
+      };
+      put(p);
+      return function () { put(prev); };
+    }
+    var cur = load().events.find(function (y) { return y.id === x.id && !y.deleted; });
+    if (!cur) return null;
+    var old = {}; keys.forEach(function (k) { old[k] = cur[k] === undefined ? null : cur[k]; });
+    api.update(x.id, p);
+    return function () { api.update(x.id, old); };
   }
   function emit() {
     var ev = live();
@@ -260,6 +360,10 @@
         var n = { id: uid(), title: String(ev.title || "Termin"), date: ev.date, time: ev.time || "", end: ev.end || "",
           note: ev.note || "", color: ev.color || "", app: ev.app || APP, created: Date.now(), changed: Date.now(),
           remind: ev.remind === "" || ev.remind == null ? null : +ev.remind };
+        n.area = ev.area || areaOf(n);
+        if (ev.endDate && ev.endDate > n.date) n.endDate = ev.endDate;
+        if (ev.star) n.star = true;
+        if (ev.rep && ev.rep.f) n.rep = repNorm(ev.rep, n.date);
         d.events.push(n); return n;
       });
     },
@@ -282,6 +386,10 @@
     occurrences: occurrences,
     externalItems: externalItems,
     allItems: allItems,
+    areaOf: areaOf,
+    weekBalance: weekBalance,
+    planSet: planSet,
+    repStarts: repStarts,
     // Einen einzelnen Termin einer Serie auslassen
     skip: function (id, date) {
       return mutate(function (d) {
@@ -537,7 +645,7 @@
     try { fired = JSON.parse(localStorage.getItem(FIRED_KEY) || "{}"); } catch (e) { fired = {}; }
     var t = iso(new Date()), list = occurrences(iso(new Date(now - 864e5)), iso(new Date(now + 2 * 864e5)));
     list.forEach(function (e) {
-      if (e.remind == null || e.remind === "") return;
+      if (e.remind == null || e.remind === "" || (e.of > 1 && e.day > 1) || e.status === "skip" || e.status === "done") return;
       var p = e.date.split("-"), hm = (e.time || "08:00").split(":");
       var start = new Date(+p[0], +p[1] - 1, +p[2], +hm[0], +hm[1]).getTime(), at = start - e.remind * 60000, key = e.id + "@" + e.date;
       // nur melden, wenn der Zeitpunkt erreicht ist, aber höchstens 2 Stunden zu spät
@@ -637,6 +745,9 @@
     "input,textarea,select{width:100%;padding:10px 11px;border-radius:9px;border:1px solid var(--line);background:var(--s1);color:var(--fg);font-size:16px}",
     "textarea{min-height:70px;resize:vertical}",
     ".row{display:flex;gap:8px}.row>*{flex:1}",
+    ".wds{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.wds button{flex:1;min-width:38px;min-height:40px;border-radius:9px;border:1px solid var(--line);background:var(--s1);color:var(--fg);font-size:14px;cursor:pointer}",
+    ".wds button.on{background:var(--acc);border-color:var(--acc);color:#fff}.ivr{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:8px}.ivr input{width:76px}",
+    ".ovl{font-size:13px;color:#b4532a;margin:8px 0 0}.v.dark .ovl{color:#f0a36c}.ask .b{display:block;width:100%;text-align:left;margin-top:8px;min-height:48px}.ask .b small{display:block;font-weight:400;color:var(--mut)}",
     ".act{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.act .sp{flex:1}",
     ".tools{display:flex;gap:6px;flex-wrap:wrap;margin-top:18px;padding-top:12px;border-top:1px solid var(--line)}",
     ".tools button.b{font-size:13px;padding:6px 10px}",
@@ -780,12 +891,12 @@
     var d = date ? parse(date) : new Date();
     state.sel = iso(d); state.month = new Date(d.getFullYear(), d.getMonth(), 1);
     if (!state.open && !EMBED) { try { history.pushState(Object.assign({}, history.state || {}, { vp: 1 }), "", location.hash); } catch (e) {} }
-    state.edit = null; state.tab = tab || "cal"; state.open = true;
+    state.edit = null; state.ask = null; state.quick = false; state.tab = tab || "cal"; state.open = true;
     render();
   }
   // Das Blatt hat einen eigenen Verlaufseintrag: Android-Zurück schließt es zuerst (die Hülle fragt panelOpen/closePanel)
   function close(fromPop) {
-    var was = state.open; state.open = false; state.edit = null; render();
+    var was = state.open; state.open = false; state.edit = null; state.ask = null; render();
     if (was && !fromPop && history.state && history.state.vp) history.back();
   }
   // nur schließen, wenn der eigene Eintrag verlassen wurde (wurde das Blatt in diesem Schritt neu geöffnet, steht schon wieder vp)
@@ -803,10 +914,11 @@
     // Termine nur ausrollen, wenn das Fenster wirklich offen ist (spart bei jeder Änderung Rechenzeit)
     var all = occurrences(iso(new Date(Date.now() - 400 * 864e5)), iso(new Date(Date.now() + 800 * 864e5)));
     // Hintergrund-Updates (andere App, anderes Gerät) dürfen kein gerade ausgefülltes Formular überschreiben.
-    if (bg && (state.edit || (state.tab === "sync" && !cfg().token))) return;
+    if (bg && (state.edit || state.ask || (state.tab === "sync" && !cfg().token))) return;
     var evs = state.filter ? all.filter(function (e) { return e.app === APP; }) : all;
     var h = "<div class='wrap'><div class='panel' role='dialog' aria-label='Kalender und Apps'>";
-    if (state.edit) h += form(state.edit);
+    if (state.ask) h += askView(state.ask);
+    else if (state.edit) h += form(state.edit);
     else {
       h += "<div class='top'><div class='tabs' role='tablist'>" +
         [["cal", "Kalender"], ["apps", "Apps"], ["design", "Design"], ["sync", "Sync"]].map(function (t) {
@@ -917,7 +1029,7 @@
     if (withDate) meta.push(parse(e.date).getDate() + ". " + MON[parse(e.date).getMonth()]);
     if (e.time) meta.push(e.time + (e.end ? "–" + e.end : "") + " Uhr");
     meta.push(e.app);
-    return "<div class='ev' data-id='" + esc(e.id) + "'><span class='bar' style='background:" + colorOf(e) + "'></span><div><div class='t'>" + esc(e.title) +
+    return "<div class='ev' data-id='" + esc(e.id) + "' data-occ='" + esc(e.occ || e.date) + "'><span class='bar' style='background:" + colorOf(e) + "'></span><div><div class='t'>" + esc(e.title) +
       "</div><div class='m'>" + esc(meta.join(" · ")) + "</div>" + (e.note ? "<div class='m'>" + esc(e.note) + "</div>" : "") + "</div></div>";
   }
 
@@ -1092,24 +1204,118 @@
     });
   }
 
+  function nthLabel(k) { var d = parse(k), n = Math.ceil(d.getDate() / 7), last = plusDays(k, 7).slice(5, 7) !== k.slice(5, 7); return "Monatlich am " + (last && n > 4 ? "letzten" : n + ".") + " " + WDL[wdx(k)]; }
+  function nthOf(k) { var d = parse(k), n = Math.ceil(d.getDate() / 7); return n > 4 ? -1 : n; }
+  // Wert der Auswahl „Wiederholung“ aus der gespeicherten Regel
+  function repUi(r) { if (!r || !r.f) return ""; if ((r.f === "w" || r.f === "2w") && (r.days || +r.iv > 2 || (r.f === "w" && +r.iv === 2))) return "wd"; if (r.f === "m" && r.nth) return "mn"; return r.f; }
   function form(e) {
-    var isNew = !e.id;
+    var isNew = !e.id, ser = !isNew && e.rep && e.rep.f && e.occ;
     var h = "<div class='hd'><h2>" + (isNew ? "Neuer Termin" : "Termin bearbeiten") + "</h2><button class='x' data-a='back' aria-label='Zurück'>✕</button></div>";
     h += "<label>Titel</label><input name='title' maxlength='120' value='" + esc(e.title || "") + "' placeholder='z. B. Training, Klassenarbeit …'>";
     h += "<label>Datum</label><input type='date' name='date' value='" + esc(e.date) + "'>";
+    h += "<label class='chk'><input type='checkbox' name='multi'" + (e.endDate ? " checked" : "") + "> Mehrtägig (Wettkampf, Trainingslager, Urlaub)</label>";
+    h += "<div class='mt'" + (e.endDate ? "" : " hidden") + "><label>Bis (letzter Tag)</label><input type='date' name='endDate' value='" + esc(e.endDate || "") + "'></div>";
     h += "<div class='row'><div><label>Von (optional)</label><input type='time' name='time' value='" + esc(e.time || "") + "'></div>" +
       "<div><label>Bis (optional)</label><input type='time' name='end' value='" + esc(e.end || "") + "'></div></div>";
+    h += "<p class='ovl' aria-live='polite'></p>";
     h += "<label>Erinnerung</label><select name='remind'>" + REMIND.map(function (r) {
       return "<option value='" + r[0] + "'" + (String(e.remind == null ? "" : e.remind) === r[0] ? " selected" : "") + ">" + r[1] + "</option>"; }).join("") + "</select>";
-    var rf = e.rep && e.rep.f || "";
-    h += "<label>Wiederholung</label><select name='rep'>" + [["", "Keine"], ["d", "Täglich"], ["w", "Wöchentlich"], ["2w", "Alle 2 Wochen"], ["m", "Monatlich"], ["y", "Jährlich"]].map(function (r) {
-      return "<option value='" + r[0] + "'" + (rf === r[0] ? " selected" : "") + ">" + r[1] + "</option>"; }).join("") + "</select>";
+    var rf = repUi(e.rep), r0 = e.rep || {}, days = r0.days && r0.days.length ? r0.days : [wdx(e.date)], iv = +r0.iv || (r0.f === "2w" ? 2 : 1);
+    h += "<label>Wiederholung</label><select name='rep'>" + [["", "Keine"], ["d", "Täglich"], ["w", "Wöchentlich"], ["2w", "Alle 2 Wochen"], ["wd", "An bestimmten Wochentagen …"], ["m", "Monatlich"], ["mn", nthLabel(e.date)], ["y", "Jährlich"]].map(function (r) {
+      return "<option value='" + r[0] + "'" + (rf === r[0] ? " selected" : "") + ">" + esc(r[1]) + "</option>"; }).join("") + "</select>";
+    h += "<div class='wdbox'" + (rf === "wd" ? "" : " hidden") + "><div class='wds' role='group' aria-label='Wochentage'>" + WD.map(function (n, i) {
+      return "<button type='button' data-wd='" + i + "' aria-pressed='" + (days.indexOf(i) > -1) + "' aria-label='" + WDL[i] + "' class='" + (days.indexOf(i) > -1 ? "on" : "") + "'>" + n + "</button>"; }).join("") +
+      "</div><div class='ivr'>alle <input type='number' name='iv' min='1' max='52' value='" + iv + "' aria-label='alle wie viele Wochen'> Woche(n)</div></div>";
+    if (ser) h += "<div class='m' style='margin-top:6px'>Teil einer Serie – beim Speichern kannst du wählen: nur dieser Termin, dieser und alle folgenden oder alle.</div>";
     h += "<label>Notiz</label><textarea name='note' maxlength='1000'>" + esc(e.note || "") + "</textarea>";
+    h += "<label class='chk'><input type='checkbox' name='star'" + (e.star ? " checked" : "") + "> ★ Wichtig (erscheint mit Countdown auf der Startseite)</label>";
     h += "<label>Farbe</label><select name='color'><option value=''>Farbe der App</option>" +
       COLORS.map(function (c, i) { return "<option value='" + c + "'" + (e.color === c ? " selected" : "") + ">" + CNAMES[i] + "</option>"; }).join("") + "</select>";
     if (!isNew) h += "<div class='m' style='margin-top:10px'>Angelegt in „" + esc(e.app) + "“</div>";
     h += "<div class='act'>" + (isNew ? "" : "<button class='b d' data-a='del'>Löschen</button>") + "<span class='sp'></span><button class='b' data-a='back'>Abbrechen</button><button class='b p' data-a='save'>Speichern</button></div>";
     return h;
+  }
+  // Serie ändern oder löschen: nur dieser, dieser und folgende, alle
+  function askView(q) {
+    var del = q.kind === "del", d = parse(q.occ), when = WD[wdx(q.occ)] + ", " + d.getDate() + ". " + MON[d.getMonth()];
+    return "<div class='hd'><h2>" + (del ? "Serientermin löschen" : "Serientermin ändern") + "</h2><button class='x' data-a='askno' aria-label='Zurück'>✕</button></div><div class='ask'>" +
+      "<p class='m'>„" + esc(q.title) + "“ wiederholt sich. Was soll " + (del ? "gelöscht" : "geändert") + " werden?</p>" +
+      "<button class='b' data-a='mode' data-m='one'>Nur dieser Termin<small>" + esc(when) + "</small></button>" +
+      "<button class='b' data-a='mode' data-m='next'>Dieser und alle folgenden<small>ab " + esc(when) + "</small></button>" +
+      "<button class='b" + (del ? " d" : "") + "' data-a='mode' data-m='all'>Alle Termine der Serie</button>" +
+      "<div class='act'><span class='sp'></span><button class='b' data-a='askno'>Abbrechen</button></div></div>";
+  }
+  // Werte aus dem Formular (null = Eingabe fehlt, Feld wird fokussiert)
+  function formValues(box) {
+    var v = {}, q = function (n) { return box.querySelector("[name=" + n + "]"); };
+    ["title", "date", "time", "end", "note", "color", "remind"].forEach(function (k) { v[k] = q(k).value.trim(); });
+    v.remind = v.remind === "" ? null : +v.remind;
+    if (!v.title) { q("title").focus(); return null; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v.date)) { q("date").focus(); return null; }
+    var ed = q("multi").checked ? q("endDate").value : "";
+    if (ed && ed <= v.date) { q("endDate").focus(); return null; }
+    v.endDate = ed || "";
+    v.star = q("star").checked;
+    var rv = q("rep").value, old = state.edit.rep || null;
+    if (!rv) v.rep = null;
+    else {
+      var base = { f: rv === "wd" ? "w" : rv === "mn" ? "m" : rv }; if (old && old.until) base.until = old.until;   // Ende der Serie bleibt auch bei neuem Rhythmus
+      if (rv === "wd") { base.days = [].map.call(box.querySelectorAll(".wds .on"), function (b) { return +b.dataset.wd; }); base.iv = +q("iv").value || 1; if (!base.days.length) base.days = [wdx(v.date)]; }
+      if (rv === "mn") base.nth = nthOf(v.date);
+      v.rep = repNorm(base, v.date);
+    }
+    return v;
+  }
+  // „Überschneidet sich mit Training 17:00“: andere Einträge mit Uhrzeit am selben Tag
+  function overlapText(v, selfId) {
+    if (!v.time || !/^\d{4}-\d{2}-\d{2}$/.test(v.date || "")) return "";
+    var a0 = mins(v.time), a1 = v.end && v.end > v.time ? mins(v.end) : a0 + 60, hit = null;
+    try {
+      allItems(v.date, v.date).some(function (x) {
+        if (!x.time || (selfId && (x.id === selfId || x.sid === selfId)) || x.st === "skip") return false;
+        var b0 = mins(x.time), b1 = x.end && x.end > x.time ? mins(x.end) : b0 + 60;
+        if (a0 < b1 && b0 < a1) { hit = x; return true; }
+        return false;
+      });
+    } catch (e) {}
+    return hit ? "Überschneidet sich mit " + (hit.title || "einem Termin") + " " + hit.time : "";
+  }
+  /* Rückgängig: Hinweis der Hülle (snack), auch aus eingebetteten Seiten. Ohne Hülle: false (dann fragt das Blatt vorher). */
+  var SNACK = null;
+  function undoSnack(text, fn) {
+    var f = SNACK; if (!f && EMBED) try { f = window.top.SharedCalendar._snack; } catch (e) {}
+    if (!f) return false;
+    try { f(text, fn); } catch (e) { return false; }
+    return true;
+  }
+  // Serie: Änderung bzw. Löschung anwenden (mode one | next | all); gibt Rückgängig zurück
+  function seriesApply(id, occ, mode, v) {
+    var base = load().events.find(function (x) { return x.id === id && !x.deleted; }); if (!base) return null;
+    var keep = JSON.parse(JSON.stringify(base)), made = null;
+    if (mode === "next" && occ <= base.date) mode = "all";
+    if (!v) {   // löschen
+      if (mode === "one") api.skip(id, occ);
+      else if (mode === "next") api.update(id, { rep: Object.assign({}, base.rep, { until: plusDays(occ, -1) }) });
+      else api.remove(id);
+    } else if (mode === "all") {
+      var delta = Math.round((parse(v.date) - parse(occ)) / 864e5), v2 = Object.assign({}, v);
+      v2.date = plusDays(base.date, delta);
+      if (v.endDate) v2.endDate = plusDays(v2.date, Math.round((parse(v.endDate) - parse(v.date)) / 864e5));
+      api.update(id, v2);
+    } else {
+      if (mode === "one") { api.skip(id, occ); v = Object.assign({}, v, { rep: null }); }
+      else api.update(id, { rep: Object.assign({}, base.rep, { until: plusDays(occ, -1) }) });
+      made = api.add(Object.assign({}, v, { app: base.app, area: base.area }));
+    }
+    return function () {
+      mutate(function (d) { var i = d.events.findIndex(function (x) { return x.id === id; }); if (i > -1) { keep.changed = Date.now(); d.events[i] = keep; } });
+      if (made) api.remove(made.id);
+    };
+  }
+  function editOf(e, occ) {
+    var o = Object.assign({}, e);
+    if (e.rep && e.rep.f && occ) { o.occ = occ; o.date = occ; if (e.endDate) o.endDate = plusDays(occ, Math.round((parse(e.endDate) - parse(e.date)) / 864e5)); }
+    return o;
   }
 
   function bind(box) {
@@ -1123,13 +1329,28 @@
       if (t.dataset.ver) { restoreVersion(t.dataset.ver, t.dataset.when); return; }
       if (t.dataset.day) { state.sel = t.dataset.day; render(); return; }
       if (t.dataset.id && !t.dataset.a) {
-        var e = live().find(function (x) { return x.id === t.dataset.id; }); // bei Serien: die ganze Serie
-        if (e) { state.edit = Object.assign({}, e); render(); }
+        var e = live().find(function (x) { return x.id === t.dataset.id; }); // bei Serien: die ganze Serie, gezeigt mit dem gewählten Tag
+        if (e) { state.edit = editOf(e, t.dataset.occ); render(); }
         return;
       }
       if (t.dataset.a === "close" && t.tagName === "A") ev.preventDefault();
-      act(t.dataset.a, box);
+      act(t.dataset.a, box, t);
     });
+    // Formular: Mehrtägig, Wochentage, Überschneidung live
+    var fm = box.querySelector("[name=multi]");
+    if (fm) {
+      var q = function (n) { return box.querySelector("[name=" + n + "]"); };
+      var upd = function () {
+        var v = { date: q("date").value, time: q("time").value, end: q("end").value };
+        box.querySelector(".ovl").textContent = overlapText(v, state.edit && state.edit.id);
+        var mn = q("rep").querySelector("option[value=mn]"); if (mn && /^\d{4}-\d{2}-\d{2}$/.test(v.date)) mn.textContent = nthLabel(v.date);
+      };
+      fm.addEventListener("change", function () { box.querySelector(".mt").hidden = !fm.checked; if (fm.checked && !q("endDate").value && q("date").value) q("endDate").value = plusDays(q("date").value, 1); });
+      q("rep").addEventListener("change", function () { box.querySelector(".wdbox").hidden = q("rep").value !== "wd"; });
+      box.querySelectorAll("[data-wd]").forEach(function (b) { b.addEventListener("click", function () { var on = !b.classList.contains("on"); b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); }); });
+      ["date", "time", "end"].forEach(function (n) { q(n).addEventListener("input", upd); q(n).addEventListener("change", upd); });
+      upd();
+    }
     box.querySelectorAll("[data-task]").forEach(function (cb) {
       cb.addEventListener("change", function () { api.tasks.update(cb.dataset.task, { done: cb.checked }); });
     });
@@ -1143,7 +1364,7 @@
     if (ti && state.edit && !state.edit.id) ti.focus();
   }
 
-  function act(a, box) {
+  function act(a, box, t) {
     var m = state.month;
     if (a === "prev") state.month = new Date(m.getFullYear(), m.getMonth() - 1, 1);
     else if (a === "next") state.month = new Date(m.getFullYear(), m.getMonth() + 1, 1);
@@ -1167,25 +1388,39 @@
     else if (a === "new") state.edit = { date: state.sel, app: APP };
     else if (a === "back") state.edit = null;
     else if (a === "save") {
-      var v = {};
-      ["title", "date", "time", "end", "note", "color", "remind"].forEach(function (k) { v[k] = box.querySelector("[name=" + k + "]").value.trim(); });
-      v.remind = v.remind === "" ? null : +v.remind;
+      var v = formValues(box); if (!v) return;
       if (v.remind != null) askNotify();
-      if (!v.title) { box.querySelector("[name=title]").focus(); return; }
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(v.date)) { box.querySelector("[name=date]").focus(); return; }
-      var rp = box.querySelector("[name=rep]"), rv = rp ? rp.value : "", old = state.edit.rep || null;
-      v.rep = rv ? Object.assign({}, old || {}, { f: rv }) : null;   // Ende der Serie (until) bleibt auch bei neuem Rhythmus
-      if (state.edit.id) api.update(state.edit.id, v); else { var ne = api.add(v); if (ne && v.rep) api.update(ne.id, { rep: v.rep }); }
+      var ed = state.edit;
+      if (ed.id && ed.occ && ed.rep && ed.rep.f) { state.ask = { kind: "save", id: ed.id, occ: ed.occ, v: v, title: ed.title }; render(); return; }
+      if (ed.id) {
+        var before = load().events.find(function (x) { return x.id === ed.id; }), keep = before && JSON.parse(JSON.stringify(before));
+        api.update(ed.id, v);
+        if (keep) undoSnack("Termin geändert", function () { mutate(function (d) { var i = d.events.findIndex(function (x) { return x.id === ed.id; }); if (i > -1) { keep.changed = Date.now(); d.events[i] = keep; } }); });
+      } else {
+        var ne = api.add(Object.assign({}, ed, v)); if (ne) undoSnack("Termin gespeichert", function () { api.remove(ne.id); });
+      }
       state.sel = v.date; var d = parse(v.date); state.month = new Date(d.getFullYear(), d.getMonth(), 1);
       state.edit = null;
     }
     else if (a === "del") {
-      if (!confirm("Termin „" + state.edit.title + "“ in allen Apps löschen?")) return;
-      api.remove(state.edit.id); state.edit = null;
+      var de = state.edit;
+      if (de.occ && de.rep && de.rep.f) { state.ask = { kind: "del", id: de.id, occ: de.occ, title: de.title }; render(); return; }
+      var hasUndo = !!(SNACK || (EMBED && (function () { try { return window.top.SharedCalendar._snack; } catch (e) { return null; } })()));
+      if (!hasUndo && !confirm("Termin „" + de.title + "“ in allen Apps löschen?")) return;
+      api.remove(de.id); state.edit = null;
+      undoSnack("„" + de.title + "“ gelöscht", function () { api.update(de.id, { deleted: false }); });
     }
+    else if (a === "mode" && state.ask) {
+      var qk = state.ask, m = t && t.dataset.m, und = seriesApply(qk.id, qk.occ, m, qk.kind === "save" ? qk.v : null);
+      state.ask = null; state.edit = null;
+      if (und) undoSnack(qk.kind === "del" ? (m === "one" ? "Dieser Termin gelöscht" : m === "next" ? "Ab hier gelöscht" : "Serie gelöscht") : (m === "one" ? "Nur dieser Termin geändert" : m === "next" ? "Ab hier geändert" : "Serie geändert"), und);
+    }
+    else if (a === "askno") state.ask = null;
     else if (a === "export") return download("gemeinsamer-kalender-" + iso(new Date()) + ".json", "application/json", JSON.stringify(load(), null, 2));
     else if (a === "import") return importFile();
     else if (a === "ics") return download("gemeinsamer-kalender.ics", "text/calendar", ics());
+    // aus der Hülle geöffnet (Neu/Bearbeiten): nach Speichern, Löschen oder Abbrechen zurück zur Startseite – dort steht „Rückgängig“
+    if (state.quick && !state.edit && !state.ask && /^(save|del|mode|back)$/.test(a)) return close();
     render();
   }
 
@@ -1205,21 +1440,52 @@
     inp.click();
   }
 
+  /* Kalenderdatei: Beginn/Ende (mehrtägig: DTEND am letzten Tag, ganztägig exklusiv = Tag danach), Regel und Ausnahmen */
+  function icsStamp(date, time) { return date.replace(/-/g, "") + "T" + time.replace(":", "") + "00"; }
+  function dtLines(e) {
+    var last = e.endDate && e.endDate > e.date ? e.endDate : e.date;
+    if (e.time) {
+      var en = last > e.date ? (e.end || e.time) : e.end && e.end > e.time ? e.end : addMin(e.time, 60);
+      return ["DTSTART:" + icsStamp(e.date, e.time), "DTEND:" + icsStamp(last, en)];
+    }
+    return ["DTSTART;VALUE=DATE:" + e.date.replace(/-/g, ""), "DTEND;VALUE=DATE:" + plusDays(last, 1).replace(/-/g, "")];
+  }
+  var BYD = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
+  function rrule(e) {
+    var r = e.rep, p;
+    if (r.f === "d") p = "FREQ=DAILY" + (+r.iv > 1 ? ";INTERVAL=" + r.iv : "");
+    else if (r.f === "w" || r.f === "2w") {
+      var iv = +r.iv || (r.f === "2w" ? 2 : 1);
+      p = "FREQ=WEEKLY" + (iv > 1 ? ";INTERVAL=" + iv : "") + (r.days && r.days.length ? ";BYDAY=" + r.days.slice().sort().map(function (d) { return BYD[d]; }).join(",") : "");
+    }
+    else if (r.f === "m") p = "FREQ=MONTHLY" + (r.nth ? ";BYDAY=" + r.nth + BYD[wdx(e.date)] : "");
+    else p = "FREQ=YEARLY";
+    return "RRULE:" + p + (r.until ? ";UNTIL=" + r.until.replace(/-/g, "") : "");
+  }
+  function exdate(e) { return e.time ? "EXDATE:" + e.ex.map(function (k) { return icsStamp(k, e.time); }).join(",") : "EXDATE;VALUE=DATE:" + e.ex.map(function (k) { return k.replace(/-/g, ""); }).join(","); }
+  // Regel vereinfachen: was das alte Format kann, bleibt im alten Format (ältere Geräte verstehen es weiter)
+  function repNorm(r, date) {
+    if (!r || !r.f) return null;
+    var o = { f: r.f }; if (r.until) o.until = r.until;
+    if (r.f === "w" || r.f === "2w") {
+      var iv = Math.max(1, Math.min(52, +r.iv || (r.f === "2w" ? 2 : 1))), days = (r.days || []).map(Number).filter(function (d, i, a) { return d >= 0 && d < 7 && a.indexOf(d) === i; }).sort();
+      if (days.length === 1 && days[0] === wdx(date)) days = [];
+      o.f = iv === 2 && !days.length ? "2w" : "w";
+      if (iv > 1 && o.f === "w") o.iv = iv;
+      if (days.length) o.days = days;
+    } else if (r.f === "d" && +r.iv > 1) o.iv = Math.min(365, +r.iv);
+    else if (r.f === "m" && r.nth) o.nth = +r.nth === -1 ? -1 : Math.max(1, Math.min(4, +r.nth));
+    return o;
+  }
   function ics() {
     function f(s) { return String(s).replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/[,;]/g, "\\$&"); }
     function stamp(date, time) { return date.replace(/-/g, "") + "T" + time.replace(":", "") + "00"; }
     var out = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SportGermany//Gemeinsamer Kalender//DE"];
     live().forEach(function (e) {
       out.push("BEGIN:VEVENT", "UID:" + e.id + "@sportgermany", "DTSTAMP:" + new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z");
-      if (e.time) {
-        out.push("DTSTART:" + stamp(e.date, e.time));
-        if (e.end) out.push("DTEND:" + stamp(e.date, e.end));
-      } else {
-        var n = parse(e.date); n.setDate(n.getDate() + 1);
-        out.push("DTSTART;VALUE=DATE:" + e.date.replace(/-/g, ""), "DTEND;VALUE=DATE:" + iso(n).replace(/-/g, ""));
-      }
+      out.push.apply(out, dtLines(e));
       out.push("SUMMARY:" + f(e.title), "DESCRIPTION:" + f((e.note ? e.note + "\n" : "") + "aus " + e.app));
-      if (e.rep && e.rep.f) out.push("RRULE:FREQ=" + { d: "DAILY", w: "WEEKLY", "2w": "WEEKLY;INTERVAL=2", m: "MONTHLY", y: "YEARLY" }[e.rep.f] + (e.rep.until ? ";UNTIL=" + e.rep.until.replace(/-/g, "") : ""));
+      if (e.rep && e.rep.f) out.push(rrule(e)); if (e.rep && e.rep.f && e.ex && e.ex.length) out.push(exdate(e));
       if (e.remind != null) out.push("BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + f(e.title), "TRIGGER:-PT" + (+e.remind) + "M", "END:VALARM");
       out.push("END:VEVENT");
     });
@@ -1516,7 +1782,7 @@
     var live = function (days) { return days.filter(function (i) { return plusDays(mon, i) >= t; }); };
     function ev(i, time, dur, title, app, note) {
       list.push({ id: uid(), title: title, date: plusDays(mon, i), time: time || "", end: time ? addMin(time, dur) : "", note: note || "Aus der Wochenplanung",
-        color: "", app: app, created: Date.now(), changed: Date.now(), remind: null, wp: mon });
+        color: "", app: app, area: areaOf({ app: app }), created: Date.now(), changed: Date.now(), remind: null, wp: mon });
     }
     if (c.topics.training) {
       live(a.train.days).forEach(function (i) {
@@ -1786,8 +2052,10 @@
   api.palette = openPalette;
   // Neuer Termin an einem Tag / bestehenden Termin bearbeiten (für den Kalender der Hülle)
   // vorgabe: erkannte Werte aus der Schnelleingabe (title, time, end, remind, rep, note) – das Formular zeigt sie vorausgefüllt
-  api.newEvent = function (date, vorgabe) { openPanel(date); state.edit = Object.assign({ date: date || iso(new Date()), app: APP }, vorgabe || {}); render(); };
-  api.editEvent = function (id, date) { var e = load().events.find(function (x) { return x.id === id && !x.deleted; }); openPanel(date || (e && e.date)); if (e) { state.edit = Object.assign({}, e); render(); } };
+  api.newEvent = function (date, vorgabe) { openPanel(date); state.quick = true; state.edit = Object.assign({ date: date || iso(new Date()), app: APP }, vorgabe || {}); render(); };
+  api.editEvent = function (id, date) { var e = load().events.find(function (x) { return x.id === id && !x.deleted; }); openPanel(date || (e && e.date)); state.quick = true; if (e) { state.edit = editOf(e, date); render(); } };
+  // Rückgängig-Hinweis der Hülle (snack(text, undo))
+  api.setSnack = function (f) { SNACK = f; api._snack = f; };
   api.openDesign = function () { openPanel(null, "design"); };
   api.openSync = function () { openPanel(null, "sync"); };
   api.wordsMatch = wordsMatch;
@@ -1815,6 +2083,7 @@
     mons.forEach(function (m) { if (!wpCfg().planned[m]) stdApply(m); });
   }
   setTimeout(stdAuto, 3000);
+  setTimeout(areaFill, 800);
   api.weekPlanSave = function (c) { wpSave(c); renderWpToast(); };
 
   /* ---------- Handykalender: Abgleich mit dem Kalender auf dem Handy über Kalenderdateien ----------
@@ -1824,11 +2093,16 @@
   var PKEY = "sg-handykalender-v1";
   function pState() { var s = jkey(PKEY) || {}; s.sent = s.sent || {}; s.opt = Object.assign({ schule: true, atmung: false }, s.opt || {}); return s; }
   function pSave(s) { try { localStorage.setItem(PKEY, JSON.stringify(s)); } catch (e) {} }
-  function pSig(e) { return [e.title, e.date, e.time || "", e.end || "", e.rep ? e.rep.f + (e.rep.until || "") : "", e.remind == null ? "" : e.remind, e.note || ""].join("|"); }
+  function pSig(e) {
+    var s0 = [e.title, e.date, e.time || "", e.end || "", e.rep ? e.rep.f + (e.rep.until || "") : "", e.remind == null ? "" : e.remind, e.note || ""].join("|");
+    // neue Angaben nur anhängen, wenn vorhanden – sonst gälten alle schon übertragenen Termine als geändert
+    var x = (e.endDate ? "|bis" + e.endDate : "") + (e.rep && (e.rep.days || e.rep.iv || e.rep.nth) ? "|" + JSON.stringify([e.rep.days || 0, e.rep.iv || 0, e.rep.nth || 0]) : "") + (e.rep && e.ex && e.ex.length ? "|ex" + e.ex.join(",") : "");
+    return s0 + x;
+  }
   // Was ins Handy gehört: eigene Termine (auch Wochenplanung) und – wählbar – Schultermine/Prüfungen und Atemübungen
   function pItems(opt) {
     var from = iso(new Date(Date.now() - 30 * 864e5)), to = iso(new Date(Date.now() + 400 * 864e5));
-    var out = live().filter(function (e) { return e.date >= from || (e.rep && e.rep.f && (!e.rep.until || e.rep.until >= from)); })
+    var out = live().filter(function (e) { return e.date >= from || (e.endDate && e.endDate >= from) || (e.rep && e.rep.f && (!e.rep.until || e.rep.until >= from)); })
       .filter(function (e) { return e.app !== "Handy" || (e.changed || 0) > (e.imported || 0) + 1000; });
     var ext = [];
     try { ext = externalItems(from, to); } catch (x) {}
@@ -1846,15 +2120,10 @@
     var out = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SportGermany//Planer//DE", "CALSCALE:GREGORIAN", "METHOD:PUBLISH"];
     list.forEach(function (e) {
       out.push("BEGIN:VEVENT", "UID:" + (e.ext ? e.ext.replace(/^handy:/, "") : e.id + "@planer"), "DTSTAMP:" + now, "SEQUENCE:" + Math.floor((e.changed || Date.now()) / 1000 % 2147483647));
-      if (e.time) {
-        out.push("DTSTART:" + stamp(e.date, e.time), "DTEND:" + stamp(e.date, e.end && e.end > e.time ? e.end : addMin(e.time, 60)));
-      } else {
-        var n = parse(e.date); n.setDate(n.getDate() + 1);
-        out.push("DTSTART;VALUE=DATE:" + e.date.replace(/-/g, ""), "DTEND;VALUE=DATE:" + iso(n).replace(/-/g, ""));
-      }
+      out.push.apply(out, dtLines(e));
       out.push("SUMMARY:" + f(e.title));
       if (e.note) out.push("DESCRIPTION:" + f(e.note));
-      if (e.rep && e.rep.f) out.push("RRULE:FREQ=" + { d: "DAILY", w: "WEEKLY", "2w": "WEEKLY;INTERVAL=2", m: "MONTHLY", y: "YEARLY" }[e.rep.f] + (e.rep.until ? ";UNTIL=" + e.rep.until.replace(/-/g, "") : ""));
+      if (e.rep && e.rep.f) out.push(rrule(e)); if (e.rep && e.rep.f && e.ex && e.ex.length) out.push(exdate(e));
       if (e.remind != null && e.remind !== "") out.push("BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + f(e.title), "TRIGGER:-PT" + (+e.remind) + "M", "END:VALARM");
       out.push("END:VEVENT");
     });
@@ -1903,17 +2172,28 @@
       else if (name === "DTEND") { var e2 = icsDate(val, params); if (e2) ev._end = e2; }
       else if (name === "DURATION") { var du = /PT(?:(\d+)H)?(?:(\d+)M)?/.exec(val); if (du) ev._dur = (+(du[1] || 0)) * 60 + (+(du[2] || 0)); }
       else if (name === "RRULE") {
-        var fq = (/FREQ=(\w+)/.exec(val) || [])[1], iv = +((/INTERVAL=(\d+)/.exec(val) || [])[1] || 1), un = (/UNTIL=(\d{8})/.exec(val) || [])[1];
-        var f = { DAILY: "d", WEEKLY: iv === 2 ? "2w" : "w", MONTHLY: "m", YEARLY: "y" }[fq];
-        if (f && (iv === 1 || f === "2w")) ev.rep = { f: f, until: un ? un.slice(0, 4) + "-" + un.slice(4, 6) + "-" + un.slice(6, 8) : "" };
+        var fq = (/FREQ=(\w+)/.exec(val) || [])[1], iv = +((/INTERVAL=(\d+)/.exec(val) || [])[1] || 1), un = (/UNTIL=(\d{8})/.exec(val) || [])[1], by = (/BYDAY=([^;]+)/.exec(val) || [])[1];
+        var f = { DAILY: "d", WEEKLY: "w", MONTHLY: "m", YEARLY: "y" }[fq], rp = f ? { f: f } : null;
+        if (rp && f === "w") { rp.iv = iv; if (by) rp.days = by.split(",").map(function (x) { return BYD.indexOf(x.trim().slice(-2).toUpperCase()); }).filter(function (d) { return d >= 0; }); }
+        else if (rp && f === "d") rp.iv = iv;
+        else if (rp && f === "m") { var nm = by && /^([+-]?\d)(\w\w)$/.exec(by.trim()); if (nm) rp.nth = +nm[1]; if (iv > 1 || (by && !nm)) rp = null; }
+        else if (rp && iv > 1) rp = null;   // alle N Jahre: kann der Kalender nicht – dann als einzelner Termin
+        if (rp) { if (un) rp.until = un.slice(0, 4) + "-" + un.slice(4, 6) + "-" + un.slice(6, 8); ev._rep = rp; }
       }
+      else if (name === "EXDATE") val.split(",").forEach(function (x) { var d0 = /^(\d{4})(\d{2})(\d{2})/.exec(x.trim()); if (d0) (ev._ex = ev._ex || []).push(d0[1] + "-" + d0[2] + "-" + d0[3]); });
       else if (name === "STATUS" && /CANCELLED/i.test(val)) ev.cancelled = true;
     });
     return out.filter(function (e) { return !e.cancelled; }).map(function (e) {
-      var r = { title: e.title || "Termin", date: e.date, time: e.time || "", end: "", note: e.note || "", uid: e.uid || "", rep: e.rep || null, remind: e.remind == null ? null : e.remind };
+      var r = { title: e.title || "Termin", date: e.date, time: e.time || "", end: "", note: e.note || "", uid: e.uid || "", rep: e._rep ? repNorm(e._rep, e.date) : null, remind: e.remind == null ? null : e.remind };
       if (r.time && e._end && e._end.date === r.date && e._end.time > r.time) r.end = e._end.time;
+      else if (r.time && e._end && e._end.date > r.date) {
+        // über Mitternacht bis 0:00 = bis zum Ende des Vortags
+        if (e._end.time === "00:00") { var lt = plusDays(e._end.date, -1); if (lt > r.date) r.endDate = lt; else r.end = "23:59"; }
+        else { r.endDate = e._end.date; r.end = e._end.time; }
+      }
       else if (r.time && e._dur) r.end = addMin(r.time, e._dur);
-      if (!r.time && e._end && e._end.date) { var last = parse(e._end.date); last.setDate(last.getDate() - 1); if (iso(last) > r.date) r.note = (r.note ? r.note + "\n" : "") + "bis " + last.getDate() + "." + (last.getMonth() + 1) + "." + last.getFullYear(); }
+      if (!r.time && e._end && e._end.date) { var last = plusDays(e._end.date, -1); if (last > r.date) r.endDate = last; }
+      if (r.rep && e._ex) r.ex = e._ex.filter(function (k, i, a) { return a.indexOf(k) === i; }).sort();
       return r;
     });
   }
@@ -1961,6 +2241,8 @@
           if (!e && !own) e = d.events.find(function (y) { return !y.deleted && y.title === x.title && y.date === x.date && (y.time || "") === (x.time || ""); });
           var patch = { title: x.title, date: x.date, time: x.time || "", end: x.end || "", note: x.note || "" };
           if (x.rep) patch.rep = x.rep;
+          if (x.endDate || (e && e.endDate)) patch.endDate = x.endDate || "";
+          if (x.ex) patch.ex = x.ex;
           if (x.remind != null) patch.remind = x.remind;
           if (e) {
             var diff = Object.keys(patch).some(function (k) { return JSON.stringify(e[k] == null ? "" : e[k]) !== JSON.stringify(patch[k] == null ? "" : patch[k]); });
@@ -1996,14 +2278,22 @@
   function hOut(opt) {
     var from = iso(new Date(Date.now() + HDAYS[0] * 864e5)), to = iso(new Date(Date.now() + HDAYS[1] * 864e5)), out = [];
     function add(x, desc) {
-      var ev = { key: (x.id || x.title) + "@" + x.date, title: x.title, description: desc };
-      if (x.time) { ev.start = dayMs(x.date, x.time); ev.end = x.end && x.end > x.time ? dayMs(x.date, x.end) : ev.start + 3600e3; ev.allDay = false; }
-      else { ev.start = utcDay(x.date); ev.end = ev.start + 864e5; ev.allDay = true; }
+      // mehrtägig: ein Termin über den ganzen Zeitraum (nicht je Tag einer)
+      var d0 = x.of > 1 ? x.occ : x.date, d1 = x.of > 1 ? x.lastDay : x.date;
+      var ev = { key: (x.id || x.title) + "@" + d0, title: x.title, description: desc };
+      if (x.time || (x.of > 1 && x.orig && x.orig.time)) {
+        var t0 = x.of > 1 ? x.orig.time : x.time, t1 = x.of > 1 ? x.orig.end : x.end;
+        ev.start = dayMs(d0, t0); ev.end = d1 > d0 ? dayMs(d1, t1 || t0) : t1 && t1 > t0 ? dayMs(d0, t1) : ev.start + 3600e3; ev.allDay = false;
+      }
+      else { ev.start = utcDay(d0); ev.end = utcDay(d1) + 864e5; ev.allDay = true; }
       ev.reminder = x.remind == null || x.remind === "" ? -1 : +x.remind;
       ev.h = strHash([ev.title, ev.start, ev.end, ev.description, ev.reminder].join("|"));
       out.push(ev);
     }
-    if (opt.termine) occurrences(from, to).forEach(function (e) { if (e.app !== "Handy") add(e, (e.note ? e.note + "\n" : "") + "Planer · " + e.app); });
+    if (opt.termine) occurrences(from, to).forEach(function (e) {
+      if (e.app === "Handy" || (e.of > 1 && e.day > 1 && e.date !== from)) return;   // mehrtägig: einmal (am ersten Tag oder am Anfang des Zeitraums)
+      add(e, (e.note ? e.note + "\n" : "") + "Planer · " + e.app);
+    });
     var ext = []; try { ext = externalItems(from, to, true); } catch (x) {}
     ext.forEach(function (x) {
       if (x.learn) return;
@@ -2022,7 +2312,8 @@
     var s = jkey(HKEY);
     if (!s || !s.on || !s.cache || !HP()) return [];
     var off = s.off || {};
-    return (s.cache.events || []).filter(function (e) { return e.date >= from && e.date <= to && !off[e.cal]; });
+    // mehrtägige Handytermine wie eigene: je Tag ein Eintrag („Tag 2 von 4“)
+    return occurrences(from, to, (s.cache.events || []).filter(function (e) { return !off[e.cal]; }));
   }
   var hBusy = false, hAgain = false, hLastOut = "";
   function hSync(force) {
@@ -2042,9 +2333,14 @@
     }).then(function (x) {
       var list = (x[0].events || []).map(function (e) {
         var b = new Date(e.begin), en = new Date(e.end), date, time = "", end = "";
-        if (e.allDay) { date = new Date(e.begin + new Date(e.begin).getTimezoneOffset() * 60000); date = iso(date); }
-        else { date = iso(b); time = pad(b.getHours()) + ":" + pad(b.getMinutes()); end = iso(en) === date ? pad(en.getHours()) + ":" + pad(en.getMinutes()) : ""; }
-        return { id: "hd-" + e.eventId + "-" + e.begin, title: e.title || "(ohne Titel)", date: date, time: time, end: end, app: "Handy", color: e.color, cal: String(e.calendarId), calName: e.calendar,
+        var endDate = "";
+        if (e.allDay) { date = iso(new Date(e.begin + new Date(e.begin).getTimezoneOffset() * 60000)); var lastD = iso(new Date(e.end - 864e5 + new Date(e.end).getTimezoneOffset() * 60000)); if (lastD > date) endDate = lastD; }
+        else {
+          date = iso(b); time = pad(b.getHours()) + ":" + pad(b.getMinutes());
+          var ed = iso(en), et = pad(en.getHours()) + ":" + pad(en.getMinutes());
+          if (ed === date) end = et; else if (et === "00:00" && plusDays(ed, -1) === date) end = "23:59"; else { endDate = et === "00:00" ? plusDays(ed, -1) : ed; end = et === "00:00" ? "" : et; }
+        }
+        return { id: "hd-" + e.eventId + "-" + e.begin, title: e.title || "(ohne Titel)", date: date, endDate: endDate, time: time, end: end, app: "Handy", color: e.color, cal: String(e.calendarId), calName: e.calendar,
           note: [e.location ? "Ort: " + e.location : "", e.description || ""].filter(Boolean).join("\n"), ro: "Handykalender", phone: { eventId: e.eventId, recurring: !!e.recurring, begin: e.begin, end: e.end, allDay: !!e.allDay } };
       });
       res.read = list.length;
@@ -2102,7 +2398,7 @@
     var now = Date.now(), from = iso(new Date()), to = iso(new Date(now + 14 * 864e5)), out = [];
     function at(k, t) { var d = parse(k); var p = t.split(":"); d.setHours(+p[0], +p[1], 0, 0); return d.getTime(); }
     occurrences(from, to).forEach(function (e) {
-      if (!e.time || e.app === "Handy") return;
+      if (!e.time || e.app === "Handy" || e.status === "skip" || e.status === "done") return;   // mehrtägig: Uhrzeit steht nur am ersten Tag
       var start = at(e.date, e.time), tr = /^(Training|Mobility|Rodeln)/.test(e.app || "");
       if (opt.termine && e.remind != null && e.remind !== "") out.push({ key: "r-" + e.id + "@" + e.date, at: start - (+e.remind) * 60000, title: e.title, body: (+e.remind ? "In " + (+e.remind >= 60 ? (+e.remind / 60) + " Std." : (+e.remind) + " Min.") : "Jetzt") + " · " + e.time + " Uhr", go: tr ? (e.app === "Mobility" ? "mobility/mobility/heute" : "training/heute") : "kalender" });
       if (opt.training && tr) out.push({ key: "t-" + e.id + "@" + e.date, at: start, title: e.title + " – jetzt starten", body: "Antippen, dann geht es los", go: e.app === "Mobility" ? "mobility/mobility/heute" : "training/heute" });

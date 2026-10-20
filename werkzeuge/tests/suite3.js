@@ -4,7 +4,7 @@ const fs = require('fs');
 const U = 'http://localhost:8765/planer/', APP = U + 'app/';
 const SEED = fs.readFileSync(__dirname + '/seed.js', 'utf8');
 const ONLY = process.argv[2] || '';
-const VER = '3.7.0';
+const VER = '3.8.0';
 const results = [];
 const PAGES = ['', 'schule/', 'pause/', 'training/', 'training/mobility/', 'training/atmung/', 'training/bahnplan/', 'bibel/', 'wissen/'];
 const PHONE = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 };
@@ -1296,6 +1296,261 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(await p.evaluate(() => { const el = document.querySelector('.flash'); return el && Math.abs(el.getBoundingClientRect().top) < 300; }), 'Stelle nicht markiert');
     await p.goBack(); await wait(p, 300); assert(await p.inputValue('#q') === 'Eisbad-Dilemma', 'Suchbegriff nicht behalten');
     assert(!e.length, e.join(' | ')); await c.close();
+  });
+  /* ---------- P7: Kalender-Verbesserungen (mehrtägig, Serien, Verschieben, Status, Bereich) ---------- */
+  const FIX350 = fs.readFileSync(__dirname + '/stand-3.5.0.js', 'utf8');
+  const LOC = `const pad=n=>String(n).padStart(2,'0'), K=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());};`;
+  await test('P7 Alte Daten (seed + Stand 3.5.0) laden fehlerfrei, Bereich einmalig nachgetragen, Serien wie vorher', async () => {
+    const c = await ctxFor(PHONE); await c.addInitScript(FIX350); const p = await c.newPage(), e = watch(p);
+    await open(p, '#kalender'); await wait(p, 600);
+    const r = await p.evaluate(LOC + `(() => {
+      const d = JSON.parse(localStorage.getItem('sg-shared-calendar-v1')), by = id => d.events.find(x => x.id === id);
+      const occ = SharedCalendar.occurrences(K(-21), K(14)).filter(x => x.sid === 'o2').map(x => x.date);
+      const phys = SharedCalendar.occurrences(K(-14), K(60)).filter(x => x.sid === 'o3').length;
+      return { areas: [by('o1').area, by('o5').area, by('o6').area, by('o9').area, by('o2').area], changed: [by('o1').changed, by('o2').changed], deleted: !by('o8') || !by('o8').area,
+        occ, exp: [K(-21), K(-7), K(7)], phys, rows: document.querySelectorAll('#dayplan .ev').length, plan: SharedCalendar.allItems(K(1), K(2)).filter(x => x.plan).map(x => x.id).sort().join() };
+    })()`);
+    assert(JSON.stringify(r.areas) === JSON.stringify(['training', 'mobility', 'schule', 'termin', 'termin']), 'Bereiche ' + r.areas);
+    assert(r.changed[0] === 1 && r.changed[1] === 2 && r.deleted, 'Änderungszeit blieb / gelöschte unberührt');
+    assert(JSON.stringify(r.occ) === JSON.stringify([r.exp[0], r.exp[2]]), 'zweiwöchentlich mit Ausnahme ' + r.occ);
+    assert(r.phys === 7, 'Physio bis Serienende: ' + r.phys);
+    assert(r.plan === 'o4,o5,o6,pp-p2', 'planbare Einträge (mit Atemübung aus dem Seed) ' + r.plan);
+    assert(r.rows >= 2 && !e.length, e.join(' | ')); await c.close();
+  });
+  function K0(k, n) { const d = new Date(k + 'T12:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+  await test('P7 Mehrtägig: Tag 2 von 4, Balken im Monat (neu an der Wochengrenze), .ics DTEND exklusiv, Import, Danach einmal', async () => {
+    const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
+    await open(p, '#kalender');
+    const r = await p.evaluate(LOC + `(() => {
+      // Fr bis Mo nächster Woche: über die Wochengrenze
+      const d = new Date(); d.setDate(d.getDate() + 7 + (5 - (d.getDay() + 6) % 7 - 1 + 7) % 7); const fr = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+      const e3 = new Date(d); e3.setDate(e3.getDate() + 3); const mo = e3.getFullYear()+'-'+pad(e3.getMonth()+1)+'-'+pad(e3.getDate());
+      const n = SharedCalendar.add({ title: 'Trainingslager', date: fr, endDate: mo, app: 'Training' });
+      const occ = SharedCalendar.occurrences(fr, mo).filter(x => x.id === n.id).map(x => x.day + '/' + x.of);
+      const ics = SharedCalendar.phone.ics([JSON.parse(localStorage.getItem('sg-shared-calendar-v1')).events.find(x => x.id === n.id)]);
+      const back = SharedCalendar.phone.parse(ics)[0];
+      const t = SharedCalendar.add({ title: 'Wettkampf', date: fr, endDate: K(0) > fr ? fr : (() => { const x = new Date(d); x.setDate(x.getDate() + 1); return x.getFullYear()+'-'+pad(x.getMonth()+1)+'-'+pad(x.getDate()); })(), time: '18:00', end: '14:00', app: 'Kalender' });
+      const ics2 = SharedCalendar.phone.ics([JSON.parse(localStorage.getItem('sg-shared-calendar-v1')).events.find(x => x.id === t.id)]);
+      const back2 = SharedCalendar.phone.parse(ics2)[0];
+      return { fr, mo, occ, dtend: /DTEND;VALUE=DATE:(\\d+)/.exec(ics)[1], back: [back.date, back.endDate, back.time], back2: [back2.time, back2.endDate, back2.end], id: n.id };
+    })()`);
+    assert(r.occ.join() === '1/4,2/4,3/4,4/4', 'Tage ' + r.occ);
+    assert(r.dtend === K0(r.mo, 1).replace(/-/g, ''), 'DTEND exklusiv ' + r.dtend);
+    assert(r.back[0] === r.fr && r.back[1] === r.mo && !r.back[2], 'Import ganztägig ' + r.back);
+    assert(r.back2[0] === '18:00' && r.back2[1] === K0(r.fr, 1) && r.back2[2] === '14:00', 'Import mit Uhrzeit ' + r.back2);
+    await p.evaluate(k => { location.hash = 'kalender'; }, r.fr); await wait(p, 200);
+    // Tag 2 im Tagesplan
+    await p.evaluate(k => { const b = document.querySelector('#mgrid [data-mday="' + k + '"]'); if (!b) { document.querySelector('[data-c=mnext]').click(); } }, K0(r.fr, 1)); await wait(p, 300);
+    await p.click('#mgrid [data-mday="' + K0(r.fr, 1) + '"]'); await wait(p, 400);
+    assert(/Tag 2 von 4/.test(await p.textContent('#dayplan')), 'Tag 2 von 4 im Tagesplan');
+    const bars = await p.evaluate(k => [...document.querySelectorAll('#mgrid .mcell')].filter(c => c.querySelector('.mspan')).map(c => c.querySelector('[data-mday]').dataset.mday + ':' + c.querySelector('.mspan').className), r.fr);
+    const mine = bars.filter(b => b >= r.fr && b <= r.mo + '~');
+    assert(mine.length >= 4 && /\bs\b/.test(mine[0]) && /\bf\b/.test(mine[2].split(':')[1]) && /\bs\b/.test(mine[3].split(':')[1]), 'Balken ' + mine.join(' | '));
+    const next = await p.evaluate(() => [...document.querySelectorAll('#cal-next .nd')].map(x => x.textContent).filter(t => /Trainingslager/.test(t)).length);
+    assert(next <= 1, 'Danach doppelt: ' + next);
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('P7 Serien: Wochentage, alle N Wochen, n-ter Wochentag; RRULE/EXDATE-Rundreise; Formular', async () => {
+    const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
+    await open(p, '#kalender');
+    const r = await p.evaluate(LOC + `(() => {
+      const S = SharedCalendar, ev = id => JSON.parse(localStorage.getItem('sg-shared-calendar-v1')).events.find(x => x.id === id);
+      const m = (() => { const d = new Date(); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d; })(), mo = m.getFullYear()+'-'+pad(m.getMonth()+1)+'-'+pad(m.getDate());
+      const a = S.add({ title: 'Kraft Mo Mi Fr', date: mo, time: '17:00', end: '18:00', app: 'Training', rep: { f: 'w', days: [0, 2, 4] } });
+      const b = S.add({ title: 'Alle 3 Wochen Di', date: mo, time: '09:00', app: 'Kalender', rep: { f: 'w', days: [1], iv: 3 } });
+      const c = S.add({ title: 'Erster Montag', date: '2026-01-05', app: 'Kalender', rep: { f: 'm', nth: 1 } });
+      const l = S.add({ title: 'Letzter Freitag', date: '2026-01-30', app: 'Kalender', rep: { f: 'm', nth: -1 } });
+      S.skip(a.id, (() => { const x = new Date(m); x.setDate(x.getDate() + 2); return x.getFullYear()+'-'+pad(x.getMonth()+1)+'-'+pad(x.getDate()); })());
+      const to = (() => { const x = new Date(m); x.setDate(x.getDate() + 27); return x.getFullYear()+'-'+pad(x.getMonth()+1)+'-'+pad(x.getDate()); })();
+      const wd = k => ['So','Mo','Di','Mi','Do','Fr','Sa'][new Date(k + 'T12:00').getDay()];
+      const oa = S.occurrences(mo, to).filter(x => x.sid === a.id).map(x => wd(x.date)), ob = S.occurrences(mo, to).filter(x => x.sid === b.id).map(x => x.date);
+      const oc = S.occurrences('2026-01-01', '2026-06-30').filter(x => x.sid === c.id).map(x => x.date), ol = S.occurrences('2026-01-01', '2026-04-30').filter(x => x.sid === l.id).map(x => x.date);
+      const ics = S.phone.ics([ev(a.id), ev(b.id), ev(c.id), ev(l.id)]), back = S.phone.parse(ics);
+      return { oa, ob, oc, ol, rr: (ics.match(/RRULE:[^\\r]+/g) || []).join(' | '), ex: /EXDATE:\\d{8}T170000/.test(ics),
+        back: back.map(x => JSON.stringify(x.rep) + (x.ex ? x.ex.length : 0)), src: [a, b, c, l].map(x => JSON.stringify(ev(x.id).rep) + ((ev(x.id).ex || []).length)) };
+    })()`);
+    assert(r.oa.length === 11 && r.oa.slice(0, 5).join() === 'Mo,Fr,Mo,Mi,Fr', 'Mo/Mi/Fr mit Ausnahme ' + r.oa);
+    assert(r.ob.length === 2, 'alle 3 Wochen ' + r.ob);
+    assert(r.oc.join() === '2026-01-05,2026-02-02,2026-03-02,2026-04-06,2026-05-04,2026-06-01', 'erster Montag ' + r.oc);
+    assert(r.ol.join() === '2026-01-30,2026-02-27,2026-03-27,2026-04-24', 'letzter Freitag ' + r.ol);
+    assert(/BYDAY=MO,WE,FR/.test(r.rr) && /INTERVAL=3;BYDAY=TU/.test(r.rr) && /BYDAY=1MO/.test(r.rr) && /BYDAY=-1FR/.test(r.rr) && r.ex, 'RRULE ' + r.rr);
+    assert(JSON.stringify(r.back) === JSON.stringify(r.src), 'Rundreise ' + r.back.join(' ; ') + ' ≠ ' + r.src.join(' ; '));
+    // Formular: „An bestimmten Wochentagen“ speichert Wochentage und Intervall
+    await p.evaluate(() => SharedCalendar.newEvent()); await wait(p, 400);
+    const f = p.locator('#sg-cal-root, body').first();
+    await p.fill('[name=title]', 'Lauf Di Do'); await p.selectOption('[name=rep]', 'wd'); await wait(p, 100);
+    const today = await p.evaluate(() => (new Date().getDay() + 6) % 7);
+    for (const i of [1, 3]) if (i !== today) await p.click('[data-wd="' + i + '"]');
+    if (today !== 1 && today !== 3) await p.click('[data-wd="' + today + '"]');
+    await p.fill('[name=iv]', '2'); await p.click('[data-a=save]'); await wait(p, 400);
+    const saved = await p.evaluate(() => JSON.parse(localStorage.getItem('sg-shared-calendar-v1')).events.find(x => x.title === 'Lauf Di Do').rep);
+    assert(saved && saved.f === 'w' && saved.iv === 2 && JSON.stringify(saved.days) === '[1,3]', 'Formular ' + JSON.stringify(saved));
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('P7 Serie ändern/löschen: nur dieser, dieser und folgende, alle – jeweils mit Rückgängig', async () => {
+    const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
+    await open(p, '#kalender');
+    const id = await p.evaluate(LOC + `SharedCalendar.add({ title: 'Teamtreffen', date: K(-7), time: '18:00', app: 'Kalender', rep: { f: 'w' } }).id`);
+    const occ = await p.evaluate(LOC + 'K(7)');
+    const ev = () => p.evaluate(i => JSON.parse(localStorage.getItem('sg-shared-calendar-v1')).events.filter(x => !x.deleted && (x.id === i || x.title.indexOf('Teamtreffen') === 0)), id);
+    const step = async (title, mode) => {
+      await p.evaluate(([i, k]) => SharedCalendar.editEvent(i, k), [id, occ]); await wait(p, 400);
+      assert(await p.inputValue('[name=date]') === occ, 'Formular zeigt den gewählten Tag');
+      if (title) { await p.fill('[name=title]', title); await p.click('[data-a=save]'); } else await p.click('[data-a=del]');
+      await wait(p, 200); assert(/wiederholt sich/.test(await p.textContent('.ask')), 'Frage nach Umfang');
+      await p.click('[data-a=mode][data-m=' + mode + ']'); await wait(p, 400);
+    };
+    await step('Teamtreffen (verlegt)', 'one');
+    let l = await ev(); const base = l.find(x => x.id === id);
+    assert((base.ex || []).includes(occ) && l.some(x => x.title === 'Teamtreffen (verlegt)' && x.date === occ && !x.rep), 'nur dieser ' + JSON.stringify(l.map(x => [x.title, x.date, x.ex])));
+    assert(/Nur dieser Termin geändert/.test(await p.textContent('#snack')), 'Hinweis');
+    await p.click('#snack button'); await wait(p, 400);
+    l = await ev(); assert(l.length === 1 && !(l[0].ex || []).length && l[0].title === 'Teamtreffen', 'Rückgängig (nur dieser) ' + JSON.stringify(l));
+    await step('Teamtreffen neu', 'next');
+    l = await ev(); assert(l.find(x => x.id === id).rep.until === K0(occ, -1) && l.some(x => x.title === 'Teamtreffen neu' && x.date === occ && x.rep && x.rep.f === 'w'), 'folgende ' + JSON.stringify(l));
+    await p.click('#snack button'); await wait(p, 400);
+    await step('Teamtreffen alle', 'all');
+    l = await ev(); assert(l.length === 1 && l[0].title === 'Teamtreffen alle' && l[0].date === K0(occ, -14), 'alle ' + JSON.stringify(l));
+    await p.click('#snack button'); await wait(p, 400);
+    await step(null, 'one');
+    l = await ev(); assert((l[0].ex || []).includes(occ), 'löschen nur dieser');
+    await p.click('#snack button'); await wait(p, 400);
+    await step(null, 'all'); l = await ev(); assert(!l.length, 'Serie gelöscht');
+    await p.click('#snack button'); await wait(p, 400); l = await ev(); assert(l.length === 1, 'Löschen rückgängig');
+    // einzelner Termin: Löschen ohne Rückfrage, mit Rückgängig
+    const sid = await p.evaluate(LOC + `SharedCalendar.add({ title: 'Einzeln', date: K(3), app: 'Kalender' }).id`);
+    await p.evaluate(i => SharedCalendar.editEvent(i), sid); await wait(p, 300); await p.click('[data-a=del]'); await wait(p, 300);
+    assert(/gelöscht/.test(await p.textContent('#snack')), 'Hinweis Löschen'); await p.click('#snack button'); await wait(p, 300);
+    assert(await p.evaluate(i => !JSON.parse(localStorage.getItem('sg-shared-calendar-v1')).events.find(x => x.id === i).deleted, sid), 'einzeln wiederhergestellt');
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('P7 Verschieben, Auslassen, Erledigt – nur dieser Eintrag, Status sichtbar, Wochenbilanz, Rückgängig', async () => {
+    const c = await ctxFor(Object.assign({ timezoneId: 'Europe/Berlin' }, PHONE)), p = await c.newPage(), e = watch(p);
+    await open(p, '#kalender');
+    const t0 = await p.evaluate(LOC + 'K(0)'), t1 = await p.evaluate(LOC + 'K(1)');
+    const c1 = () => p.evaluate(() => JSON.parse(localStorage.getItem('sg-shared-calendar-v1')).events.find(x => x.id === 'c1'));
+    const row = () => p.locator('#dayplan .ev', { hasText: 'Rodeltraining' });
+    const bal0 = await p.textContent('.calhd');
+    await row().click(); await wait(p, 300);
+    assert(/Erledigt/.test(await p.textContent('#sheet')) && /Auf morgen verschieben/.test(await p.textContent('#sheet')) && /Heute auslassen/.test(await p.textContent('#sheet')), 'Aktionen im Blatt');
+    await p.click('#sheet [data-s=tom]'); await wait(p, 500);
+    assert((await c1()).date === t1 && /Auf morgen verschoben/.test(await p.textContent('#snack')), 'morgen');
+    await p.click('#snack button'); await wait(p, 400); assert((await c1()).date === t0, 'Rückgängig morgen');
+    // Auslassen mit Grund
+    await row().click(); await wait(p, 300); await p.click('#sheet [data-s=skip]'); await wait(p, 200);
+    await p.click('#sheet [data-s="w:Wetter"]'); await p.click('#sheet [data-s=ok]'); await wait(p, 500);
+    let x = await c1(); assert(x.status === 'skip' && x.why === 'Wetter', 'ausgelassen ' + JSON.stringify(x));
+    assert(await p.evaluate(() => { const r = [...document.querySelectorAll('#dayplan .ev')].find(b => /Rodeltraining/.test(b.textContent)); return r.classList.contains('skip') && /ausgelassen \(Wetter\)/.test(r.textContent) && getComputedStyle(r).opacity < 0.8; }), 'gedämpft mit Grund');
+    assert(/ausgelassen/.test(await p.textContent('.calhd')), 'Wochenbilanz zählt ausgelassen: ' + await p.textContent('.calhd'));
+    await p.click('#snack button'); await wait(p, 400); x = await c1(); assert(!x.status && !x.why, 'Rückgängig auslassen');
+    // Erledigt
+    await row().click(); await wait(p, 300); await p.click('#sheet [data-s=done]'); await wait(p, 500);
+    assert((await c1()).status === 'done' && await p.evaluate(() => /✓/.test([...document.querySelectorAll('#dayplan .ev')].find(b => /Rodeltraining/.test(b.textContent)).textContent)), '✓ sichtbar');
+    const bal = await p.textContent('.calhd .wbal'); assert(/^1 von \d+ Einheiten/.test(bal), 'Bilanz ' + bal);
+    await p.click('#snack button'); await wait(p, 400); assert(!(await c1()).status, 'Rückgängig erledigt');
+    // Heute später: neue Uhrzeit, Dauer bleibt
+    await row().click(); await wait(p, 300); await p.click('#sheet [data-s=later]'); await wait(p, 200);
+    await p.fill('#plt', '19:00'); await p.click('#sheet [data-s=ok]'); await wait(p, 500);
+    x = await c1(); assert(x.time === '19:00' && x.end === '20:30' && x.date === t0, 'später ' + x.time + '–' + x.end);
+    await p.click('#snack button'); await wait(p, 300);
+    // Anderen Tag
+    await row().click(); await wait(p, 300); await p.click('#sheet [data-s=day2]'); await wait(p, 200);
+    await p.fill('#pld', K0(t0, 3)); await p.click('#sheet [data-s=ok]'); await wait(p, 500);
+    x = await c1(); assert(x.date === K0(t0, 3) && x.time === '16:00', 'anderer Tag ' + x.date);
+    await p.click('#snack button'); await wait(p, 300); assert((await c1()).date === t0, 'Rückgängig anderer Tag');
+    // Atemübung aus Atmung & HRV (andere Datenquelle) verschieben
+    await p.locator('#dayplan .ev', { hasText: 'Langsames Atmen' }).click(); await wait(p, 300); await p.click('#sheet [data-s=tom]'); await wait(p, 500);
+    const pp = await p.evaluate(() => JSON.parse(localStorage.getItem('pulsplan.v1')).entries.find(x => x.id === 'p1'));
+    assert(pp.date === t1, 'Atemübung verschoben ' + pp.date);
+    await p.click('#snack button'); await wait(p, 300);
+    assert(await p.evaluate(() => JSON.parse(localStorage.getItem('pulsplan.v1')).entries.find(x => x.id === 'p1').date) === t0, 'Atemübung zurück');
+    // Standardwoche unberührt
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('P7 Automatisch erledigt aus dem Trainingstagebuch – je Tag nie doppelt, ohne Extra-Zeile', async () => {
+    const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
+    await p.addInitScript(LOC + `if (!localStorage.getItem('p7log')) { localStorage.setItem('p7log','1'); localStorage.setItem('wk_log', JSON.stringify({ [K(0)]: { done: true, type: 'strength', sec: 2400 } })); }`);
+    await open(p, '#kalender');
+    await p.evaluate(LOC + `SharedCalendar.add({ title: 'Abendlauf', date: K(0), time: '19:00', end: '19:40', app: 'Training' })`); await wait(p, 400);
+    const r = await p.evaluate(LOC + `SharedCalendar.allItems(K(0), K(0)).filter(x => /Rodeltraining|Abendlauf|erledigt/.test(x.title)).map(x => x.title + ':' + (x.st || '-') + (x.auto ? '*' : ''))`);
+    assert(r.join() === 'Rodeltraining:done*,Abendlauf:-', 'Zuordnung ' + r);
+    assert(!(await p.textContent('#dayplan')).includes('Training erledigt'), 'Extra-Zeile weg');
+    assert(/^1 von 2 Einheiten/.test(await p.textContent('.calhd .wbal')), 'Bilanz ' + await p.textContent('.calhd .wbal'));
+    // „Wieder offen“ übersteuert den Automatismus
+    await p.locator('#dayplan .ev', { hasText: 'Rodeltraining' }).click(); await wait(p, 300); await p.click('#sheet [data-s=open1]'); await wait(p, 500);
+    const r2 = await p.evaluate(LOC + `SharedCalendar.allItems(K(0), K(0)).filter(x => /Rodeltraining|Abendlauf/.test(x.title)).map(x => x.title + ':' + (x.st || '-'))`);
+    assert(r2.join() === 'Rodeltraining:-,Abendlauf:done', 'nach Wieder offen ' + r2);
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('P7 Tagesplan: „Frei … bis …“, Jetzt-Linie, Überschneidung im Blatt, Zeitraster mit Blöcken nebeneinander', async () => {
+    const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
+    await open(p, '#kalender');
+    await p.evaluate(LOC + `SharedCalendar.add({ title: 'Schwimmen', date: K(2), time: '10:00', end: '11:00', app: 'Training' }); SharedCalendar.add({ title: 'Physio', date: K(2), time: '13:00', end: '14:00', app: 'Kalender' }); SharedCalendar.add({ title: 'Kurz', date: K(2), time: '13:30', end: '15:00', app: 'Kalender' });`);
+    await p.click('#strip [data-day="' + await p.evaluate(LOC + 'K(2)') + '"]').catch(async () => { await p.evaluate(LOC + `document.querySelector('[data-mday="' + K(2) + '"]').click()`); });
+    await wait(p, 400);
+    assert(/Frei 11:00 bis 13:00/.test(await p.textContent('#dayplan')), 'Frei-Zeile: ' + await p.textContent('#dayplan'));
+    assert(!(await p.$('#dayplan .nowl')), 'keine Jetzt-Linie an anderen Tagen');
+    await p.click('[data-c=vgrid]'); await wait(p, 300);
+    const g = await p.evaluate(() => [...document.querySelectorAll('.tgrid .tb')].map(b => { const r = b.getBoundingClientRect(); return [b.textContent.slice(0, 6), Math.round(r.left), Math.round(r.width), Math.round(r.height)]; }));
+    const ph = g.find(x => /Physio/.test(x[0])), ku = g.find(x => /Kurz/.test(x[0])), sw = g.find(x => /Schwim/.test(x[0]));
+    assert(g.length === 3 && ph[1] !== ku[1] && ph[2] < sw[2] && ku[3] > ph[3], 'Zeitraster ' + JSON.stringify(g));
+    assert(await p.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 1, 'kein Überlauf');
+    await p.click('[data-c=vlist]'); await wait(p, 200);
+    // heute: Jetzt-Linie (Seed: Rodeltraining 16:00)
+    await p.click('[data-c=today]').catch(() => {}); await wait(p, 300);
+    assert(await p.$('#dayplan .nowl'), 'Jetzt-Linie heute');
+    // Überschneidung im Blatt
+    await p.evaluate(LOC + 'SharedCalendar.newEvent(K(2))'); await wait(p, 400);
+    await p.fill('[name=time]', '10:30'); await p.fill('[name=end]', '11:30'); await wait(p, 200);
+    assert(/Überschneidet sich mit Schwimmen 10:00/.test(await p.textContent('.ovl')), 'Warnung: ' + await p.textContent('.ovl'));
+    await p.fill('[name=time]', '11:00'); await wait(p, 200);
+    assert(!(await p.textContent('.ovl')), 'keine Warnung, wenn es anschließt');
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('P7 Wichtig: Stern im Blatt, Kachel „Nächster wichtiger Termin“ mit Countdown, Prüfungen zählen', async () => {
+    const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
+    await open(p, '#kalender');
+    let gl = await p.textContent('#cal-glance');
+    assert(/in 3 Tagen/.test(gl) && /Mathematik|Schulaufgabe/.test(gl), 'Prüfung aus dem Seed: ' + gl);
+    await p.evaluate(LOC + 'SharedCalendar.newEvent(K(2))'); await wait(p, 400);
+    await p.fill('[name=title]', 'Landesmeisterschaft'); await p.check('[name=star]'); await p.click('[data-a=save]'); await wait(p, 600);
+    gl = await p.textContent('#cal-glance');
+    assert(/in 2 Tagen/.test(gl) && /Landesmeisterschaft/.test(gl), 'Stern-Termin: ' + gl);
+    await p.click('#cal-glance [data-gl^="imp:"]'); await wait(p, 400);
+    assert(/★/.test(await p.textContent('#dayplan')) && /Landesmeisterschaft/.test(await p.textContent('#dayplan')), 'Kachel führt zum Tag, Stern sichtbar');
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('P7 Cloud-Abgleich: Gerät mit neuen Feldern und Gerät ohne – beide behalten alles', async () => {
+    const gist = { id: 'g1', description: 'Gemeinsamer Kalender (SportGermany-Apps)', files: {} };
+    const route = async r => {
+      const u = new URL(r.request().url()), m = r.request().method(), H = { 'content-type': 'application/json', 'access-control-allow-origin': '*' };
+      if (u.pathname === '/user') return r.fulfill({ status: 200, headers: H, body: JSON.stringify({ login: 'test' }) });
+      if (u.pathname === '/gists' && m === 'GET') return r.fulfill({ status: 200, headers: H, body: JSON.stringify([{ id: 'g1', description: gist.description, files: Object.assign({ 'kalender.json': {} }, gist.files) }]) });
+      if (u.pathname === '/gists/g1' && m === 'PATCH') { const b = JSON.parse(r.request().postData()); Object.keys(b.files).forEach(k => { gist.files[k] = { content: b.files[k].content }; }); return r.fulfill({ status: 200, headers: H, body: JSON.stringify(gist) }); }
+      if (u.pathname === '/gists/g1') return r.fulfill({ status: 200, headers: H, body: JSON.stringify(gist) });
+      return r.fulfill({ status: 200, headers: H, body: '[]' });
+    };
+    const dev = async () => { const c = await ctxFor(PHONE); await c.route('https://api.github.com/**', route); await c.addInitScript(() => { if (!localStorage.getItem('sg-shared-calendar-sync')) localStorage.setItem('sg-shared-calendar-sync', JSON.stringify({ token: 'x', user: 'test', gist: 'g1' })); }); const p = await c.newPage(); await open(p, '#kalender'); return [c, p]; };
+    const [ca, a] = await dev(), ea = watch(a);
+    await a.evaluate(LOC + `SharedCalendar.add({ title: 'Lager neu', date: K(5), endDate: K(8), star: true, app: 'Training', rep: null }); SharedCalendar.add({ title: 'Serie neu', date: K(1), time: '17:00', app: 'Training', rep: { f: 'w', days: [0, 3], iv: 2 } });`);
+    await a.evaluate(() => SharedCalendar.sync()); await wait(a, 2500);
+    // Gerät B: älterer Stand – schreibt Einträge ohne die neuen Felder (so wie Version 3.7.0)
+    const [cb, b] = await dev(), eb = watch(b);
+    await b.evaluate(LOC + `(() => { const d = JSON.parse(localStorage.getItem('sg-shared-calendar-v1')); d.events.push({ id: 'alt1', title: 'Alt ohne Felder', date: K(4), time: '', end: '', app: 'Kalender', created: Date.now(), changed: Date.now() }); localStorage.setItem('sg-shared-calendar-v1', JSON.stringify(d)); })()`);
+    await b.evaluate(() => SharedCalendar.sync()); await wait(b, 1500);
+    // B ändert den neuen Termin (nur Titel, wie die alte App: unbekannte Felder bleiben)
+    await b.evaluate(() => { const e = JSON.parse(localStorage.getItem('sg-shared-calendar-v1')).events.find(x => x.title === 'Lager neu'); SharedCalendar.update(e.id, { title: 'Lager geändert' }); });
+    await b.evaluate(() => SharedCalendar.sync()); await wait(b, 1500);
+    await a.evaluate(() => SharedCalendar.sync()); await wait(a, 1500);
+    const sa = await a.evaluate(() => JSON.parse(localStorage.getItem('sg-shared-calendar-v1')).events.filter(x => !x.deleted).map(x => [x.title, x.endDate || '', !!x.star, x.rep ? JSON.stringify(x.rep) : '']));
+    const sb = await b.evaluate(() => JSON.parse(localStorage.getItem('sg-shared-calendar-v1')).events.filter(x => !x.deleted).map(x => x.title));
+    const lager = sa.find(x => x[0] === 'Lager geändert'), ser = sa.find(x => x[0] === 'Serie neu');
+    assert(lager && lager[1] && lager[2], 'A: neue Felder nach Änderung durch B erhalten ' + JSON.stringify(sa));
+    assert(ser && /"days":\[0,3\]/.test(ser[3]), 'A: Serie mit Wochentagen');
+    assert(sa.some(x => x[0] === 'Alt ohne Felder'), 'A hat Eintrag von B');
+    assert(['Lager geändert', 'Serie neu', 'Alt ohne Felder'].every(t => sb.includes(t)), 'B hat alles ' + sb);
+    assert(await b.evaluate(LOC + `SharedCalendar.areaOf(JSON.parse(localStorage.getItem('sg-shared-calendar-v1')).events.find(x => x.id === 'alt1'))`) === 'termin', 'B: Bereich tolerant');
+    assert(!ea.length && !eb.length, ea.concat(eb).join(' | ')); await ca.close(); await cb.close();
   });
   const ok = results.filter(r => r[0]).length;
   console.log(`\n${ok}/${results.length} Tests grün`); results.filter(r => !r[0]).forEach(r => console.log('FEHLER:', r[1], '–', r[2]));

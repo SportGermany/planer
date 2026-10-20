@@ -380,6 +380,7 @@
     aufgabe: { c: "var(--c-aufgabe)", ic: "check", label: "Aufgabe", act: "", to: null }
   };
   function area(e) {
+    var c = C(); if (c && c.areaOf) return c.areaOf(e);   // zentrale Tabelle im Verbund (Feld area, sonst tolerant aus app)
     var a = e.app || "";
     if (a === "Notiz") return "notiz";
     if (/Lernplan|Schule/.test(a)) return "schule";
@@ -455,7 +456,9 @@
     var lab = a.getMonth() === b.getMonth() ? MO[a.getMonth()] + " " + a.getFullYear()
       : a.getFullYear() === b.getFullYear() ? MS[a.getMonth()] + "/" + MS[b.getMonth()] + " " + b.getFullYear()
       : MS[a.getMonth()] + " " + a.getFullYear() + "/" + MS[b.getMonth()] + " " + b.getFullYear();
-    var h = '<div class="calhd"><b>KW ' + kwOf(from) + " · " + lab + "</b>" + (calSel !== t ? '<button class="lnk" data-c="today">Heute</button>' : "") + '</div><div class="week" id="strip">';
+    var wb = null; try { wb = C().weekBalance(from); } catch (e) {}
+    var bal = wb && wb.n ? '<span class="wbal" aria-label="Wochenbilanz: ' + wb.done + " von " + (wb.n - wb.skip) + ' Einheiten erledigt' + (wb.skip ? ", " + wb.skip + " ausgelassen" : "") + '">' + wb.done + " von " + (wb.n - wb.skip) + " Einheiten" + (wb.skip ? " · " + wb.skip + " ausgelassen" : "") + "</span>" : "";
+    var h = '<div class="calhd"><b>KW ' + kwOf(from) + " · " + lab + "</b>" + bal + (calSel !== t ? '<button class="lnk" data-c="today">Heute</button>' : "") + '</div><div class="week" id="strip">';
     for (var k = from; k <= to; k = plus(k, 1)) {
       var d = parse(k);
       h += '<button class="wd' + (k === t ? " t" : "") + (k === calSel ? " s" : "") + '" data-day="' + k + '" aria-pressed="' + (k === calSel) + '" aria-label="' + dayLabel(k) + '"><small>' + WD[d.getDay()] + '</small><span class="n">' + d.getDate() + '</span><span class="dots">' + stripDots(k) + "</span></button>";
@@ -467,21 +470,96 @@
     needData();
     var t = today(), sel = calSel, sd = parse(sel), c = C();
     var day = (CD.by[sel] || []).slice().sort(function (x, y) { return (x.time ? 1 : 0) - (y.time ? 1 : 0); }), tasks = tasksFor(sel);
+    var grid = dayView() === "grid" && day.some(function (e) { return e.time; });
     var h = '<div class="grp" id="dayplan"><header><span>' + (sel === t ? "Heute · " : sel === plus(t, 1) ? "Morgen · " : sel === plus(t, -1) ? "Gestern · " : "") + WDL[sd.getDay()] + ", " + sd.getDate() + ". " + MO[sd.getMonth()] + "</span>" +
+      (day.some(function (e) { return e.time; }) ? '<span class="seg2" role="group" aria-label="Ansicht"><button data-c="vlist" aria-pressed="' + !grid + '">Liste</button><button data-c="vgrid" aria-pressed="' + grid + '">Zeitraster</button></span>' : "") +
       '<button class="lnk" data-c="new">+ Eintrag</button></header>';
     if (!day.length && !tasks.length) h += '<div class="cells"><div class="empty">Nichts geplant.<div class="btns" style="margin-top:12px"><button class="btn" data-c="week">Woche planen</button>' +
       (c && c.weekPlanConfig && c.weekPlanConfig().std ? '<button class="btn p" data-c="std">Standardwoche übernehmen</button>' : "") + "</div></div></div>";
-    else h += '<div class="cells">' + day.map(function (e) { return evRow(e, sel === t); }).join("") + tasks.map(taskRow).join("") + "</div>";
+    else if (grid) h += timeGrid(day, sel === t) + '<div class="cells">' + tasks.map(taskRow).join("") + "</div>";
+    else h += '<div class="cells">' + dayRows(day, sel === t) + tasks.map(taskRow).join("") + "</div>";
     $("cal-day").innerHTML = h + "</div>";
+    dayPlan.min = nowMin();
   }
-  function monthMarks(k, wide) {
-    var all = (CD.by[k] || []).map(function (e) { return [area(e), e.title]; })
+  function nowMin() { var n = new Date(); return n.getHours() * 60 + n.getMinutes(); }
+  function hm(m) { return pad(Math.floor(m / 60)) + ":" + pad(m % 60); }
+  function tmin(t) { var p = String(t).split(":"); return +p[0] * 60 + +p[1]; }
+  function endMin(e) { var a = tmin(e.time); return e.end && e.end > e.time ? tmin(e.end) : a + 60; }
+  var dayPlan = { min: -1 };
+  // Liste: „Frei 14:00 bis 16:30“ ab 45 Minuten zwischen Einträgen, heute eine Jetzt-Linie
+  function dayRows(day, isT) {
+    var out = "", lastEnd = -1, now = isT ? nowMin() : -1, nowDone = !isT;
+    day.forEach(function (e) {
+      if (e.time) {
+        var a = tmin(e.time);
+        if (!nowDone && now < a) { out += nowLine(now); nowDone = true; }
+        if (lastEnd >= 0 && a - lastEnd >= 45) out += '<div class="gap" role="note">Frei ' + hm(lastEnd) + " bis " + hm(a) + "</div>";
+        out += evRow(e, isT);
+        if (e.st !== "skip") lastEnd = Math.max(lastEnd, endMin(e));
+      } else out += evRow(e, isT);
+    });
+    if (!nowDone && day.some(function (e) { return e.time; })) out += nowLine(now);
+    return out;
+  }
+  function nowLine(m) { return '<div class="nowl" role="note" aria-label="Jetzt, ' + hm(m) + ' Uhr"><span>' + hm(m) + "</span><i></i></div>"; }
+  // Zeitraster 06–22 Uhr: Blöcke nach Dauer, Überschneidungen nebeneinander
+  function timeGrid(day, isT) {
+    var H0 = 6 * 60, H1 = 22 * 60, PX = 0.9, timed = day.filter(function (e) { return e.time; }), allday = day.filter(function (e) { return !e.time; });
+    var cols = [], ends = [];
+    timed.forEach(function (e) {
+      var a = tmin(e.time), b = Math.max(a + 20, endMin(e)), ci = ends.findIndex(function (x) { return x <= a; });
+      if (ci < 0) { ci = ends.length; ends.push(0); }
+      ends[ci] = b; e._col = ci; e._a = a; e._b = b;
+    });
+    // je Block: wie viele Spalten in seiner Gruppe gleichzeitig laufen
+    timed.forEach(function (e) { e._n = 1 + timed.filter(function (x) { return x !== e && x._a < e._b && e._a < x._b && x._col > e._col; }).length + e._col; });
+    var h = (allday.length ? '<div class="cells">' + allday.map(function (e) { return evRow(e, isT); }).join("") + "</div>" : "") + '<div class="tgrid" style="height:' + Math.round((H1 - H0) * PX) + 'px">';
+    for (var m = H0; m <= H1; m += 60) h += '<div class="tl" style="top:' + Math.round((m - H0) * PX) + 'px"><span>' + pad(m / 60) + "</span></div>";
+    timed.forEach(function (e) {
+      var A = AREA[area(e)], top = Math.round((Math.max(H0, Math.min(H1 - 20, e._a)) - H0) * PX), ht = Math.max(22, Math.round((Math.min(H1, e._b) - Math.max(H0, e._a)) * PX)), w = 100 / e._n;
+      h += '<button class="tb' + (e.st === "skip" ? " skip" : e.st === "done" ? " evd" : "") + '" data-ev="' + e._k + '" style="--c:' + A.c + ";top:" + top + "px;height:" + ht + "px;left:calc(44px + (100% - 48px) * " + (e._col * w / 100).toFixed(4) + ");width:calc((100% - 48px) * " + (w / 100).toFixed(4) + ' - 3px)">' +
+        "<b>" + (e.st === "done" ? "✓ " : "") + esc(e.title || "(ohne Titel)") + "</b><small>" + esc(e.time) + (e.end ? "–" + esc(e.end) : "") + "</small></button>";
+    });
+    if (isT) { var nm = nowMin(); if (nm >= H0 && nm <= H1) h += '<div class="tnow" style="top:' + Math.round((nm - H0) * PX) + 'px" aria-hidden="true"></div>'; }
+    return h + "</div>";
+  }
+  function dayView() { try { return localStorage.getItem("sg-tagesansicht-v1") === "grid" ? "grid" : "list"; } catch (e) { return "list"; } }
+  function monthMarks(k, wide, lanes) {
+    var all = (CD.by[k] || []).filter(function (e) { return !(e.of > 1 && SPANS.lane[e.id + "@" + e.occ] != null); }).map(function (e) { return [area(e), e.title]; })
       .concat(openTasks(k).map(function (q) { return ["aufgabe", q.title]; }));
-    var h = all.slice(0, 3).map(function (x) {
+    var cap = Math.max(1, 3 - (lanes || 0)), nAll = all.length + (CD.by[k] || []).length - (CD.by[k] || []).filter(function (e) { return !(e.of > 1 && SPANS.lane[e.id + "@" + e.occ] != null); }).length;
+    var h = all.slice(0, cap).map(function (x) {
       var A = AREA[x[0]];
       return wide ? '<span class="ml" style="--c:' + A.c + '">' + ico(A.ic) + "<em>" + esc(x[1] || "(ohne Titel)") + "</em></span>" : '<span class="mb" style="--c:' + A.c + '">' + ico(A.ic) + "<i></i></span>";
     }).join("");
-    return [h + (all.length > 3 ? '<span class="more">+' + (all.length - 3) + "</span>" : ""), all.length];
+    return [h + (all.length > cap ? '<span class="more">+' + (all.length - cap) + "</span>" : ""), nAll];
+  }
+  /* Mehrtägige Termine im Monatsraster: ein durchgehender Balken je Termin (an der Wochengrenze neu angesetzt).
+     Bahnen (höchstens zwei) werden über das ganze Raster vergeben, damit der Balken von Tag zu Tag auf gleicher Höhe bleibt. */
+  var SPANS = { lane: {}, cell: {} };
+  function monthSpans(from) {
+    var to = plus(from, 41), seen = {}, list = [], laneEnd = [];
+    SPANS = { lane: {}, cell: {} };
+    CD.list.forEach(function (e) {
+      if (!(e.of > 1)) return; var key = e.id + "@" + e.occ; if (seen[key]) return; seen[key] = 1;
+      var a = e.occ > from ? e.occ : from, b = e.lastDay < to ? e.lastDay : to; if (a > b) return;
+      list.push({ key: key, a: a, b: b, e: e });
+    });
+    list.sort(function (x, y) { return x.a.localeCompare(y.a) || y.b.localeCompare(x.b); });
+    list.forEach(function (x) {
+      var li = laneEnd.findIndex(function (z) { return z < x.a; }); if (li < 0) li = laneEnd.length;
+      if (li > 1) return;   // mehr als zwei gleichzeitig: als Punkt wie andere Einträge
+      laneEnd[li] = x.b; SPANS.lane[x.key] = li;
+      for (var k = x.a; k <= x.b; k = plus(k, 1)) {
+        var wd = (parse(k).getDay() + 6) % 7;
+        (SPANS.cell[k] = SPANS.cell[k] || []).push({ lane: li, s: k === x.a || wd === 0, f: k === x.b || wd === 6, t: x.e.title || "", c: AREA[area(x.e)].c, real: k === x.e.occ });
+      }
+    });
+  }
+  function spanHTML(k, wide) {
+    return (SPANS.cell[k] || []).map(function (z) {
+      return '<span class="mspan l' + z.lane + (z.s ? " s" : "") + (z.f ? " f" : "") + '" style="--c:' + z.c + '" aria-hidden="true">' + (wide && z.s ? "<em>" + esc(z.t) + "</em>" : "") + "</span>";
+    }).join("");
   }
   function renderMonth(slide) {
     needData();
@@ -491,14 +569,15 @@
       '</button><button class="ib" data-c="mnext" aria-label="Nächster Monat">' + ico("chev") + "</button>" + (calMonth !== t.slice(0, 8) + "01" ? '<button class="lnk" data-c="mtoday">Heute</button>' : "") + "</div>";
     h += '<div class="mgrid' + (wide ? " wide" : "") + (slide ? " sl" + slide : "") + '" id="mgrid" role="grid" aria-label="' + MO[m0.getMonth()] + " " + m0.getFullYear() + '">' +
       '<div class="mrow mh" role="row"><span class="kw" role="columnheader">KW</span>' + ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map(function (w) { return '<span role="columnheader">' + w + "</span>"; }).join("") + "</div>";
+    monthSpans(from);
     for (var r = 0; r < 6; r++) {
       var ws = plus(from, r * 7);
       h += '<div class="mrow" role="row"><span class="kw" role="rowheader" aria-label="Kalenderwoche ' + kwOf(ws) + '">' + kwOf(ws) + "</span>";
       for (var i = 0; i < 7; i++) {
-        var k = plus(ws, i), d = parse(k), mk = monthMarks(k, wide), fr = CD.free[k];
+        var k = plus(ws, i), d = parse(k), sp = SPANS.cell[k] || [], mk = monthMarks(k, wide, sp.length ? Math.max.apply(null, sp.map(function (z) { return z.lane; })) + 1 : 0), fr = CD.free[k];
         h += '<span role="gridcell" class="mcell"><button class="mc' + (k === t ? " t" : "") + (k === calSel ? " s" : "") + (d.getMonth() !== m0.getMonth() ? " o" : "") + (i >= 5 ? " we" : "") + (fr ? " fr" : "") +
           '" data-mday="' + k + '" aria-pressed="' + (k === calSel) + '" aria-label="' + dayLabel(k, mk[1]) + (fr ? ", " + esc(fr) : "") + '"' + (fr ? ' title="' + esc(fr) + '"' : "") +
-          '><span class="n">' + d.getDate() + '</span><span class="ms">' + mk[0] + "</span></button></span>";
+          '><span class="n">' + d.getDate() + '</span><span class="ms">' + mk[0] + "</span></button>" + spanHTML(k, wide) + "</span>";
       }
       h += "</div>";
     }
@@ -509,7 +588,7 @@
   function renderGlance() { $("cal-glance").innerHTML = calSel === today() ? '<div class="grp"><header><span>Auf einen Blick</span></header>' + glance() + "</div>" : ""; }
   function renderNext() {
     needData();
-    var sel = calSel, rows = CD.list.filter(function (e) { return e.date > sel; }).map(function (e) { return { k: e.date, tm: e.time || "", t: e.title, c: AREA[area(e)].c }; })
+    var sel = calSel, rows = CD.list.filter(function (e) { return e.date > sel && !(e.of > 1 && e.day > 1 && e.date > plus(sel, 1)); }).map(function (e) { return { k: e.date, tm: e.time || "", t: e.title, c: AREA[area(e)].c }; })
       .concat(CD.tasks.filter(function (q) { return !q.done && q.due && q.due > sel; }).map(function (q) { return { k: q.due, tm: "", t: q.title, c: AREA.aufgabe.c, task: 1 }; }))
       .sort(function (a, b) { return (a.k + (a.tm || "~")).localeCompare(b.k + (b.tm || "~")); }).slice(0, 5);
     $("cal-next").innerHTML = '<div class="grp next"><header><span>Danach</span></header><div class="cells">' + (rows.length ? rows.map(function (x) {
@@ -597,14 +676,23 @@
   }
   function evRow(e, isToday) {
     var a = area(e), A = AREA[a], tm = e.time ? esc(e.time) + (e.end ? "<small>" + esc(e.end) + "</small>" : "") : "<small>ganztägig</small>";
-    var sub = A.label + (e.note && a !== "notiz" ? " · " + e.note.split("\n")[0].slice(0, 50) : "");
-    return '<button class="ev" data-ev="' + e._k + '" style="--c:' + A.c + '"><span class="tm">' + tm + '</span><span class="bar"></span><span class="tx"><b>' + esc(e.title || "(ohne Titel)") + "</b><small>" + esc(sub) + "</small></span>" +
-      (A.act && isToday ? '<span class="go" data-start="' + e._k + '">' + A.act + "</span>" : "") + "</button>";
+    if (e.of > 1) tm = (e.time ? esc(e.time) : e.end ? "<small>bis</small>" + esc(e.end) : "") + "<small>Tag " + e.day + "/" + e.of + "</small>";
+    var sub = A.label + (e.of > 1 ? " · Tag " + e.day + " von " + e.of : "") + (e.st === "done" ? " · erledigt" : e.st === "skip" ? " · ausgelassen" + (e.why ? " (" + e.why + ")" : "") : "") + (e.note && a !== "notiz" ? " · " + e.note.split("\n")[0].slice(0, 50) : "");
+    return '<button class="ev' + (e.st === "done" ? " evd" : e.st === "skip" ? " skip" : "") + '" data-ev="' + e._k + '" style="--c:' + A.c + '"><span class="tm">' + tm + '</span><span class="bar"></span><span class="tx"><b>' + (e.st === "done" ? '<span class="ck1" aria-hidden="true">✓</span> ' : "") + (e.star ? '<span class="st1" aria-label="wichtig">★</span> ' : "") + esc(e.title || "(ohne Titel)") + "</b><small>" + esc(sub) + "</small></span>" +
+      (A.act && isToday && !e.st ? '<span class="go" data-start="' + e._k + '">' + A.act + "</span>" : "") + "</button>";
   }
   function taskRow(q) {
     var late = q.due < today() && !q.done;
     return '<div class="ev' + (q.done ? " done" : "") + '" style="--c:var(--c-aufgabe)" data-task="' + q.id + '"><span class="tm"><button class="ck' + (q.done ? " on" : "") + '" data-ck="' + q.id + '" aria-label="Erledigt">' + ico("ok") + "</button></span>" +
       '<span class="bar"></span><span class="tx"><b>' + esc(q.title) + "</b><small>Aufgabe" + (late ? " · überfällig" : "") + "</small></span></div>";
+  }
+  // nächster wichtiger Termin (Stern) oder Prüfung aus der Schule, mit Countdown
+  function nextImportant() {
+    var t = today(), hit = null;
+    try { hit = C().allItems(t, plus(t, 365)).find(function (e) { return (e.star || e.exam) && e.st !== "skip" && !(e.of > 1 && e.day > 1) && (e.date > t || !e.time || e.time >= hm(nowMin())); }); } catch (e) {}
+    if (!hit) return null;
+    var n = Math.round((parse(hit.date) - parse(t)) / 864e5);
+    return { date: hit.date, title: hit.title || "Termin", label: n === 0 ? "heute" : n === 1 ? "morgen" : "in " + n + " Tagen" };
   }
   // „Auf einen Blick“ (nur heute): was jetzt wichtig ist, ein Tipp führt hin
   function glance() {
@@ -617,6 +705,7 @@
       var wp = c.weekPlanConfig && c.weekPlanConfig(), mon = monday(today());
       if (wp && wp.on && !wp.planned[mon] && !wp.planned[plus(mon, 7)]) out.push(["training", "wand", "Woche planen", wp.std ? "Standard mit 1 Tipp" : "in 2 Minuten", "week"]);
     } catch (e) {}
+    var ni = nextImportant(); if (ni) out.splice(Math.min(1, out.length), 0, ["termin", "star", ni.label, ni.title, "imp:" + ni.date]);
     var b = null; try { b = JSON.parse(localStorage.getItem("zweiminutenbibel_v2") || "null"); } catch (e) {}
     // todayDone ist in der Bibel {date, ids} (Tagesziel dailyGoal); früher ein Datum
     // wie die Bibel selbst: heute gelesen, sobald lastDate heute ist; sonst todayDone (neu {date, ids}, alt ein Datum)
@@ -633,7 +722,11 @@
     var w = ($("n-kalender").clientWidth || innerWidth) >= 600;
     if (w !== renderMonth.wide) renderMonth(); toMonthBtn();
   });
-  setInterval(function () { if (!document.hidden && dayRoll() && cur.v === "kalender") renderCal(); }, 30000);
+  setInterval(function () {
+    if (document.hidden || cur.v !== "kalender") return;
+    if (dayRoll()) return renderCal();
+    if (calSel === today() && dayPlan.min !== nowMin() && !sheetOpen) renderDay();   // Jetzt-Linie wandert mit
+  }, 30000);
   $("n-kalender").addEventListener("scroll", function () { if (!toMonthBtn.t) toMonthBtn.t = requestAnimationFrame(function () { toMonthBtn.t = 0; toMonthBtn(); }); }, { passive: true });
   $("tomonth").addEventListener("click", function () { var el = $("n-kalender"), g = $("cal-month"); if (g) scrollCal(Math.max(0, el.scrollTop + g.getBoundingClientRect().top - el.getBoundingClientRect().top - 8)); });
   $("n-kalender").addEventListener("click", function (e) {
@@ -647,7 +740,7 @@
     var md = e.target.closest("[data-mday]"); if (md) { if (Date.now() - mSuppress < 600) return; setSel(md.dataset.mday); renderAfterPick(true); return; }
     var d = e.target.closest("[data-day]"); if (d) { setSel(d.dataset.day); renderAfterPick(!!e.target.closest("#cal-next")); return; }
     var gl = e.target.closest("[data-gl]");
-    if (gl) { var g = gl.dataset.gl; if (g === "week") return C().weekPlan(); if (g === "bibel") return go("bibel", "lesen", null, { push: true }); if (g === "karten") return go("training", "wissen", "karten"); return go(g, null, null, { push: true }); }
+    if (gl) { var g = gl.dataset.gl; if (g.indexOf("imp:") === 0) { setSel(g.slice(4)); renderAfterPick(true); return; } if (g === "week") return C().weekPlan(); if (g === "bibel") return go("bibel", "lesen", null, { push: true }); if (g === "karten") return go("training", "wissen", "karten"); return go(g, null, null, { push: true }); }
     var b = e.target.closest("[data-c]"); if (!b) return;
     var a = b.dataset.c;
     if (a === "today") { setSel(today()); renderAfterPick(); }
@@ -656,25 +749,90 @@
     else if (a === "mpick") monthPickSheet();
     else if (a === "legend") legendSheet();
     else if (a === "new") addSheet();
+    else if (a === "vlist" || a === "vgrid") { try { localStorage.setItem("sg-tagesansicht-v1", a === "vgrid" ? "grid" : "list"); } catch (x) {} renderDay(); }
     else if (a === "week") C().weekPlan();
     else if (a === "std") C().weekPlanStd();
   });
   // Eintrag antippen: Details und was man damit tun kann
   function evSheet(e) {
-    var a = area(e), A = AREA[a], own = !/^(lp|lc|pp|tb|ta|nt|hd)-/.test(e.id || ""), d = parse(e.date);
+    var a = area(e), A = AREA[a], own = !e.ro, d = parse(e.date), isT = e.date === today();   // eigene Termine: ohne ro (Bereichs-Einträge tragen ro)
     if (a === "notiz") return noteSheet(e.noteId);
     if (e.phone) return handyEvSheet(e);
-    var h = '<h3>' + esc(e.title) + '</h3><p class="s">' + WDL[d.getDay()] + ", " + d.getDate() + ". " + MO[d.getMonth()] + (e.time ? " · " + e.time + (e.end ? "–" + e.end : "") + " Uhr" : " · ganztägig") + " · " + esc(e.ro || A.label) + "</p>";
+    var h = '<h3>' + (e.star ? "★ " : "") + esc(e.title) + '</h3><p class="s">' + WDL[d.getDay()] + ", " + d.getDate() + ". " + MO[d.getMonth()] + (e.of > 1 ? " · Tag " + e.day + " von " + e.of : "") + (e.time ? " · " + e.time + (e.end ? "–" + e.end : "") + " Uhr" : e.of > 1 ? "" : " · ganztägig") + " · " + esc(e.ro || A.label) +
+      (e.st === "done" ? " · erledigt" + (e.auto ? " (aus dem Training)" : "") : e.st === "skip" ? " · ausgelassen" + (e.why ? ": " + esc(e.why) : "") : "") + "</p>";
     if (e.note) h += '<p class="s" style="color:var(--ink);white-space:pre-wrap">' + esc(e.note) + "</p>";
-    if (A.to) h += sRow("open", A.ic, a === "schule" ? "In Schule öffnen" : a === "atmung" ? "Atemübung öffnen" : a === "mobility" ? "Mobility starten" : "Training öffnen", "", A.c);
+    if (A.to && e.st !== "skip") h += sRow("open", A.ic, a === "schule" ? "In Schule öffnen" : a === "atmung" ? "Atemübung öffnen" : a === "mobility" ? "Mobility starten" : "Training öffnen", "", A.c);
+    // geplante Einheiten: nur diesen Eintrag verschieben, auslassen, abhaken (nie die Standardwoche)
+    if (e.plan) {
+      if (e.st === "done") h += sRow("open1", "back", "Wieder offen", e.auto ? "Haken entfernen, obwohl im Training eingetragen" : "Haken entfernen", "var(--muted)");
+      else if (e.st === "skip") h += sRow("open1", "back", "Wieder einplanen", "", "var(--muted)");
+      else {
+        h += sRow("done", "ok", "Erledigt", "", "var(--c-aufgabe)");
+        if (isT) h += sRow("later", "clock", "Heute später", "Andere Uhrzeit wählen", "var(--muted)");
+        h += sRow("tom", "chev", isT ? "Auf morgen verschieben" : "Einen Tag später", "", "var(--muted)");
+        h += sRow("day2", "cal", "Anderen Tag wählen", "", "var(--muted)");
+        h += sRow("skip", "trash", isT ? "Heute auslassen" : "Auslassen", "Mit kurzem Grund, wenn du willst", "var(--muted)");
+      }
+    }
     if (own) h += sRow("edit", "edit", "Bearbeiten", "Zeit, Wiederholung, Erinnerung", "var(--muted)");
     if (!A.to && !own) h += sRow("day", "cal", "Im Kalender öffnen", "", "var(--muted)");
     sheet(h, function (act) {
+      if (act === "later") return laterSheet(e);
+      if (act === "day2") return dayPickSheet(e);
+      if (act === "skip") return skipSheet(e);
       closeSheet(false, function () {
         if (act === "open") A.to(e);
-        else if (act === "edit") C().editEvent(e.id, e.date);
+        else if (act === "edit") C().editEvent(e.id, e.occ || e.date);
         else if (act === "day") C().open(e.date);
+        else if (act === "done") planDo(e, { status: "done" }, "Erledigt");
+        else if (act === "open1") planDo(e, { status: e.auto ? "open" : null, why: null }, e.st === "skip" ? "Wieder eingeplant" : "Wieder offen");
+        else if (act === "tom") planDo(e, { date: plus(e.date, 1) }, isT ? "Auf morgen verschoben" : "Einen Tag später");
       });
+    });
+  }
+  // Verschieben, Auslassen, Abhaken: ändert nur diesen Eintrag, Rückgängig im Hinweis
+  function planDo(e, patch, msg) {
+    var u = C().planSet(e, patch); refresh();
+    if (u) snack(msg, function () { u(); refresh(); }); else snack("Eintrag nicht gefunden");
+  }
+  function laterSheet(e) {
+    var n = new Date(Date.now() + 30 * 60000), m = Math.ceil(n.getMinutes() / 15) * 15, d0 = new Date(n.getFullYear(), n.getMonth(), n.getDate(), n.getHours(), m);
+    var def = d0.getDate() !== new Date().getDate() ? "23:30" : pad(d0.getHours()) + ":" + pad(d0.getMinutes());
+    if (e.time && e.time > def) def = e.time;
+    sheet('<h3>Heute später</h3><p class="s">' + esc(e.title) + (e.time ? " · bisher " + esc(e.time) + " Uhr" : "") + '</p><label class="f"><span>Neue Uhrzeit</span><input type="time" id="plt" value="' + def + '" style="color-scheme:dark"></label>' +
+      '<div class="btns"><button class="btn" data-s="x">Abbrechen</button><button class="btn p" data-s="ok">Verschieben</button></div>', function (x) {
+      if (x !== "ok") return closeSheet();
+      var t = $("plt").value; if (!t) return $("plt").focus();
+      closeSheet(false, function () { planDo(e, { time: t }, "Auf " + t + " Uhr verschoben"); });
+    });
+    setTimeout(function () { try { $("plt").focus(); } catch (x) {} }, 50);
+  }
+  function dayPickSheet(e) {
+    sheet('<h3>Anderen Tag wählen</h3><p class="s">' + esc(e.title) + '</p><label class="f"><span>Tag</span><input type="date" id="pld" value="' + plus(e.date, 1) + '" style="color-scheme:dark"></label>' +
+      (e.time ? '<label class="f"><span>Uhrzeit</span><input type="time" id="plt" value="' + esc(e.time) + '" style="color-scheme:dark"></label>' : "") +
+      '<div class="btns"><button class="btn" data-s="x">Abbrechen</button><button class="btn p" data-s="ok">Verschieben</button></div>', function (x) {
+      if (x !== "ok") return closeSheet();
+      var k = $("pld").value, t = $("plt") ? $("plt").value : ""; if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return $("pld").focus();
+      var dd = parse(k), patch = { date: k }; if (t && t !== e.time) patch.time = t;
+      closeSheet(false, function () { planDo(e, patch, "Auf " + WD[dd.getDay()] + " " + dd.getDate() + "." + (dd.getMonth() + 1) + ". verschoben"); });
+    });
+  }
+  var WHY = ["krank", "Wetter", "Bahn gesperrt", "Schule", "anderes"];
+  function skipSheet(e) {
+    var isT = e.date === today();
+    sheet('<h3>' + (isT ? "Heute auslassen" : "Auslassen") + '</h3><p class="s">' + esc(e.title) + ' · Grund (optional)</p><div class="whys" role="group" aria-label="Grund">' +
+      WHY.map(function (w) { return '<button class="chip" data-s="w:' + w + '" aria-pressed="false">' + w + "</button>"; }).join("") + '</div>' +
+      '<label class="f"><span>Eigener Grund (optional)</span><input type="text" id="plw" maxlength="80"></label>' +
+      '<div class="btns"><button class="btn" data-s="x">Abbrechen</button><button class="btn p" data-s="ok">Auslassen</button></div>', function (x, b) {
+      if (x.indexOf("w:") === 0) {
+        var on = b.getAttribute("aria-pressed") !== "true";
+        sheetEl.querySelectorAll('.whys .chip').forEach(function (c) { c.classList.remove("on"); c.setAttribute("aria-pressed", "false"); });
+        if (on) { b.classList.add("on"); b.setAttribute("aria-pressed", "true"); }
+        return;
+      }
+      if (x !== "ok") return closeSheet();
+      var sel = sheetEl.querySelector('.whys .chip.on'), own = $("plw").value.trim(), why = own || (sel ? sel.textContent : "");
+      closeSheet(false, function () { planDo(e, { status: "skip", why: why || null }, (isT ? "Heute ausgelassen" : "Ausgelassen") + (why ? " (" + why + ")" : "")); });
     });
   }
   // Termin aus dem Handykalender (nur Android-App): ändern oder löschen schreibt direkt in den Kalender des Handys
@@ -1623,6 +1781,7 @@
     if (!C()) return setTimeout(start, 30);
     C().onChange(function () { clearTimeout(refresh.t); refresh.t = setTimeout(refresh, 100); });
     // neue Vollbild-Suche statt der Befehlspalette (fällt sie aus, bleibt die alte als Rückfall)
+    if (C().setSnack) C().setSnack(function (t, fn) { snack(t, function () { fn(); refresh(); }); });   // Rückgängig auch aus dem Terminblatt
     if (C().setPalette && window.SGSuche) C().setPalette(function (text) { try { openSearch(text); } catch (e) { if (sx) sxFail(e); else { diag("Suche: " + e.message); C().setPalette(null); C().palette(text); } } });
     if (location.hash.length > 1) fromHash(); else { history.replaceState({ app: 1 }, "", "#kalender"); render(); }
     if (window.SGNative && !localStorage.getItem("sg-umzug-v1")) setTimeout(function () { moveInSheet(true); }, 600);

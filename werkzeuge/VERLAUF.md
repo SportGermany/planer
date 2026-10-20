@@ -283,6 +283,26 @@ Nachtest nach den Befunden:
 | Test „Maskierung“ rot nach Mitternacht | Test rechnete „heute“ in UTC (`toISOString`), die App in Ortszeit – zwischen 0 und 2 Uhr verschiedene Tage | Test nimmt das Ortsdatum |
 | Bahnplan-Test: Ladefehler in der Konsole beim Schritt „ohne Netz“ | Test brach nur die Anfragen ab, der Browser war „online“ – die App fragte und der Browser meldete die Fehler | App fragt Wikipedia ohne Netz gar nicht erst; Test schaltet wirklich offline |
 
+### Phase 7 – Kalender-Verbesserungen (in Arbeit, Version 3.8.0)
+Plan (Abschnitt 10 der Anleitung). Datenmodell bleibt abwärtskompatibel: nur neue, optionale Felder; ältere Geräte reichen sie beim Abgleich durch
+(Zusammenführen ersetzt ganze Einträge, `update` ändert nur die genannten Felder).
+- Neue Felder am Termin: `endDate` (mehrtägig), `star` (wichtig), `area` (Bereich), `status` (`done`/`skip`) mit `why`;
+  `rep` bekommt `days` (Wochentage, Mo = 0), `iv` (alle N Wochen/Tage), `nth` (1.–4. oder letzter Wochentag im Monat).
+  Einfache Regeln bleiben im alten Format (`w`, `2w`), damit ältere Geräte sie weiter verstehen.
+- `occurrences()`: Serien mit Wochentagen, Intervall, n-tem Wochentag; mehrtägige Termine liefern je Tag einen Eintrag mit `day`/`of`/`occ`.
+- Bereich: zentrale Tabelle `AREAS` im Verbund, `areaOf(e)` (Feld oder tolerant aus `app`), einmalige Nachtragung beim Start ohne Änderungszeit;
+  „eigener Termin“ = kein `ro` statt ID-Präfix.
+- Blatt „Termin“: Mehrtägig mit Bis-Datum, Wochentage + alle N Wochen, „jeden 1. Montag“, Stern, Warnung bei Überschneidung;
+  Serie ändern/löschen fragt „Nur dieser / Dieser und alle folgenden / Alle“ (`ex`, `rep.until` + neue Serie). Löschen mit Rückgängig.
+- .ics: RRULE mit INTERVAL/BYDAY, EXDATE, DTEND für mehrtägig (ganztägig exklusiv); Import liest das alles; Handykalender (hOut, Lesen) und
+  Erinnerungen kennen den Zeitraum (nur am ersten Tag).
+- Bereichs-Einträge (Wochenplanung, Atmung): Heute später, Morgen, Anderer Tag, Auslassen (Grund), Erledigt – nur dieser Eintrag, mit Rückgängig.
+  Status ✓/ausgelassen sichtbar; Training/Mobility/Atmung erledigt automatisch aus Trainingstagebuch, Aktivitäten, Atem-Sitzungen
+  (je Tag höchstens so viele, wie wirklich gemacht – nie doppelt). Wochenbilanz über der Leiste.
+- Tagesplan: „Frei 14:00 bis 16:30“ ab 45 Minuten, Jetzt-Linie heute, Umschalter Liste | Zeitraster (06–22 Uhr, Überschneidungen nebeneinander).
+- „Auf einen Blick“: Nächster wichtiger Termin (Stern oder Prüfung) mit „in 12 Tagen“.
+- Tests: alte Daten (seed + Stand 3.5.0), Cloud mit/ohne neue Felder, .ics-Rundreise, Handykalender-Mock, Verschieben/Auslassen/Erledigt mit Rückgängig.
+
 ## 3.5.0 – erste veröffentlichte Android-App
 
 Secret `APK_PASSWORT` vom Nutzer eingetragen (Passwort bekam er als PDF, weil er die .txt nicht öffnen konnte).

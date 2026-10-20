@@ -130,6 +130,25 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
   const ok2 = await q.evaluate(async () => { await SharedCalendar.handy.update(501, { title: 'Arzttermin Dr. Weber' }); const a = SharedCalendar.allItems('2000-01-01', '2099-01-01').some(e => e.title === 'Arzttermin Dr. Weber');
     await SharedCalendar.handy.remove(501); const b = !SharedCalendar.allItems('2000-01-01', '2099-01-01').some(e => /Arzttermin/.test(e.title)); return [a, b, window.__sim.removed]; });
   ok(ok2[0] && ok2[1] && ok2[2].includes(501), 'Handytermin aus der App ändern und löschen');
+  // Phase 7: mehrtägige und wiederkehrende Termine kommen richtig ins Handy und zurück
+  const p7 = await q.evaluate(async () => {
+    const pad = n => String(n).padStart(2, '0'), K = n => { const d = new Date(); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+    SharedCalendar.add({ title: 'Trainingslager Oberhof', date: K(3), endDate: K(6), app: 'Training' });
+    SharedCalendar.add({ title: 'Kraft Mo Do', date: K(0), time: '17:00', end: '18:00', app: 'Training', rep: { f: 'w', days: [0, 3] } });
+    SharedCalendar.add({ title: 'Wettkampfreise', date: K(8), endDate: K(9), time: '18:00', end: '14:00', app: 'Kalender' });
+    // aus dem Handy: ganztägig über drei Tage (Android: UTC-Mitternacht, Ende exklusiv)
+    const u = n => { const d = new Date(); d.setDate(d.getDate() + n); return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()); };
+    window.__sim.phone.push({ eventId: 601, calendarId: 1, title: 'Urlaub Garda', begin: u(10), end: u(13), allDay: true, calendar: 'Mein Kalender', color: '#33AA55', recurring: false });
+    await SharedCalendar.handy.sync(true);
+    const cal = window.__sim.cal, one = cal.filter(e => e.title === 'Trainingslager Oberhof'), kr = cal.filter(e => e.title === 'Kraft Mo Do'), tr = cal.filter(e => e.title === 'Wettkampfreise');
+    const wd = ms => (new Date(ms).getDay() + 6) % 7;
+    const urlaub = SharedCalendar.allItems(K(9), K(14)).filter(e => e.title === 'Urlaub Garda').map(e => e.date + ':' + e.day + '/' + e.of);
+    return { one: one.map(e => [e.allDay, Math.round((e.end - e.start) / 864e5)]), kr: [kr.length, kr.every(e => wd(e.start) === 0 || wd(e.start) === 3)], tr: tr.map(e => [new Date(e.start).getHours(), new Date(e.end).getHours(), Math.round((e.end - e.start) / 3600e3)]), urlaub, K10: K(10) };
+  });
+  ok(p7.one.length === 1 && p7.one[0][0] && p7.one[0][1] === 4, 'Mehrtägig ins Handy: ein Termin über 4 Tage ' + JSON.stringify(p7.one));
+  ok(p7.kr[0] >= 20 && p7.kr[1], 'Serie Mo/Do ins Handy: nur an Mo und Do (' + p7.kr[0] + ')');
+  ok(p7.tr.length === 1 && p7.tr[0][0] === 18 && p7.tr[0][1] === 14 && p7.tr[0][2] === 20, 'Mehrtägig mit Uhrzeit: 18 Uhr bis 14 Uhr am Folgetag ' + JSON.stringify(p7.tr));
+  ok(p7.urlaub.length === 3 && p7.urlaub[0] === p7.K10 + ':1/3', 'Aus dem Handy: mehrtägiger Termin je Tag 1/3, 2/3, 3/3 ' + p7.urlaub);
   // Mehr: Handykalender-Blatt in der APK
   await q.evaluate(() => { location.hash = 'mehr'; }); await q.waitForTimeout(600);
   await q.click('#n-mehr [data-m=handy]'); await q.waitForTimeout(300);
