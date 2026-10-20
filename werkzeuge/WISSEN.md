@@ -87,6 +87,9 @@ planer/
 | `bahnplan.v1` | Bahnplan |
 | `zweiminutenbibel_v2` | Bibel |
 | `sg-handykalender-v1` | Handykalender: was schon ins Handy übertragen wurde, Optionen (nur dieses Gerät, nicht in der Cloud) |
+| `sg-handy-v1` | APK: Handykalender an/aus, Auswahl, Zwischenspeicher der Handytermine |
+| `sg-erinnern-v1` | APK: Erinnerungen an/aus, Auswahl |
+| `sg-stundenplan-v1` | Schulstunden der nächsten Monate (von der Schul-Seite vorgerechnet) |
 | `sg-umzug-v1` | APK: Umzug erledigt bzw. „neu angefangen“ |
 | `sg-diag-v1` | Fehlerprotokoll der Hülle (Leiste) |
 | Cache `sg-teilen` | kurzzeitig: Geteiltes aus dem Handy (Share Target) |
@@ -123,7 +126,17 @@ Oberfläche in `app/js/1-app.js` (`phoneSheet`, `importSheet`, `takeShared`), Te
 - Umzug Chrome → APK: Mehr › „In die Android-App umziehen“ (Umzugsdatei: localStorage + IndexedDB `bahnplan/img`, `lernplan-dateien/files`),
   in der APK beim ersten Start bzw. Mehr › „Daten aus Chrome übernehmen“. Merker `sg-umzug-v1`. `window.SGMove`.
 - versionCode = Major·10000 + Minor·100 + Patch (muss steigen).
-- Test: `node werkzeuge/tests/apk.js` (täuscht `window.Capacitor` vor).
+- **Handykalender (B):** Plugin `PlanerKalenderPlugin.java` (`ensure`, `calendars`, `instances`, `write`, `update`, `remove`, `request`, `status`).
+  Eigener lokaler Kalender „Planer“ (Konto-Typ LOCAL, als Sync-Adapter geschrieben), Schlüssel je Eintrag in `SYNC_DATA1` (= `id@datum`), Prüfsumme in `SYNC_DATA2`.
+  JS: `SharedCalendar.handy` in verbund.js (`hOut` = was ins Handy geht, `hSync`, Zwischenspeicher `sg-handy-v1`), Handytermine via `phoneItems()` in `externalItems()`
+  (app `"Handy"`, `id` `hd-<eventId>-<beginn>`, Feld `phone`). Zeitraum −30 bis +180 Tage. Stundenplan kommt aus `sg-stundenplan-v1`
+  (rechnet die Schul-Seite in `publishLessons()` – mit Ferien, Feiertagen, A/B-Woche).
+- **Erinnerungen (C):** `SharedCalendar.erinnern` (LocalNotifications), Einstellungen `sg-erinnern-v1`, plant die nächsten 14 Tage (max. 60), IDs ab 9000,
+  `extra.go` = Hülle-Adresse zum Öffnen. Symbol `res/drawable/ic_stat_planer.xml`.
+- Einrichtung in der APK: Willkommen (Umzug) → „Fast fertig“ (Handykalender + Erinnerungen), Merker `sg-apk-setup`.
+- Test: `node werkzeuge/tests/apk.js` (täuscht `window.Capacitor` samt Kalender/Benachrichtigungen vor);
+  echte App: `werkzeuge/tests/emulator.js` läuft auf GitHub im Emulator (Job `emulator`, Bildschirmfotos als Artefakt `emulator-ergebnis`).
+  Release wird erst nach bestandenem Emulator-Test veröffentlicht.
 
 ### Sportwissenschaft aktualisieren
 Das Buch ist ein Claude-Doc („Sportwissenschaft für Rennrodler“, https://claude.ai/artifact/5nhNSLmBbqpxQD1ndpYutj).
