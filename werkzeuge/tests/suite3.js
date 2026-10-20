@@ -17,7 +17,7 @@ async function ctxFor(opt, seed = true) {
   return c;
 }
 // Fehler der Hülle UND aller eingebetteten Seiten
-function watch(p) { const e = []; p.on('pageerror', x => e.push('pageerror: ' + x.message)); return e; }
+function watch(p) { const e = []; p.on('pageerror', x => e.push('pageerror: ' + x.message)); p.on('console', m => { const u = (m.location() || {}).url || ''; if (m.type() === 'error' && !(/^Failed to load resource: net::ERR_/.test(m.text()) && !/^http:\/\/localhost/.test(u))) e.push('console: ' + m.text() + ' @ ' + ((m.location() || {}).url || '')); }); return e; }
 function assert(c, m) { if (!c) throw new Error(m); }
 async function test(name, fn) {
   if (ONLY && !name.toLowerCase().includes(ONLY.toLowerCase())) return;
@@ -119,25 +119,110 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     }
     assert(!e.length, e.join(' | ')); await c.close();
   });
-  await test('S Kalender: Woche, Monat, Tag wählen, Wischen, Danach', async () => {
+  // Wischen/Langdruck auf einem Element (Touch-Ereignisse wie am Handy)
+  const touch = (p, sel, dx, dy, ms) => p.evaluate(([sel, dx, dy, ms]) => new Promise(res => {
+    const g = document.querySelector(sel), r = g.getBoundingClientRect(), x0 = r.left + r.width / 2, y0 = r.top + Math.min(r.height / 2, 120);
+    const tgt = document.elementFromPoint(x0, y0) || g, t = (x, y) => new Touch({ identifier: 1, target: tgt, clientX: x, clientY: y });
+    tgt.dispatchEvent(new TouchEvent('touchstart', { touches: [t(x0, y0)], changedTouches: [t(x0, y0)], bubbles: true }));
+    setTimeout(() => { if (dx || dy) tgt.dispatchEvent(new TouchEvent('touchmove', { touches: [t(x0 + dx, y0 + dy)], changedTouches: [t(x0 + dx, y0 + dy)], bubbles: true }));
+      tgt.dispatchEvent(new TouchEvent('touchend', { touches: [], changedTouches: [t(x0 + dx, y0 + dy)], bubbles: true })); res(); }, ms || 30);
+  }), [sel, dx, dy, ms]);
+  await test('K Kalender: Reihenfolge Wochenleiste · Tagesplan · Monat, auf 360×800 ohne Scrollen sichtbar', async () => {
+    const c = await ctxFor({ viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true }), p = await c.newPage(), e = watch(p);
+    await open(p, '#kalender');
+    const r = await p.evaluate(() => { const y = id => document.getElementById(id).getBoundingClientRect(), rows = [...document.querySelectorAll('#dayplan .ev')];
+      return { strip: y('cal-strip').top, day: y('cal-day').top, month: y('cal-month').top, glance: y('cal-glance').top, next: y('cal-next').top, rows: rows.length,
+        row2: rows[1] ? rows[1].getBoundingClientRect().bottom : 9999, nav: document.getElementById('nav').getBoundingClientRect().top,
+        hd: document.querySelector('.calhd b').textContent, over: document.documentElement.scrollWidth - innerWidth, mw: document.getElementById('mgrid').scrollWidth - document.getElementById('mgrid').clientWidth,
+        cells: document.querySelectorAll('#mgrid [data-mday]').length, ch: document.querySelector('#mgrid .mc').getBoundingClientRect().height }; });
+    assert(r.strip < r.day && r.day < r.month && r.month < r.glance && r.glance <= r.next, 'Reihenfolge ' + JSON.stringify(r));
+    assert(r.rows >= 2 && r.row2 <= r.nav, 'Tagesplan mit 2 Einträgen ohne Scrollen ' + r.row2 + '/' + r.nav);
+    assert(/^KW \d+ · \S+/.test(r.hd), 'Kopf ' + r.hd);
+    assert(r.over <= 1 && r.mw <= 1 && r.cells === 42 && r.ch >= 64, 'Raster ' + JSON.stringify(r));
+    assert(!(await p.$('[data-c=monat]')), 'kein Woche/Monat-Schalter mehr');
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('K Kalender: Wochenleiste wischen, Tag tippen, Danach', async () => {
     const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
     await open(p, '#kalender');
-    assert((await p.$$('#grid .wd')).length === 7, 'Woche');
-    assert(/Rodeltraining/.test(await p.textContent('#n-kalender')), 'Termin des Tages');
-    const k1 = await p.$eval('#grid .wd:nth-child(1)', x => x.dataset.day);
-    await p.evaluate(() => { const g = document.getElementById('grid'), t = (x) => new Touch({ identifier: 1, target: g, clientX: x, clientY: 300 });
-      g.dispatchEvent(new TouchEvent('touchstart', { touches: [t(300)], changedTouches: [t(300)], bubbles: true })); g.dispatchEvent(new TouchEvent('touchend', { touches: [], changedTouches: [t(120)], bubbles: true })); });
-    await wait(p, 200);
-    const k2 = await p.$eval('#grid .wd:nth-child(1)', x => x.dataset.day);
+    assert((await p.$$('#strip .wd')).length === 7, 'Woche');
+    assert(/Rodeltraining/.test(await p.textContent('#dayplan')), 'Termin des Tages');
+    const k1 = await p.$eval('#strip .wd:nth-child(1)', x => x.dataset.day);
+    await touch(p, '#strip', -180, 0); await wait(p, 200);
+    const k2 = await p.$eval('#strip .wd:nth-child(1)', x => x.dataset.day);
     assert(k2 > k1, 'Wischen zur nächsten Woche');
-    await p.click('[data-c=today]'); await p.click('[data-c=monat]'); await wait(p, 200);
-    assert((await p.$$('#grid [data-day]')).length === 42, 'Monat');
-    await p.locator('#grid [data-day]').nth(20).click(); await wait(p, 200);
-    assert(await p.$('.week'), 'Tag im Monat → Woche');
-    if (await p.$('[data-c=today]')) await p.click('[data-c=today]');
-    await p.locator('.nd').nth(0).click(); await wait(p, 200);
-    assert(/Morgen/.test(await p.textContent('.grp header')), 'Danach-Tag wählen');
+    await p.click('[data-c=today]'); await wait(p, 200);
+    const rows = await p.$$('#cal-next .nd');
+    assert(rows.length >= 1 && rows.length <= 5, 'Danach höchstens 5: ' + rows.length);
+    const nk = await rows[0].evaluate(x => x.dataset.day);
+    await rows[0].click(); await wait(p, 400);
+    assert(await p.evaluate(k => document.querySelector('#strip .wd.s').dataset.day === k, nk), 'Danach-Tag gewählt');
+    assert(await p.evaluate(() => document.getElementById('n-kalender').scrollTop) < 5, 'nach oben gescrollt');
     assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('K Monatskalender: tippen, langer Druck, wischen, Pfeile, Monat wählen, Legende, Bedienhilfe', async () => {
+    const c = await ctxFor(Object.assign({ timezoneId: 'Europe/Berlin' }, PHONE)), p = await c.newPage(), e = watch(p);
+    await open(p, '#kalender');
+    // Tippen auf einen Tag: gewählt, Tagesplan zeigt ihn, weich nach oben
+    await p.evaluate(() => { document.getElementById('n-kalender').scrollTop = 500; });
+    const cell = p.locator('#mgrid [data-mday]').nth(24); const k = await cell.getAttribute('data-mday');
+    await cell.click(); await wait(p, 450);
+    assert(await p.evaluate(k => document.querySelector('#strip .wd.s').dataset.day === k && document.querySelector('#mgrid .mc.s').dataset.mday === k, k), 'Tag gewählt');
+    const d = new Date(k + 'T12:00'); assert((await p.textContent('#dayplan header')).includes(d.getDate() + '.'), 'Tagesplan zeigt den Tag');
+    assert(await p.evaluate(() => document.getElementById('n-kalender').scrollTop) < 5, 'nach oben gescrollt');
+    const lab = await p.getAttribute('#mgrid .mc.s', 'aria-label'), pr = await p.getAttribute('#mgrid .mc.s', 'aria-pressed');
+    assert(/^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), \d+\. \S+, (keine|\d+) Eintr/.test(lab) && pr === 'true', 'Bedienhilfe ' + lab);
+    assert(await p.$('#mgrid[role=grid] [role=gridcell] button'), 'role=grid');
+    // Langer Druck: „Neu“ für genau diesen Tag
+    const lp = await p.locator('#mgrid [data-mday]').nth(30).getAttribute('data-mday');
+    await touch(p, '#mgrid [data-mday="' + lp + '"]', 0, 0, 600); await wait(p, 300);
+    const dd = new Date(lp + 'T12:00');
+    assert(/Neu/.test(await p.textContent('#sheet')) && (await p.textContent('#sheet')).includes(dd.getDate() + '.'), 'Langer Druck öffnet Neu für den Tag');
+    await p.keyboard.press('Escape'); await p.evaluate(() => history.back()); await wait(p, 300);
+    // Wischen: Monat weiter, Tag bleibt (31.10. → 30.11.)
+    await p.evaluate(() => { window.__pick = k => { const b = document.querySelector('#mgrid [data-mday="' + k + '"]'); if (b) b.click(); }; });
+    // auf den Monat Oktober 2026 springen und den 31. wählen
+    await p.click('[data-c=mpick]'); await wait(p, 200);
+    while (!(await p.textContent('#sheet .mpy b')).includes('2026')) await p.click((await p.textContent('#sheet .mpy b')) > '2026' ? '#sheet [data-s=py]' : '#sheet [data-s=ny]');
+    await p.click('#sheet [data-s=m9]'); await wait(p, 300);
+    assert(/Oktober 2026/.test(await p.textContent('.mhd .mt')), 'Monat gewählt');
+    await p.evaluate(() => window.__pick('2026-10-31')); await wait(p, 400);
+    await touch(p, '#mgrid', -200, 0); await wait(p, 400);
+    assert(/November 2026/.test(await p.textContent('.mhd .mt')), 'gewischt: November');
+    assert(await p.evaluate(() => document.querySelector('#strip .wd.s').dataset.day) === '2026-11-30', 'Tag bleibt (letzter im kürzeren Monat)');
+    await touch(p, '#mgrid', 200, 0); await wait(p, 400);
+    assert(/Oktober 2026/.test(await p.textContent('.mhd .mt')) && await p.evaluate(() => document.querySelector('#strip .wd.s').dataset.day) === '2026-10-30', 'zurückgewischt');
+    // Pfeile: Monat blättern, Auswahl bleibt
+    await p.click('[data-c=mnext]'); await p.click('[data-c=mnext]'); await wait(p, 300);
+    assert(/Dezember 2026/.test(await p.textContent('.mhd .mt')) && await p.evaluate(() => document.querySelector('#strip .wd.s').dataset.day) === '2026-10-30', 'Pfeile ändern die Auswahl nicht');
+    await p.click('[data-c=mprev]'); await wait(p, 200);
+    assert(/November 2026/.test(await p.textContent('.mhd .mt')), 'Pfeil zurück');
+    // Legende
+    await p.click('[data-c=legend]'); await wait(p, 200);
+    const lg = await p.textContent('#sheet');
+    assert(['Training', 'Mobility', 'Atmung', 'Schule', 'Aufgabe', 'Notiz', 'Termin', 'Ferien'].every(x => lg.includes(x)), 'Legende ' + lg);
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('K Kalender: Schrift 130 %, Tablet, alle zehn Farbwelten lesbar', async () => {
+    for (const vp of [{ width: 360, height: 640 }, { width: 800, height: 1280 }, { width: 1280, height: 800 }]) {
+      const c = await ctxFor(Object.assign({}, PHONE, { viewport: vp })), p = await c.newPage(), e = watch(p);
+      await open(p, '#kalender');
+      await p.evaluate(() => { document.documentElement.style.zoom = '1.3'; }); await wait(p, 300);
+      const over = await p.evaluate(() => [document.documentElement.scrollWidth - innerWidth, ...[...document.querySelectorAll('#mgrid .mc')].slice(0, 7).map(b => b.scrollWidth - b.clientWidth)]);
+      assert(over.every(x => x <= 2), 'Überlauf ' + vp.width + ': ' + over);
+      assert(!e.length, e.join(' | ')); await c.close();
+    }
+    const c = await ctxFor(PHONE), p = await c.newPage();
+    await open(p, '#kalender');
+    const ids = await p.evaluate(() => SGTheme.list.map(t => t.id)), bad = [];
+    const lum = 'const L=c=>{const m=c.match(/\\d+(\\.\\d+)?/g).map(Number);const f=v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)};return .2126*f(m[0])+.7152*f(m[1])+.0722*f(m[2])};const K=(a,b)=>{const x=L(a),y=L(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)};';
+    for (const id of ids) {
+      await p.evaluate(id => SGTheme.set(id), id); await wait(p, 150);
+      const k = await p.evaluate(lum + 'const bg=getComputedStyle(document.querySelector("#mgrid")).backgroundColor,fg=getComputedStyle(document.querySelector("#mgrid .mc:not(.o) .n")).color,mu=getComputedStyle(document.querySelector("#mgrid .mh span")).color,dbg=getComputedStyle(document.querySelector("#dayplan .cells")).backgroundColor,dfg=getComputedStyle(document.querySelector("#dayplan .ev b")).color;[K(fg,bg),K(mu,bg),K(dfg,dbg)]');
+      if (k[0] < 4.5 || k[1] < 4.5 || k[2] < 4.5) bad.push(id + ' ' + k.map(x => x.toFixed(1)).join('/'));
+    }
+    assert(!bad.length, 'Kontrast zu niedrig: ' + bad.join(', '));
+    await c.close();
   });
   await test('S Kalender verknüpft: Starten führt in Training und Atmung, Zurück-Geste zum Kalender', async () => {
     const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
@@ -172,7 +257,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
   await test('S Plus: Aufgabe, Notiz und Termin für den gewählten Tag', async () => {
     const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
     await open(p, '#kalender');
-    await p.locator('#grid .wd').nth(6).click(); const day = await p.$eval('#grid .wd.s', x => x.dataset.day);
+    await p.locator('#strip .wd').nth(6).click(); const day = await p.$eval('#strip .wd.s', x => x.dataset.day);
     await p.click('#fab'); await p.click('#sheet [data-s=aufgabe]'); await p.fill('#tq', 'Startbügel prüfen'); await p.click('#sheet [data-s=save]'); await wait(p, 300);
     assert(await p.evaluate(d => SharedCalendar.tasks.list().some(q => q.title === 'Startbügel prüfen' && q.due === d), day), 'Aufgabe');
     assert(/Startbügel prüfen/.test(await p.textContent('#n-kalender')), 'Aufgabe im Tag');
@@ -184,7 +269,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(await p.evaluate(d => { const r = document.getElementById('sg-shared-calendar'); return !!(r.shadowRoot || r).querySelector('input[type=date][value="' + d + '"], [value="' + d + '"]'); }, day), 'Terminformular mit Datum');
     // Aufgabe abhaken im Kalender + Rückgängig
     await p.keyboard.press('Escape'); await p.goto(APP + '#kalender'); await wait(p, 1500);
-    await p.locator('#grid .wd').nth(6).click();
+    await p.locator('#strip .wd').nth(6).click();
     await p.locator('.ev', { hasText: 'Startbügel' }).locator('[data-ck]').click(); await wait(p, 200);
     assert(await p.evaluate(() => SharedCalendar.tasks.list().find(q => q.title === 'Startbügel prüfen').done), 'abgehakt');
     await p.click('#snack button'); assert(!(await p.evaluate(() => SharedCalendar.tasks.list().find(q => q.title === 'Startbügel prüfen').done)), 'Rückgängig');

@@ -41,7 +41,7 @@ const navOk = p => p.evaluate(() => { const n = document.getElementById('nav').g
   const c = await b.newContext({ viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true });
   await c.addInitScript(fs.readFileSync(__dirname + '/seed.js', 'utf8'));
   await c.addInitScript(() => { try { localStorage.setItem('sg-update-check', String(Date.now())); } catch (e) {} });
-  const p = await c.newPage(); p.setDefaultTimeout(8000); const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('dialog', d => d.dismiss().catch(() => {}));
+  const p = await c.newPage(); p.setDefaultTimeout(8000); const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { const u = (m.location() || {}).url || ''; if (m.type() === 'error' && !(/^Failed to load resource: net::ERR_/.test(m.text()) && !/^http:\/\/localhost/.test(u))) errs.push('console: ' + m.text() + ' @ ' + u); }); p.on('dialog', d => d.dismiss().catch(() => {}));
   await p.goto(APP); await p.waitForFunction(() => navigator.serviceWorker.controller, null, { timeout: 20000 }).catch(() => {});
   await p.evaluate(() => navigator.serviceWorker.ready);
   const cached = await p.evaluate(async () => { const k = await caches.keys(); const c = await caches.open(k[0]); return [k, (await c.keys()).map(r => new URL(r.url).pathname)]; });

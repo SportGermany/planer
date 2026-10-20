@@ -197,12 +197,15 @@ function persist() {
 // (mit Ferien, Feiertagen und A/B-Woche – genau wie hier angezeigt). Liest der Verbund aus sg-stundenplan-v1.
 function publishLessons() {
   try {
-    const from = addDays(todayStr(), -14), to = addDays(todayStr(), 180), out = [];
+    const from = addDays(todayStr(), -14), to = addDays(todayStr(), 180), out = [], free = [];
     for (let d = from; d <= to; d = addDays(d, 1)) {
-      if (!isSchoolDay(d)) continue;
+      const info = dayInfo(d);
+      // Ferien und Feiertage (für die dezente Markierung im Monatskalender der Hülle)
+      if (info.h || info.f) free.push([d, (info.h && info.h.name) || (info.f && (info.f.name || info.f.title)) || 'Ferien']);
+      if (!info.school) continue;
       lessonsOn(d).forEach(l => { const p = period(l.period); if (!p) return; const s = subj(l.subject); out.push([d, p.s, p.e, s.name || s.short || 'Unterricht', l.room || '', l.period]); });
     }
-    localStorage.setItem('sg-stundenplan-v1', JSON.stringify({ at: Date.now(), from, to, l: out }));
+    localStorage.setItem('sg-stundenplan-v1', JSON.stringify({ at: Date.now(), from, to, l: out, f: free }));
   } catch (e) {}
 }
 setTimeout(publishLessons, 1500);
