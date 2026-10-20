@@ -5,7 +5,7 @@
 import re, os
 # Versionsnummer der ganzen App: steht in sw.js (Cache-Name), in jeder Seite (window.SGVersion) und an jeder Skriptdatei.
 # Bei jeder Veröffentlichung erhöhen – dann holt „Version aktualisieren“ die neue Fassung.
-VERSION=os.environ.get('SGV','3.2.0')
+VERSION=os.environ.get('SGV','3.3.0')
 HERE=os.path.dirname(os.path.abspath(__file__))
 SP=os.path.join(HERE,'quellen')+'/'  # Quellen der gemeinsamen Skripte und des Sportwissenschafts-Generators
 R=os.path.dirname(HERE)+'/'  # Wurzel des Repositorys
@@ -60,7 +60,7 @@ open(R+'training/js/csv-worker.js','w').write('/* Rechnet den Datei-Import (CSV,
 files=['./app/','./','./index.html','./schule/','./pause/','./training/','./training/mobility/','./training/atmung/','./training/bahnplan/','./bibel/','./bibel/elb1905.json','./wissen/',
   './manifest.json','./inter.woff2','./icon-192.png','./icon-512.png','./icon-maskable-192.png','./icon-maskable-512.png','./apple-touch-icon.png','./favicon.png']
 for d,_,fs in sorted(os.walk(R)):
-    if '/.git' in d: continue
+    if '/.git' in d or '/werkzeuge' in d: continue  # Werkzeugkoffer (auch die APK-Kopie) gehört nicht in den Offline-Speicher
     rel=d[len(R):]
     if rel=='sg' or rel.endswith('js') and os.path.basename(rel)=='js':
         files+=['./'+(rel+'/' if rel else '')+f+'?v='+VERSION for f in sorted(fs) if f.endswith('.js')]

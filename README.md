@@ -29,5 +29,6 @@ Eine App für Kalender, Aufgaben, Notizen, Schule, Pause, Training, Mobility, At
   - `js/` in jedem Ordner – die Skripte der jeweiligen Seite (als Dateien, damit der Browser sie schneller startet)
 - **Neue Version veröffentlichen:** Versionsnummer erhöhen (sie steht in `sw.js` und an jeder Skriptdatei als `?v=`),
   dann holt sich jedes Gerät die neue Fassung.
+- **Android-App (APK):** unter Releases (https://github.com/SportGermany/planer/releases) – gebaut von GitHub (`.github/workflows/apk.yml`, Quellen in `werkzeuge/apk/`).
 - **Installieren:** In Chrome auf Android ⋮ → „App installieren“.
 - **Weiterarbeiten:** alles Wissen, der Build, die Tests und der Fehlerverlauf liegen in `werkzeuge/` (zuerst `werkzeuge/WISSEN.md` lesen).

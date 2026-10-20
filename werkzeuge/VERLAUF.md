@@ -5,6 +5,28 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## 3.3.0 – Android-App (APK), Schritt A
+
+**Wunsch:** „Als APK zum Laufen kriegen … nicht im Play Store, einfach per APK herunterladbar.“ Gewählt: Weg 1 (Capacitor, Bau auf GitHub).
+Antworten: Schlüssel geheim bei GitHub · eigener Handykalender „Planer“ · alle Handykalender lesen · Umzug per Datei ·
+in den Handykalender: Termine & Wochenplanung, Schule, Atemübungen, Stundenplan · Erinnerungen: Termine & Notizen, Training & Mobility ·
+Name „Planer“ · Web-App weiter pflegen. Plan: A (APK wie Web + Umzug + Update) → B (Kalenderabgleich nativ) → C (Erinnerungen nativ).
+
+**Umsetzung A:** siehe WISSEN.md › APK. Workflow `.github/workflows/apk.yml`, Release je Version, Update-Hinweis aus der App.
+
+| Fehler | Ursache | Lösung |
+| --- | --- | --- |
+| (vorab gefunden) Ordner-Adressen wie `/planer/app/` hätten in der APK immer die Start-`index.html` geliefert → Endlosschleife | Capacitor „html5mode“: Pfade ohne Dateiendung → `/index.html` | `html5mode:false` + RouteProcessor in `MainActivity` |
+| Service-Worker-Liste hatte plötzlich 99 statt 49 Dateien | `build.py` lief auch durch `werkzeuge/apk/android/…/public` | `werkzeuge/` beim Sammeln überspringen |
+| Herunterladen geht im Android-WebView nicht | WebView hat keinen Download-Dialog und kein Web-Share | `a[download]` / `a.click()` abfangen → Datei in den App-Zwischenspeicher, Android-Teilen |
+| Seiten geben Blob-Adressen sofort nach dem Klick frei | `URL.revokeObjectURL` direkt nach `a.click()` | in der APK Freigabe um 60 s verzögert |
+| Umzug: Schul-Ablage hätte ohne „inbox“ angelegt werden können | IndexedDB-Version 1 ohne alle Ablagen → Seite legt sie nie mehr an | beim Umzug immer den vollständigen Aufbau anlegen |
+| Umzug: eingebettete Seiten hätten beim Neustart alte Daten zurückgeschrieben | Seiten speichern beim Schließen | vor dem Einlesen alle iframes schließen |
+
+**Grenzen in der APK (Stand A):** Drucken (Bahnplan) geht nicht – Hinweis, dafür Chrome. Kalender und Erinnerungen folgen in B und C.
+
+Tests: suite3 47/47, offline3 44/44, apk.js grün (Umzug inkl. Bild/PDF, Speichern/Teilen, Links, Update), upd.js grün.
+
 ## 3.2.0 – Handykalender
 
 **Wunsch:** „Meinen lokalen Handykalender mit der App synchronisieren, dass beides auf dem gleichen Stand ist.“ Antwort auf Rückfrage:

@@ -1,0 +1,20 @@
+{
+  "name": "planer-apk",
+  "private": true,
+  "description": "Android-App (APK) der App Planer mit Capacitor – siehe werkzeuge/WISSEN.md, Abschnitt APK",
+  "scripts": {
+    "www": "node www.js",
+    "sync": "node www.js && npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.2",
+    "@capacitor/app": "8.1.1",
+    "@capacitor/core": "8.5.2",
+    "@capacitor/filesystem": "8.1.4",
+    "@capacitor/local-notifications": "8.3.1",
+    "@capacitor/share": "8.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.2"
+  }
+}

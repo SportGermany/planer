@@ -1,0 +1,25 @@
+{
+  "appId": "de.sportgermany.planer",
+  "appName": "Planer",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#131313",
+    "allowMixedContent": false,
+    "captureInput": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "DARK"
+    },
+    "LocalNotifications": {
+      "iconColor": "#529cca"
+    }
+  },
+  "server": {
+    "html5mode": false,
+    "androidScheme": "https",
+    "hostname": "localhost"
+  }
+}

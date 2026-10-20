@@ -87,6 +87,7 @@ planer/
 | `bahnplan.v1` | Bahnplan |
 | `zweiminutenbibel_v2` | Bibel |
 | `sg-handykalender-v1` | Handykalender: was schon ins Handy übertragen wurde, Optionen (nur dieses Gerät, nicht in der Cloud) |
+| `sg-umzug-v1` | APK: Umzug erledigt bzw. „neu angefangen“ |
 | `sg-diag-v1` | Fehlerprotokoll der Hülle (Leiste) |
 | Cache `sg-teilen` | kurzzeitig: Geteiltes aus dem Handy (Share Target) |
 | `sg-dir-v1` | frühere Übersicht (Version 2.x, nicht mehr benutzt) |
@@ -106,6 +107,23 @@ Notizen eintragsweise zusammengeführt (neuere Änderung gewinnt).
 ### Handykalender
 Gerätekalender ist für Web-Apps gesperrt → Abgleich über .ics/.vcs: `SharedCalendar.phone` (verbund.js: `pending`, `ics`, `markSent`, `parse`, `apply`),
 Oberfläche in `app/js/1-app.js` (`phoneSheet`, `importSheet`, `takeShared`), Teilen-Ziel: `manifest.json` `share_target` + POST-Zweig in `sw.js`.
+
+### APK (Android-App)
+- Ordner `werkzeuge/apk/`: Capacitor 8 (`package.json`, `capacitor.config.json`), Android-Projekt `android/`, `www.js` kopiert die App nach
+  `www/planer/…` (gleiche Pfade wie im Netz, Start `www/index.html` → `/planer/app/`). App-ID `de.sportgermany.planer`, Name „Planer“.
+- Bau nur auf GitHub (`.github/workflows/apk.yml`): bei jedem Push auf main, wenn es für die Version aus `sw.js` noch kein Release `v<Version>` gibt.
+  Ergebnis: Release mit `planer-<Version>.apk`. Ohne Secret nur Test-APK als Artefakt. Hier im Container fehlt das Android-SDK (dl.google.com gesperrt).
+- Signatur: `werkzeuge/apk/planer-schluessel.enc` = PKCS12-Schlüssel (Alias `planer`), verschlüsselt mit `openssl enc -aes-256-cbc -pbkdf2 -iter 200000`;
+  Passwort = Secret `APK_PASSWORT` (hat nur der Nutzer). SHA-256 des Zertifikats beginnt mit `0B:E8:95:D8:09:84:3A:B0`. **Nie neu erzeugen** – sonst lassen sich
+  Updates nicht mehr über die installierte App installieren.
+- `MainActivity.java`: RouteProcessor liefert für Ordner-Adressen (`/planer/app/`) deren `index.html`; dazu `server.html5mode=false`.
+- Im Web-Code: `window.SGNative` (design.js) ist in der APK ein Objekt: kein Service Worker, `a[download]`/`a.click()` → `SGNative.save` (Filesystem + Teilen),
+  Links nach außen → Browser, `print()` → Hinweis. Update: `SGUpdate` fragt `api.github.com/repos/SportGermany/planer/releases/latest`.
+- Ränder: Capacitor setzt `--safe-area-inset-*` (SystemBars `insetsHandling: css`), die Hülle nutzt sie vor `env()`.
+- Umzug Chrome → APK: Mehr › „In die Android-App umziehen“ (Umzugsdatei: localStorage + IndexedDB `bahnplan/img`, `lernplan-dateien/files`),
+  in der APK beim ersten Start bzw. Mehr › „Daten aus Chrome übernehmen“. Merker `sg-umzug-v1`. `window.SGMove`.
+- versionCode = Major·10000 + Minor·100 + Patch (muss steigen).
+- Test: `node werkzeuge/tests/apk.js` (täuscht `window.Capacitor` vor).
 
 ### Sportwissenschaft aktualisieren
 Das Buch ist ein Claude-Doc („Sportwissenschaft für Rennrodler“, https://claude.ai/artifact/5nhNSLmBbqpxQD1ndpYutj).
@@ -139,6 +157,7 @@ node werkzeuge/tests/upd.js               # echter Update-Weg in der Hülle (bau
 - Fest positionierte Behälter bilden eine eigene Ebene – `#sg-shared-calendar` braucht deshalb den höchsten z-index.
 - Fehlerprotokoll der Hülle: `SGShellDiag()` in der Konsole bzw. `localStorage['sg-diag-v1']`.
 - Pillen/Knöpfe aus `<span>`: immer `display:inline-flex;align-items:center`, sonst sitzt der Text oben.
+- Neue Werkzeug-Ordner nie in den Offline-Speicher: `build.py` überspringt `werkzeuge/` (sonst landete die APK-Kopie in `sw.js`).
 - Inhalte von Seiten mit CSP `worker-src 'self'`: Worker nur aus Dateien, nicht aus `blob:`.
 
 ## 6. Wo die Geschichte steht

@@ -1,0 +1,112 @@
+# Baut die Android-App (APK) der App Planer und legt sie als Release zum Herunterladen ab.
+# Läuft bei jedem Push auf main – gebaut wird nur, wenn es für die Versionsnummer (aus sw.js) noch kein Release gibt.
+# Von Hand: Actions › APK bauen › Run workflow (baut die aktuelle Version neu).
+# Signatur: werkzeuge/apk/planer-schluessel.enc wird mit dem Secret APK_PASSWORT entschlüsselt (Settings › Secrets and variables › Actions).
+name: APK bauen
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      neu:
+        description: "Vorhandenes Release dieser Version ersetzen"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      APK_PASSWORT: ${{ secrets.APK_PASSWORT }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version lesen und prüfen, ob schon gebaut
+        id: ver
+        run: |
+          VER=$(grep -oP "const VERSION = 'planer-\K[0-9.]+" sw.js)
+          echo "ver=$VER" >> "$GITHUB_OUTPUT"
+          if gh release view "v$VER" >/dev/null 2>&1; then
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.neu }}" = "true" ]; then
+              echo "bauen=ja" >> "$GITHUB_OUTPUT"; echo "Release v$VER wird ersetzt"
+            else
+              echo "bauen=nein" >> "$GITHUB_OUTPUT"; echo "::notice::Für Version $VER gibt es schon ein Release – nichts zu bauen."
+            fi
+          else
+            echo "bauen=ja" >> "$GITHUB_OUTPUT"; echo "Neue Version $VER"
+          fi
+
+      - uses: actions/setup-java@v4
+        if: steps.ver.outputs.bauen == 'ja'
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: actions/setup-node@v4
+        if: steps.ver.outputs.bauen == 'ja'
+        with:
+          node-version: "22"
+
+      - name: App in das Android-Projekt kopieren
+        if: steps.ver.outputs.bauen == 'ja'
+        working-directory: werkzeuge/apk
+        run: |
+          npm ci --no-audit --no-fund
+          node www.js
+          npx cap sync android
+
+      - name: Schlüssel entschlüsseln
+        if: steps.ver.outputs.bauen == 'ja' && env.APK_PASSWORT != ''
+        run: |
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in werkzeuge/apk/planer-schluessel.enc -out "$RUNNER_TEMP/planer.keystore" -pass env:APK_PASSWORT
+          echo "PLANER_KEYSTORE=$RUNNER_TEMP/planer.keystore" >> "$GITHUB_ENV"
+          echo "PLANER_PASSWORT=$APK_PASSWORT" >> "$GITHUB_ENV"
+
+      - name: APK bauen
+        if: steps.ver.outputs.bauen == 'ja'
+        working-directory: werkzeuge/apk/android
+        run: |
+          chmod +x gradlew
+          if [ -n "$PLANER_KEYSTORE" ]; then TASK=assembleRelease; else TASK=assembleDebug; echo "::warning::Secret APK_PASSWORT fehlt – es wird nur eine Test-APK gebaut (kein Release)."; fi
+          ./gradlew "$TASK" -PplanerVersion=${{ steps.ver.outputs.ver }} --no-daemon --stacktrace
+          mkdir -p "$RUNNER_TEMP/out"
+          if [ "$TASK" = assembleRelease ]; then cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/out/planer-${{ steps.ver.outputs.ver }}.apk";
+          else cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/out/planer-${{ steps.ver.outputs.ver }}-test.apk"; fi
+          ls -la "$RUNNER_TEMP/out"
+
+      - name: Signatur prüfen
+        if: steps.ver.outputs.bauen == 'ja' && env.PLANER_KEYSTORE != ''
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" verify --print-certs "$RUNNER_TEMP/out/planer-${{ steps.ver.outputs.ver }}.apk" | tee /dev/stderr | grep -q "0b:e8:95:d8:09:84:3a:b0\|0be895d809843ab0"
+
+      - uses: actions/upload-artifact@v4
+        if: steps.ver.outputs.bauen == 'ja'
+        with:
+          name: planer-apk-${{ steps.ver.outputs.ver }}
+          path: ${{ runner.temp }}/out/*.apk
+          retention-days: 30
+
+      - name: Release veröffentlichen
+        if: steps.ver.outputs.bauen == 'ja' && env.PLANER_KEYSTORE != ''
+        run: |
+          VER=${{ steps.ver.outputs.ver }}
+          gh release delete "v$VER" --yes --cleanup-tag >/dev/null 2>&1 || true
+          cat > "$RUNNER_TEMP/notes.md" <<NOTES
+          Android-App **Planer $VER**
+
+          **Installieren:** Datei \`planer-$VER.apk\` auf dem Handy herunterladen, antippen, „Installieren“.
+          Beim ersten Mal fragt Android, ob Chrome bzw. „Eigene Dateien“ Apps installieren darf – erlauben.
+          **Update:** einfach über die alte App installieren, die Daten bleiben. In der App: Mehr › Version › „Neue Version von GitHub holen“.
+          NOTES
+          gh release create "v$VER" "$RUNNER_TEMP/out/planer-$VER.apk" --target "$GITHUB_SHA" --title "Planer $VER" --notes-file "$RUNNER_TEMP/notes.md"

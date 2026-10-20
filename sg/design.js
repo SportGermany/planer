@@ -11,6 +11,51 @@
     }
   } catch (e) {}
 })();
+/* APK (Android-App mit Capacitor): Die Seiten sind dieselben wie im Netz. Unterschiede nur hier:
+ * kein Service Worker (die Dateien liegen ohnehin in der App), Herunterladen = Speichern/Teilen über Android,
+ * Links nach außen öffnen im Browser. window.SGNative ist in der APK ein Objekt, sonst null. */
+(function () {
+  var C = null; try { C = window.top.Capacitor; } catch (e) {}
+  if (!C || !C.isNativePlatform || !C.isNativePlatform()) { window.SGNative = null; return; }
+  document.documentElement.classList.add("sg-native");
+  try { if (navigator.serviceWorker) navigator.serviceWorker.register = function () { return Promise.resolve({ scope: "" }); }; } catch (e) {}
+  function P() { return window.top.Capacitor.Plugins; }
+  function b64(data) {
+    var blob = data instanceof Blob ? data : new Blob([data]);
+    return new Promise(function (ok, no) { var r = new FileReader(); r.onload = function () { ok(String(r.result).split(",")[1] || ""); }; r.onerror = no; r.readAsDataURL(blob); });
+  }
+  // Datei speichern/weitergeben: landet im Zwischenspeicher der App, dann Android-Teilen (Eigene Dateien, Drive, Kalender, …)
+  function save(name, data) {
+    name = String(name || "datei").replace(/[\\/:*?"<>|]+/g, "-");
+    return b64(data).then(function (d) { return P().Filesystem.writeFile({ path: name, data: d, directory: "CACHE" }); })
+      .then(function (r) { return P().Share.share({ title: name, files: [r.uri], dialogTitle: "Speichern oder teilen" }); })
+      .catch(function (e) { if (!/cancel/i.test(String(e && e.message))) alert("Speichern hat nicht geklappt: " + (e && e.message || e)); });
+  }
+  function external(url) { try { window.top.location.href = url; } catch (e) { location.href = url; } }
+  function handle(a) {
+    var href = a.href || "";
+    if (a.hasAttribute("download") && /^(blob:|data:)/.test(href)) {
+      fetch(href).then(function (r) { return r.blob(); }).then(function (b) { return save(a.getAttribute("download") || "datei", b); })
+        .catch(function (e) { alert("Speichern hat nicht geklappt: " + e.message); });
+      return true;
+    }
+    if (/^https?:/.test(href) && new URL(href).origin !== location.origin) { external(href); return true; }
+    return false;
+  }
+  var click = HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click = function () { if (handle(this)) return; return click.call(this); };
+  document.addEventListener("click", function (e) {
+    var a = e.target && e.target.closest && e.target.closest("a[href]");
+    if (a && handle(a)) { e.preventDefault(); e.stopPropagation(); }
+  }, true);
+  var open = window.open;
+  window.open = function (url) { if (url && /^https?:/.test(url) && new URL(url, location.href).origin !== location.origin) { external(url); return null; } return open.apply(window, arguments); };
+  // Seiten geben Blob-Adressen oft direkt nach dem Klick frei – hier etwas später, damit das Speichern sie noch lesen kann
+  var revoke = URL.revokeObjectURL;
+  URL.revokeObjectURL = function (u) { setTimeout(function () { revoke.call(URL, u); }, 60000); };
+  window.print = function () { alert("Drucken geht in der Android-App nicht. Zum Drucken die Seite in Chrome öffnen: sportgermany.github.io/planer"); };
+  window.SGNative = { save: save, external: external, plugins: P, platform: "android" };
+})();
 /* SportGermany-Design: 10 dunkle Farbwelten für alle Apps. Läuft im <head>, damit beim Laden nichts aufblitzt.
  * Die Wahl liegt im gemeinsamen Speicher (gilt sofort für alle Apps) und wird vom Verbund-Sync mit abgeglichen.
  * data-design nennt, welche CSS-Variablen die jeweilige App benutzt. */
@@ -231,7 +276,7 @@
 (function () {
   "use strict";
   if (window.SGFixUrl) return;
-  var VERSION = "3.2.0";
+  var VERSION = "3.3.0";
   window.SGVersion = VERSION;
   var BASE = "/" + (location.pathname.split("/")[1] || "") + "/";
   var MAP = { trainingsblog: "training/", pulsplan: "training/atmung/", rodeln: "training/mobility/", schulplaner: "", kalender: "",
@@ -301,6 +346,11 @@
   // want: neue Versionsnummer. Neu geladen wird, sobald der Service Worker sie bereitstellt –
   // auch wenn der Browser sie schon vorher im Hintergrund installiert hat.
   function install(cb, want) {
+    if (window.SGNative) {
+      if (apkUrl) { cb && cb("Download startet – danach die Datei antippen und „Installieren“ wählen."); window.SGNative.external(apkUrl); }
+      else nativeCheck(cb || function () {}, false);
+      return;
+    }
     var sw = navigator.serviceWorker;
     if (!sw) { location.reload(); return; }
     var t = null, go = function () { location.reload(); clearTimeout(t); t = setTimeout(go, 4000); };
@@ -313,8 +363,22 @@
     sw.getRegistration(BASE).then(function (reg) { if (!reg) return go(); return reg.update(); }).catch(go);
   }
   // check(status): status(text) meldet den Fortschritt; Ergebnis "neu" | "aktuell" | "offline" | "fehler"
+  // APK: neue Fassungen liegen als Release auf GitHub (Bau: .github/workflows/apk.yml) – Download öffnet im Browser, dann installieren
+  var REL = "https://api.github.com/repos/SportGermany/planer/releases/latest", apkUrl = "";
+  function nativeCheck(status, auto) {
+    if (!navigator.onLine) { status("Ohne Internet kann nicht nach einer neuen Version gesucht werden. Die App läuft offline ganz normal weiter."); return Promise.resolve("offline"); }
+    status("Suche nach einer neuen Version …");
+    return fetch(REL, { cache: "no-store", headers: { Accept: "application/vnd.github+json" } }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (j) {
+      var v = String(j.tag_name || "").replace(/^v/, ""), a = (j.assets || []).find(function (x) { return /\.apk$/.test(x.name); });
+      if (!a || !newer(v, window.SGVersion)) { status("Du hast die neueste Version (" + window.SGVersion + ")."); return "aktuell"; }
+      apkUrl = a.browser_download_url;
+      if (auto) { status("Version " + v + " ist da."); return v; }
+      status("Version " + v + " gefunden – die neue App wird heruntergeladen. Danach antippen und installieren (deine Daten bleiben)."); install(status, v); return "neu";
+    }).catch(function () { status("GitHub ist gerade nicht erreichbar. Die App läuft offline ganz normal weiter."); return "fehler"; });
+  }
   function check(status, auto) {
     status = status || function () {};
+    if (window.SGNative) return nativeCheck(status, auto);
     if (!navigator.onLine) { status("Ohne Internet kann nicht nach einer neuen Version gesucht werden. Die App läuft offline ganz normal weiter."); return Promise.resolve("offline"); }
     status("Suche nach einer neuen Version …");
     return remote().then(function (v) {
