@@ -5,6 +5,12 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## 3.5.0 – erste veröffentlichte Android-App
+
+Secret `APK_PASSWORT` vom Nutzer eingetragen (Passwort bekam er als PDF, weil er die .txt nicht öffnen konnte).
+Lauf 39427364524: signiert (Zertifikat geprüft), Emulator 25/25, Release **v3.5.0** mit `planer-3.5.0.apk` (5,4 MB):
+https://github.com/SportGermany/planer/releases/tag/v3.5.0
+
 ## 3.4.x – Android-App: Handykalender (B), Erinnerungen (C), Test im echten Emulator
 
 **Umsetzung:** siehe WISSEN.md › APK. Workflow: bauen → Emulator-Test (`werkzeuge/tests/emulator.js`, API 34, Pixel 6) → erst dann Release.
