@@ -118,14 +118,14 @@ button { cursor: pointer; }
   .path { pointer-events: none; }
 }
 /* ---------- Mehr (4.0): Suchfeld, Zustand rechts, Warnpunkt, Schalter ---------- */
-.msearch { display: flex; align-items: center; gap: 10px; height: 48px; margin: 4px 0 18px; padding: 0 14px; border-radius: 14px; background: var(--s1); color: var(--muted); }
+.msearch { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; margin: 4px 0 18px; padding: 8px 14px; border: 0; border-radius: 14px; background: var(--s1); color: var(--muted); font-size: 16px; text-align: left; }
 .msearch svg { width: 20px; height: 20px; flex: none; }
-.msearch input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; outline: none; font-size: 16px; color: var(--ink); }
 #n-mehr .row { min-height: 60px; }
-#n-mehr .row .tx b, #n-mehr .row .tx small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Titel brechen um, Untertitel höchstens zwei Zeilen – nichts wird abgeschnitten (auch bei großer Schrift) */
+#n-mehr .row .tx small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 #n-mehr { padding-bottom: calc(24px + var(--bot)); } /* kein Plus-Knopf auf Mehr */
 #n-mehr .grp { margin-bottom: 18px; }
-#n-mehr .row .val { max-width: 45%; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#n-mehr .row .val { max-width: 42%; text-align: right; }
 #n-mehr .row.big { min-height: 76px; background: color-mix(in srgb, var(--c) 14%, var(--s1)); }
 #n-mehr .row.big .tx b { font-size: 16.5px; }
 .val em { font-style: normal; font-weight: 700; }
@@ -134,10 +134,10 @@ button { cursor: pointer; }
 .lnk-ic { font-size: 16px; color: var(--muted); }
 .nav button .warn { position: absolute; top: 9px; left: calc(50% + 12px); width: 9px; height: 9px; border-radius: 50%; background: #ff6b6b; box-shadow: 0 0 0 2px var(--s1); }
 .row.tgl { cursor: pointer; }
-.swi { appearance: none; -webkit-appearance: none; flex: none; width: 48px; height: 28px; margin: 0; border-radius: 14px; background: var(--s3); position: relative; cursor: pointer; transition: background .15s; }
+.swi { appearance: none; -webkit-appearance: none; flex: none; width: 48px; height: 28px; margin: 0; border-radius: 14px; background: var(--s3); box-shadow: inset 0 0 0 1.5px var(--muted); position: relative; cursor: pointer; transition: background .15s; }
 .swi::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--muted); transition: transform .15s, background .15s; }
-.swi:checked { background: color-mix(in srgb, var(--acc) 55%, var(--s3)); }
-.swi:checked::after { transform: translateX(20px); background: var(--ink); }
+.swi:checked { background: var(--acc); box-shadow: none; }
+.swi:checked::after { transform: translateX(20px); background: var(--accfg); }
 .swi:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .swi, .swi::after { transition: none; } }
 ul.wn { margin: 0 16px 12px; padding-left: 18px; color: var(--muted); font-size: 14px; }

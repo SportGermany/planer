@@ -340,7 +340,8 @@
       }
     },
     me: ME,
-    status: function () { var c = cfg(); return { connected: !!c.token, user: c.user || "", busy: sync.busy, error: sync.error, last: sync.last || c.last || 0 }; },
+    // offline: kein Fehler (die App läuft offline), wird nachgeholt
+    status: function () { var c = cfg(); return { connected: !!c.token, user: c.user || "", busy: sync.busy, error: sync.error, offline: !!sync.offline || /^Keine Verbindung|^Offline/.test(sync.error || ""), last: sync.last || c.last || 0 }; },
     open: function (date, tab) { openPanel(date, tab); },
     sync: function () { return syncNow(); }
   };
@@ -461,7 +462,8 @@
     if (EMBED) return Promise.resolve(false); // eingebettete Module: die App drumherum synchronisiert
     var c = cfg();
     if (!c.token) return Promise.resolve(false);
-    if (!navigator.onLine) { sync.error = "Offline – wird nachgeholt, sobald Internet da ist."; render(true); return Promise.resolve(false); }
+    if (!navigator.onLine) { sync.error = "Offline – wird nachgeholt, sobald Internet da ist."; sync.offline = true; render(true); return Promise.resolve(false); }
+    sync.offline = false;
     if (sync.busy) { sync.again = true; return Promise.resolve(false); }
     sync.busy = true; render(true);
     var token = c.token;
@@ -494,6 +496,7 @@
       return false;
     }).then(function (ok) {
       sync.busy = false; render(true);
+      try { window.dispatchEvent(new Event("sg-sync")); } catch (x) {}
       if (sync.again) { sync.again = false; syncNow(); }
       return ok;
     });
@@ -1039,13 +1042,19 @@
     }).then(function () { alert("Stand vom " + when + " wiederhergestellt."); location.reload(); })
       .catch(function (e) { state.hist = { error: e.message || "Wiederherstellen fehlgeschlagen." }; render(); });
   }
+  function topMove() { try { var m = window.top.SGMove; return m && m.backup ? m : null; } catch (e) { return null; } }
   function restoreFile() {
     var inp = document.createElement("input");
     inp.type = "file"; inp.accept = ".json,application/json";
     inp.onchange = function () {
       var file = inp.files && inp.files[0]; if (!file) return;
       file.text().then(function (txt) {
-        var b = JSON.parse(txt);
+        var b = JSON.parse(txt), mv = null; try { mv = window.top.SGMove; } catch (x) {}
+        // Sicherung aus Mehr (Format der Umzugsdatei, mit Dateien/Bildern) gleich hier einspielen
+        if (b && b.format === "planer-umzug" && mv) {
+          if (!confirm("Sicherung einspielen? Die aktuellen Daten werden ersetzt.")) return;
+          return mv.apply(b).then(function () { location.reload(); });
+        }
         if (!b || b.format !== "sportgermany-sicherung" || !b.data) throw new Error("format");
         if (!confirm("Sicherung vom " + new Date(b.created).toLocaleString("de-DE") + " einspielen? Die aktuellen Daten aller Apps werden ersetzt.")) return;
         applySnapshot(b.data);
@@ -1136,6 +1145,7 @@
     else if (a === "connect") return connect(box.querySelector("[name=token]").value);
     else if (a === "syncnow") return syncNow();
     else if (a === "notify") return askNotify();
+    else if (a === "backup" && topMove()) { close(); return topMove().backup(); }   // eine Sicherung für alles (mit Dateien/Bildern)
     else if (a === "backup") return download("sportgermany-sicherung-" + iso(new Date()) + ".json", "application/json", JSON.stringify(fullBackup(), null, 1));
     else if (a === "restorefile") return restoreFile();
     else if (a === "history") { state.hist = { loading: true }; render(); loadHistory(); return; }
@@ -1621,7 +1631,7 @@
     }
     add("Daten", cfg().token ? "Jetzt synchronisieren" : "Cloud-Sicherung einrichten", function () { if (cfg().token) syncNow(); else openPanel(null, "sync"); });
     add("Daten", "Frühere Stände zurückholen", function () { openPanel(null, "sync"); });
-    add("Daten", "Alles als Datei sichern", function () { download("sportgermany-sicherung-" + iso(new Date()) + ".json", "application/json", JSON.stringify(fullBackup(), null, 2)); });
+    if (!topMove()) add("Daten", "Alles als Datei sichern", function () { download("sportgermany-sicherung-" + iso(new Date()) + ".json", "application/json", JSON.stringify(fullBackup(), null, 2)); });
     if ("Notification" in window && Notification.permission === "default") add("Daten", "Erinnerungen als Benachrichtigung erlauben", askNotify);
     if (!standalone()) add("Daten", ME.name + " als App installieren", function () { installNow(); });
     return L.concat(CMD_EXTRA);
@@ -2045,7 +2055,7 @@
         var s = hState(); s.on = true; hSave(s); return hSync(true);
       });
     },
-    disable: function () { var s = hState(); s.on = false; hSave(s); emit(); },
+    disable: function () { var s = hState(); s.on = false; s.err = ""; hSave(s); emit(); },
     setOpt: function (k, v) { var s = hState(); s.opt[k] = !!v; hSave(s); return hSync(true); },
     setCal: function (id, on) { var s = hState(); if (on) delete s.off[id]; else s.off[id] = 1; hSave(s); emit(); },
     sync: hSync,

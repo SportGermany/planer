@@ -529,7 +529,8 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(!e.length, e.join(' | ')); await c.close();
   });
   /* ---------- P5: Mehr neu geordnet ---------- */
-  const mehrCtx = async (init) => { const c = await ctxFor(SMALL); if (init) await c.addInitScript(init); const p = await c.newPage(); return { c, p, e: watch(p) }; };
+  const ANDROID = Object.assign({ userAgent: 'Mozilla/5.0 (Linux; Android 14; SM-A546B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36' }, SMALL);
+  const mehrCtx = async (init, opt) => { const c = await ctxFor(opt || SMALL); if (init) await c.addInitScript(init); const p = await c.newPage(); return { c, p, e: watch(p) }; };
   const valOf = (p, m) => p.evaluate(m => { const r = document.querySelector('#n-mehr [data-m="' + m + '"] .val'); return r ? r.textContent : ''; }, m);
   await test('P5 Mehr: fünf Gruppen nach Zweck, alles von früher erreichbar, höchstens zwei Bildschirmhöhen', async () => {
     const { c, p, e } = await mehrCtx(); await open(p, '#mehr');
@@ -537,7 +538,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
       h: document.getElementById('n-mehr').scrollHeight, minRow: Math.min(...[...document.querySelectorAll('#n-mehr .row')].map(x => x.getBoundingClientRect().height)),
       links: [...document.querySelectorAll('#n-mehr .lnk-ic')].map(x => x.closest('[data-m]').dataset.m).join() }));
     assert(r.grp === 'Planen|Lesen und Lernen|Abgleich und Sicherung|Darstellung und Einstellungen|Über die App', 'Gruppen ' + r.grp);
-    const fehlt = ['aufgaben', 'notizen', 'week', 'std', 'handy', 'bibel', 'wissen', 'pause', 'design', 'sync', 'tset', 'update', 'umzug', 'backup', 'neu', 'diag', 'autodw'].filter(m => r.ms.indexOf(m) < 0);
+    const fehlt = ['aufgaben', 'notizen', 'week', 'std', 'handy', 'bibel', 'wissen', 'pause', 'design', 'sync', 'tset', 'update', 'umzug', 'backup', 'restore', 'neu', 'diag', 'autodw'].filter(m => r.ms.indexOf(m) < 0);
     assert(!fehlt.length, 'fehlt ' + fehlt);
     assert(r.links === 'wissen,tset', 'Verknüpfungen ' + r.links);
     assert(r.h <= 2 * 800 && r.minRow >= 59.5, 'Höhe ' + r.h + ' Zeile ' + r.minRow);
@@ -547,21 +548,27 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     await p.evaluate(() => { location.hash = 'kalender'; }); await wait(p, 300); await p.evaluate(() => { location.hash = 'mehr'; }); await wait(p, 400);
     await p.click('#n-mehr [data-m=diag]'); await wait(p, 300); assert(/Test-Eintrag/.test(await p.inputValue('#sheet textarea.diag')), 'Protokoll');
     await p.click('#sheet [data-s=clear]'); await wait(p, 400); assert(await p.evaluate(() => !localStorage.getItem('sg-diag-v1')), 'Leeren');
-    // Suchfeld öffnet die Suche mit dem Getippten
-    await p.fill('#mehrq', 'Bibel'); await wait(p, 400);
-    assert(await p.evaluate(() => { const r = document.getElementById('sg-shared-calendar'), i = (r.shadowRoot || r).querySelector('.palin'); return i && i.value === 'Bibel'; }), 'Suche vorbefüllt');
+    // Suchfeld öffnet die Suche; Einträge von „Mehr“ sind dort zu finden, Enter legt keine Aufgabe an
+    await p.click('#mehrq'); await wait(p, 300);
+    const pal = () => p.evaluate(() => { const r = document.getElementById('sg-shared-calendar'); return (r.shadowRoot || r); });
+    assert(await p.evaluate(() => { const r = document.getElementById('sg-shared-calendar'), i = (r.shadowRoot || r).querySelector('.palin'); return !!i && i.offsetParent !== null; }), 'Suche geht nicht auf');
+    await p.keyboard.type('Fehlerproto'); await wait(p, 200);
+    const first = await p.evaluate(() => { const r = document.getElementById('sg-shared-calendar'), x = (r.shadowRoot || r).querySelector('.pali.on'); return x ? x.textContent : ''; });
+    assert(/Fehlerprotokoll/.test(first), 'erster Treffer ' + first);
+    await p.keyboard.press('Enter'); await wait(p, 600);
+    assert(/Fehlerprotokoll/.test(await p.textContent('#sheet')), 'Befehl öffnet Fehlerprotokoll');
     assert(!e.length, e.join(' | ')); await c.close();
   });
   await test('P5 Zustände: Cloud (aus, frisch, alt mit Warnpunkt), Umzug groß nur bis erledigt, Aufgaben/Notizen-Zahl, neue Version', async () => {
     const bad = [];
-    let { c, p, e } = await mehrCtx(() => localStorage.removeItem('sg-shared-calendar-sync')); await open(p, '#mehr');
+    let { c, p, e } = await mehrCtx(() => localStorage.removeItem('sg-shared-calendar-sync'), ANDROID); await open(p, '#mehr');
     if (await valOf(p, 'sync') !== 'Aus' || await p.$('#nav [data-tab=mehr] .warn')) bad.push('aus: ' + await valOf(p, 'sync'));
     if (!(await p.$('#n-mehr .grp:first-of-type [data-m=umzug].big')) && !(await p.$('#n-mehr [data-m=umzug].big'))) bad.push('Umzug nicht groß');
     if (!/\d+ offen/.test(await valOf(p, 'aufgaben'))) bad.push('Aufgaben-Zahl ' + await valOf(p, 'aufgaben'));
     await p.evaluate(() => window.dispatchEvent(new CustomEvent('sg-update', { detail: '9.9.9' }))); await wait(p, 200);
     if (!/Neu: 9\.9\.9/.test(await valOf(p, 'update'))) bad.push('neue Version ' + await valOf(p, 'update'));
     bad.push(...e); await c.close();
-    ({ c, p, e } = await mehrCtx(() => { localStorage.setItem('sg-shared-calendar-sync', JSON.stringify({ token: 'x', user: 'u', last: Date.now() - 2 * 36e5 })); localStorage.setItem('sg-umzug-v1', '{"at":1}'); }));
+    ({ c, p, e } = await mehrCtx(() => { localStorage.setItem('sg-shared-calendar-sync', JSON.stringify({ token: 'x', user: 'u', last: Date.now() - 2 * 36e5 })); localStorage.setItem('sg-umzug-v1', '{"at":1}'); }, ANDROID));
     await c.route('https://api.github.com/**', r => r.abort()); await open(p, '#mehr');
     const v1 = await valOf(p, 'sync'); if (!/^vor 2 Std\.$/.test(v1) || await p.$('#nav [data-tab=mehr] .warn')) bad.push('frisch: ' + v1);
     if (await p.$('#n-mehr [data-m=umzug].big') || !(await p.$('#n-mehr [data-m=umzug]'))) bad.push('Umzug erledigt, aber groß');
@@ -569,9 +576,31 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     ({ c, p, e } = await mehrCtx(() => localStorage.setItem('sg-shared-calendar-sync', JSON.stringify({ token: 'x', user: 'u', last: Date.now() - 9 * 864e5 }))));
     await c.route('https://api.github.com/**', r => r.abort()); await open(p, '#kalender');
     if (!(await p.$('#nav [data-tab=mehr] .warn'))) bad.push('kein Warnpunkt am Tab');
+    // nach erfolgreicher Sicherung verschwindet der Punkt ohne Neuladen
+    await p.evaluate(() => { const c = JSON.parse(localStorage.getItem('sg-shared-calendar-sync')); c.last = Date.now(); localStorage.setItem('sg-shared-calendar-sync', JSON.stringify(c)); window.dispatchEvent(new Event('sg-sync')); }); await wait(p, 200);
+    if (await p.$('#nav [data-tab=mehr] .warn')) bad.push('Punkt bleibt nach Sicherung');
+    await p.evaluate(() => { const c = JSON.parse(localStorage.getItem('sg-shared-calendar-sync')); c.last = Date.now() - 9 * 864e5; localStorage.setItem('sg-shared-calendar-sync', JSON.stringify(c)); window.dispatchEvent(new Event('sg-sync')); }); await wait(p, 200);
     await p.click('#nav [data-tab=mehr]'); await wait(p, 400); const v2 = await valOf(p, 'sync');
     if (!/^! (vor 9 Tagen|Fehler)$/.test(v2)) bad.push('alt: ' + v2);
     await c.close();
+    // offline ist kein Fehler: kein Warnpunkt, kein „Fehler“
+    ({ c, p, e } = await mehrCtx(() => localStorage.setItem('sg-shared-calendar-sync', JSON.stringify({ token: 'x', user: 'u', last: Date.now() - 36e5 }))));
+    await c.setOffline(true).catch(() => {}); await p.goto(APP + '#mehr').catch(() => {}); await c.setOffline(false); await p.goto(APP + '#mehr'); await c.setOffline(true); await p.evaluate(() => SharedCalendar.sync && SharedCalendar.sync()); await wait(p, 600);
+    await p.evaluate(() => window.dispatchEvent(new Event('sg-sync'))); await wait(p, 200);
+    const v3 = await valOf(p, 'sync'); if (/Fehler|!/.test(v3) || await p.$('#nav [data-tab=mehr] .warn')) bad.push('offline als Fehler: ' + v3);
+    await c.setOffline(false); await c.close();
+    // Umzug: abbrechen lässt die große Karte stehen, Speichern erledigt; Merker reist nicht in Dateien mit
+    ({ c, p, e } = await mehrCtx(null, ANDROID)); await open(p, '#mehr');
+    await p.click('#n-mehr [data-m=umzug]'); await wait(p, 1500); await p.goBack(); await wait(p, 400);
+    if (!(await p.$('#n-mehr [data-m=umzug].big'))) bad.push('Abbrechen hat Umzug erledigt');
+    await p.click('#n-mehr [data-m=umzug]'); await wait(p, 1500);
+    const dl = p.waitForEvent('download', { timeout: 5000 }).catch(() => null); await p.click('#sheet [data-s=save]'); await dl; await wait(p, 400);
+    if (await p.$('#n-mehr [data-m=umzug].big')) bad.push('nach Speichern noch groß');
+    const keys = await p.evaluate(() => SGMove.data().then(d => Object.keys(d.ls)));
+    if (keys.some(k => /^sg-umzug-raus-v1|^sg-update-neu/.test(k))) bad.push('Gerätemerker in der Datei');
+    await c.close();
+    // Desktop/iPhone: keine große Umzugskarte
+    ({ c, p, e } = await mehrCtx()); await open(p, '#mehr'); if (await p.$('#n-mehr [data-m=umzug].big')) bad.push('große Umzugskarte ohne Android'); await c.close();
     assert(!bad.length, bad.join(' | '));
   });
   await test('P5 Schalter: einheitlich, „Seitenmenü automatisch öffnen“ (Standard aus) wirkt und bleibt', async () => {

@@ -191,7 +191,7 @@ Prüfung Phase 4 (Prüf-Agent, 12 Befunde):
 | (Test) | Kapitel-Auswahl im Quiz änderte den Filter der Karteikarten | gemeinsamer Baustein: Auswahlfeld trägt jetzt, welcher Filter gemeint ist (`data-fsel`) – vom Test „L Quiz“ gefunden |
 Version 3.7.0.
 
-### Phase 5 – Mehr neu ordnen (in Arbeit)
+### Phase 5 – Mehr neu ordnen (erledigt)
 Umgesetzt (app/js/1-app.js `renderMehr`, app/index.html):
 - Oben Suchfeld „Einstellungen und Seiten suchen“ – öffnet die vorhandene Suche mit dem Getippten (keine zweite Suche).
 - Fünf Gruppen; jede Zeile zeigt rechts ihren Zustand (`.val`), Untertitel einzeilig, Zeilen ≥ 60 px.
@@ -213,6 +213,25 @@ Neue Orte (alles von früher erreichbar):
 | Einstellungen: Training einstellen | Darstellung und Einstellungen, Verknüpfung ↗ (Hauptort Training › Seitenmenü) |
 | Einstellungen: App installieren | Darstellung und Einstellungen (nur im Browser) |
 | Einstellungen: Version | Über die App |
+
+Prüfung Phase 5 (Prüf-Agent, 16 Befunde):
+| # | Befund | Lösung |
+|---|---|---|
+| F1 | Offline/keine Verbindung galt als Fehler (Warnpunkt) | `status().offline`; offline und „noch nie gesichert“ warnen nicht, nur echte Fehler und > 7 Tage |
+| F2 | Zustand/Warnpunkt erst nach Seitenwechsel aktuell | Verbund feuert `sg-sync` nach jedem Lauf; Hülle aktualisiert Punkt und Mehr; `refresh()` und stündlich |
+| F3 | Umzug galt schon beim Antippen als erledigt | Merker erst nach Speichern/Teilen |
+| S4 | Gerätemerker in Umzugs-/Sicherungsdateien | `sg-umzug-raus-v1`, `sg-update-neu` in MOVE_SKIP |
+| F5/S6 | „Alles als Datei sichern“ ließ sich im Browser nicht einspielen; Text war der Umzugstext; zwei verschiedene Sicherungen | eine Sicherung (`moveOut("backup")`, mit Dateien/Bildern) überall (Mehr, Cloud-Blatt, Suche); neu „Sicherung einspielen“ in Mehr; Cloud › Einspielen nimmt sie auch |
+| S7 | Suchfeld: IME-Komposition „BBücher“, Tastatur sprang | Feld ist ein Knopf, getippt wird in der Suche selbst |
+| S8 | Suche fand keine Mehr-Einträge, Enter legte Aufgabe an | Mehr-Einträge als Befehle registriert (Gruppe „Einstellungen“) |
+| S9 | Abgeschnittene Titel (360 × 640, 130 %) | Titel brechen um, Untertitel max. 2 Zeilen, kürzere Untertitel |
+| S10 | Handykalender „! Fehler“ nach „Abgleich aus“ | `disable()` löscht den Fehler, Zeile prüft zuerst „an“ |
+| H11 | „Neu: x.y.z“ nach Neustart weg | in `sg-update-neu` gemerkt, nur wenn wirklich neuer |
+| H12 | Große Umzugskarte auf PC/iPhone | nur in der APK oder auf Android |
+| H13 | Schalter-Kontrast | Rand im Aus-Zustand, Akzentfläche im An-Zustand |
+| H14 | Kopieren ohne Version/Gerät, falsches „Kopiert“ | Kopfzeile dabei, Rückweg meldet ehrlich |
+| H15 | Schalter „Seitenmenü automatisch“ auf dem Tablet wirkungslos | dort ausgeblendet |
+| H16 | Sportwissenschaft ohne %, Erinnerungen-Zeile | % wieder da; Erinnerungen nur, wenn die APK sie kann (wie vorher) |
 
 ## 3.5.0 – erste veröffentlichte Android-App
 

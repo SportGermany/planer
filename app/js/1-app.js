@@ -925,7 +925,7 @@
   /* ---------- Umzug Chrome → Android-App ----------
      Die APK hat einen eigenen Speicher. Die Chrome-App schreibt alles in eine Umzugsdatei (localStorage + die Datei-Speicher
      von Bahnplan und Schule), die APK liest sie ein. Gerätebezogenes (Fehlerprotokoll, Handykalender-Merkliste) bleibt zurück. */
-  var MOVE_SKIP = /^(sg-update-check|sg-diag-v1|sg-handykalender-v1|sg-apply-on-boot:.*|sg-umzug-v1)$/;
+  var MOVE_SKIP = /^(sg-update-check|sg-update-neu|sg-diag-v1|sg-handykalender-v1|sg-apply-on-boot:.*|sg-umzug-v1|sg-umzug-raus-v1)$/;
   var MOVE_DB = [["bahnplan", "img"], ["lernplan-dateien", "files"]], MOVE_STORES = { bahnplan: ["img"], "lernplan-dateien": ["files", "inbox"] };
   function idbAll(name, store) {
     return new Promise(function (ok) {
@@ -960,17 +960,23 @@
       return { format: "planer-umzug", v: 1, at: Date.now(), version: window.SGVersion || "", ls: ls, idb: idb };
     });
   }
-  function moveOut() {
-    snack("Umzugsdatei wird erstellt …");
+  // mode "umzug": Datei für die Android-App; "backup": Sicherung aller Daten (gleiches Format, einspielen über Mehr › Sicherung einspielen)
+  function moveOut(mode) {
+    var bk = mode === "backup", nat = !!window.SGNative;
+    snack(bk ? "Sicherung wird erstellt …" : "Umzugsdatei wird erstellt …");
     moveData().then(function (d) {
-      var n = Object.keys(d.ls).length, text = JSON.stringify(d), name = "planer-umzug-" + today() + ".json";
+      var n = Object.keys(d.ls).length, text = JSON.stringify(d), name = (bk ? "planer-sicherung-" : "planer-umzug-") + today() + ".json";
       var file = null; try { file = new File([text], name, { type: "application/json" }); } catch (e) {}
-      function dl() { var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "application/json" })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 3000); }
-      sheet('<h3>Umzugsdatei ist fertig</h3><p class="s">' + n + ' Datenbereiche' + (Object.keys(d.idb).length ? " und gespeicherte Dateien/Bilder" : "") + ' (' + (text.length / 1048576).toFixed(1).replace(".", ",") + ' MB). So geht es weiter:</p>' +
-        '<p class="s">1. Datei speichern (landet unter „Downloads“).<br>2. Android-App „Planer“ öffnen.<br>3. Beim ersten Start „Daten aus Chrome übernehmen“ antippen (oder Mehr › Daten aus Chrome übernehmen) und die Datei wählen.</p>' +
+      function dl() { var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "application/json" })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000); }
+      // erst wenn die Datei wirklich gespeichert/geteilt ist, gilt der Umzug als erledigt
+      function done() { if (!bk) { try { localStorage.setItem("sg-umzug-raus-v1", String(Date.now())); } catch (e) {} } if (cur.v === "mehr") renderMehr(); }
+      var size = n + " Datenbereiche" + (Object.keys(d.idb).length ? " und gespeicherte Dateien/Bilder" : "") + " (" + (text.length / 1048576).toFixed(1).replace(".", ",") + " MB)";
+      sheet("<h3>" + (bk ? "Sicherung ist fertig" : "Umzugsdatei ist fertig") + '</h3><p class="s">' + size + ".</p>" +
+        (bk ? '<p class="s">Bewahre die Datei an einem sicheren Ort auf (z. B. Google Drive). Zurückholen: Mehr › Sicherung einspielen.</p>'
+          : '<p class="s">So geht es weiter:<br>1. Datei speichern (landet unter „Downloads“).<br>2. Android-App „Planer“ öffnen.<br>3. Beim ersten Start „Daten aus Chrome übernehmen“ antippen (oder Mehr › Daten aus Chrome übernehmen) und die Datei wählen.</p>') +
         '<div class="btns">' + (file && navigator.canShare && navigator.canShare({ files: [file] }) ? '<button class="btn" data-s="share">Teilen</button>' : "") + '<button class="btn p" data-s="save">Datei speichern</button></div>', function (act) {
-        if (act === "save") { dl(); closeSheet(); snack("Gespeichert unter Downloads: " + name); }
-        else if (act === "share") navigator.share({ files: [file], title: "Planer-Umzug" }).then(closeSheet).catch(function () {});
+        if (act === "save") { dl(); closeSheet(); done(); snack(nat ? "Gespeichert bzw. zum Teilen geöffnet: " + name : "Gespeichert unter Downloads: " + name); }
+        else if (act === "share") navigator.share({ files: [file], title: bk ? "Planer-Sicherung" : "Planer-Umzug" }).then(function () { closeSheet(); done(); }).catch(function () {});
       });
     });
   }
@@ -996,12 +1002,14 @@
     });
     return Promise.all(jobs).then(function () { localStorage.setItem("sg-umzug-v1", JSON.stringify({ at: Date.now(), from: d.version, n: Object.keys(d.ls).length })); });
   }
+  // first: erster Start der APK · "restore": Sicherung einspielen (Browser und APK) · sonst: Daten aus Chrome übernehmen
   function moveInSheet(first) {
-    sheet('<h3>' + (first ? "Willkommen in der Android-App" : "Daten aus Chrome übernehmen") + '</h3>' +
-      '<p class="s">' + (first ? "Die Android-App hat einen eigenen Speicher. Deine Daten aus der Chrome-App holst du so herüber:<br><br>" : "") +
-      '1. In Chrome die Planer-App öffnen › Mehr › „In die Android-App umziehen“ › Datei speichern.<br>2. Hier „Umzugsdatei wählen“ antippen und die Datei aus „Downloads“ nehmen.</p>' +
+    var rs = first === "restore"; if (rs) first = false;
+    sheet('<h3>' + (first ? "Willkommen in der Android-App" : rs ? "Sicherung einspielen" : "Daten aus Chrome übernehmen") + '</h3>' +
+      '<p class="s">' + (rs ? "Eine Sicherung (Mehr › Alles als Datei sichern) oder Umzugsdatei wählen." : (first ? "Die Android-App hat einen eigenen Speicher. Deine Daten aus der Chrome-App holst du so herüber:<br><br>" : "") +
+      '1. In Chrome die Planer-App öffnen › Mehr › „In die Android-App umziehen“ › Datei speichern.<br>2. Hier „Umzugsdatei wählen“ antippen und die Datei aus „Downloads“ nehmen.') + '</p>' +
       (first ? "" : '<p class="s">Achtung: Daten in dieser App werden durch die aus der Datei ersetzt.</p>') +
-      '<div class="btns">' + (first ? '<button class="btn" data-s="fresh">Neu anfangen</button>' : "") + '<button class="btn p" data-s="pick">Umzugsdatei wählen</button></div>', function (act) {
+      '<div class="btns">' + (first ? '<button class="btn" data-s="fresh">Neu anfangen</button>' : "") + '<button class="btn p" data-s="pick">' + (rs ? "Datei wählen" : "Umzugsdatei wählen") + '</button></div>', function (act) {
       if (act === "fresh") { localStorage.setItem("sg-umzug-v1", JSON.stringify({ at: Date.now(), fresh: true })); setupSheet(); return; }
       if (act !== "pick") return;
       var inp = document.createElement("input"); inp.type = "file"; inp.accept = ".json,application/json";
@@ -1014,7 +1022,7 @@
       inp.click();
     });
   }
-  window.SGMove = { data: moveData, apply: moveIn };
+  window.SGMove = { data: moveData, apply: moveIn, backup: function () { moveOut("backup"); } };
 
   /* ---------- Mehr ---------- */
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
@@ -1028,9 +1036,10 @@
   function cloudState() {
     var c = C(), st = c && c.status ? c.status() : {};
     if (!st.connected) return { val: "Aus", warn: false };
-    if (st.error) return { val: "Fehler", warn: true };
-    var age = st.last ? Date.now() - st.last : Infinity;
-    return { val: st.last ? "vor " + agoShort(st.last) : "noch nie", warn: age > 7 * 864e5 };
+    // offline/keine Verbindung ist kein Fehler – nur echte Fehler und „länger als 7 Tage nicht gesichert“ warnen
+    if (st.error && !st.offline) return { val: "Fehler", warn: true };
+    if (!st.last) return { val: "noch nie", warn: false };
+    return { val: "vor " + agoShort(st.last), warn: Date.now() - st.last > 7 * 864e5 };
   }
   function agoShort(t) { var m = Math.round((Date.now() - t) / 6e4); return m < 60 ? Math.max(1, m) + " Min." : m < 1440 * 2 ? Math.round(m / 60) + " Std." : Math.round(m / 1440) + " Tagen"; }
   // Warnpunkt am Tab „Mehr“, wenn die Sicherung zu alt ist oder hakt
@@ -1040,6 +1049,7 @@
     if (w && !d) { d = document.createElement("i"); d.className = "warn"; d.setAttribute("aria-label", "Sicherung prüfen"); b.appendChild(d); }
     else if (!w && d) d.remove();
   }
+  function newer(a, b) { a = String(a).split(".").map(Number); b = String(b || "0").split(".").map(Number); for (var i = 0; i < 3; i++) { if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) > (b[i] || 0); } return false; }
   function umzugDone() { try { return !!(localStorage.getItem("sg-umzug-v1") || localStorage.getItem("sg-umzug-raus-v1")); } catch (e) { return true; } }
   function renderMehr() {
     var c = C(), notes = c && c.notes ? c.notes.list().filter(function (n) { return !n.done; }).length : 0;
@@ -1048,15 +1058,19 @@
     var link = '<span class="lnk-ic" aria-label="Verknüpfung">↗</span>';
     // Abgleich und Sicherung
     var hk = "", er = "", cl = cloudState(), nat = !!window.SGNative;
-    if (c && c.handy && c.handy.available()) { var hs = c.handy.state(); hk = hs.err ? '<em class="bad">! Fehler</em>' : hs.on ? "An · " + ago(hs.last) : "Aus"; }
+    if (c && c.handy && c.handy.available()) { var hs = c.handy.state(); hk = !hs.on ? "Aus" : hs.err ? '<em class="bad">! Fehler</em>' : "An · " + ago(hs.last); }
     else if (c && c.phone) { var ps = c.phone.state(), neu = c.phone.pending("neu").length; hk = neu ? neu + " neu" : ps.last ? "zuletzt " + ago(ps.last) : ""; }
-    if (c && c.erinnern && c.erinnern.available()) { var rs = c.erinnern.state(); er = rs.err ? '<em class="bad">! Fehler</em>' : rs.on ? "An · " + (rs.n || 0) + " geplant" : "Aus"; }
-    var big = !umzugDone();
+    if (c && c.erinnern && c.erinnern.available()) { var rs = c.erinnern.state(); er = !rs.on ? "Aus" : rs.err ? '<em class="bad">! Fehler</em>' : "An · " + (rs.n || 0) + " geplant"; }
+    // groß nur, solange der Umzug ansteht – im Browser nur auf Android-Geräten (sonst gibt es keine APK)
+    var big = !umzugDone() && (nat || /Android/i.test(navigator.userAgent));
+    var w = null; try { w = JSON.parse(localStorage.getItem("sg-wissen-v1") || "null"); } catch (e) {}
     var umz = nat ? r("umzugin", "download", "var(--c-training)", "Daten aus Chrome übernehmen", "Umzugsdatei aus der Chrome-App einlesen", "", big ? "big" : "")
       : r("umzug", "phone", "var(--c-training)", "In die Android-App umziehen", "Umzugsdatei für die APK erstellen", "", big ? "big" : "");
-    var newVer = window.SGNewVer && window.SGNewVer !== window.SGVersion ? window.SGNewVer : "";
+    var nv = window.SGNewVer; try { nv = nv || localStorage.getItem("sg-update-neu"); } catch (e) {}
+    var newVer = nv && nv !== window.SGVersion && newer(nv, window.SGVersion) ? nv : "";
     $("n-mehr").firstElementChild.innerHTML =
-      '<label class="msearch">' + ico("search") + '<input type="search" id="mehrq" placeholder="Einstellungen und Seiten suchen" autocomplete="off" enterkeyhint="search" aria-label="Einstellungen und Seiten suchen"></label>' +
+      // Knopf im Aussehen eines Suchfelds: öffnet die Suche (dort wird getippt – keine zweite Suche, keine Tastatur-Probleme)
+      '<button class="msearch" id="mehrq" data-m="suche">' + ico("search") + "<span>Einstellungen und Seiten suchen</span></button>" +
       (big ? '<div class="grp"><div class="cells">' + umz + "</div></div>" : "") +
       '<div class="grp"><header><span>Planen</span></header><div class="cells">' +
       r("aufgaben", "check", "var(--c-aufgabe)", "Aufgaben", "Heute, geplant, wichtig, erledigt", open ? open + " offen" : "") +
@@ -1065,19 +1079,20 @@
       r("std", "clock", "var(--c-training)", "Standardwoche übernehmen", "deine übliche Woche mit einem Tipp", "") + "</div></div>" +
       '<div class="grp"><header><span>Lesen und Lernen</span></header><div class="cells">' +
       r("bibel", "book", "var(--c-bibel)", "Bibel", "Abschnitt von heute, Bibliothek", "") +
-      r("wissen", "star", "#5ac8fa", "Sportwissenschaft", "Hauptort: Training › Seitenmenü", link) +
+      r("wissen", "star", "#5ac8fa", "Sportwissenschaft", "Lehrbuch, Karten, Quiz – Hauptort Training", (w && w.sum && w.sum.pct ? w.sum.pct + " % " : "") + link) +
       r("pause", "coffee", "#e5a04b", "Pause", "Ablenken, Wissen, Quiz", "") + "</div></div>" +
       '<div class="grp"><header><span>Abgleich und Sicherung</span></header><div class="cells">' +
       r("handy", "phone", "var(--c-termin)", "Handykalender", nat ? "Abgleich mit dem Kalender des Handys" : "Termine mit dem Handy austauschen", hk) +
       (er ? r("erinnern", "bell", "#e5a04b", "Erinnerungen", "Benachrichtigungen, auch offline", er) : "") +
       r("sync", "cloud", "#5ac8fa", "Cloud-Sicherung", "Abgleich über GitHub", cl.warn ? '<em class="bad">! ' + cl.val + "</em>" : cl.val) +
       r("backup", "download", "var(--muted)", "Alles als Datei sichern", "alle Daten in einer Datei", "") +
+      r("restore", "download", "var(--muted)", "Sicherung einspielen", "aus einer gesicherten Datei", "") +
       (big ? "" : umz) + "</div></div>" +
       '<div class="grp"><header><span>Darstellung und Einstellungen</span></header><div class="cells">' +
       r("design", "palette", "#8f7cf7", "Design", "Farbwelt und Glaseffekt", "") +
-      r("tset", "gear", "var(--c-training)", "Training einstellen", "Hauptort: Training › Seitenmenü", link) +
+      r("tset", "gear", "var(--c-training)", "Training einstellen", "Ziele, Ruhetage – Hauptort Training", link) +
       (window.SGInstallEvt && !nat ? r("install", "download", "var(--muted)", "App installieren", "auf den Startbildschirm", "") : "") +
-      toggleRow('data-m="autodw"', "Seitenmenü automatisch öffnen", "beim Wechsel zu Training, Schule …", !!M.autoDw) + "</div></div>" +
+      (wideMQ.matches ? "" : toggleRow('data-m="autodw"', "Seitenmenü automatisch öffnen", "beim Wechsel zu Training, Schule …", !!M.autoDw)) + "</div></div>" +
       '<div class="grp"><header><span>Über die App</span></header><div class="cells">' +
       r("update", "download", "var(--muted)", "Version " + esc(window.SGVersion || ""), nat ? "neue Version von GitHub holen" : "Version aktualisieren", newVer ? '<em class="hi">Neu: ' + esc(newVer) + "</em>" : "") +
       r("neu", "star", "var(--muted)", "Was ist neu", "Änderungen der letzten Versionen", "") +
@@ -1098,7 +1113,11 @@
       (l.length ? '<textarea class="diag" readonly>' + esc(txt) + "</textarea>" : '<p class="s">Keine Einträge – alles in Ordnung.</p>') +
       '<div class="btns">' + (l.length ? '<button class="btn" data-s="clear">Leeren</button><button class="btn p" data-s="copy">Kopieren</button>' : '<button class="btn p" data-s="x">Fertig</button>') + "</div>", function (act) {
       if (act === "clear") { try { localStorage.removeItem("sg-diag-v1"); } catch (e) {} closeSheet(); renderMehr(); snack("Protokoll geleert"); }
-      else if (act === "copy") { var t = sheetEl.querySelector("textarea"); t.select(); try { (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).then(function () { snack("Kopiert"); }, function () { document.execCommand("copy"); snack("Kopiert"); }); } catch (e) { snack("Bitte markieren und kopieren"); } }
+      else if (act === "copy") {
+        var t = sheetEl.querySelector("textarea"), all = "Planer " + (window.SGVersion || "") + (window.SGNative ? " · Android-App" : " · Browser") + " · " + navigator.userAgent + "\n" + t.value;
+        var fb = function () { t.select(); var ok = false; try { ok = document.execCommand("copy"); } catch (x) {} snack(ok ? "Kopiert (ohne Kopfzeile)" : "Bitte markieren und kopieren"); };
+        try { if (navigator.clipboard) navigator.clipboard.writeText(all).then(function () { snack("Kopiert"); }, fb); else fb(); } catch (e) { fb(); }
+      }
       else closeSheet();
     });
   }
@@ -1114,8 +1133,10 @@
     else if (m === "sync") c.openSync();
     else if (m === "install") { if (window.SGInstallEvt) window.SGInstallEvt.prompt(); }
     else if (m === "erinnern") remindSheet();
-    else if (m === "backup") moveOut();
-    else if (m === "umzug") { try { localStorage.setItem("sg-umzug-raus-v1", String(Date.now())); } catch (x) {} moveOut(); }
+    else if (m === "backup") moveOut("backup");
+    else if (m === "restore") moveInSheet("restore");
+    else if (m === "suche") c.palette("");
+    else if (m === "umzug") moveOut("umzug");
     else if (m === "umzugin") moveInSheet(false);
     else if (m === "neu") whatsNewSheet();
     else if (m === "diag") diagSheet();
@@ -1123,8 +1144,18 @@
     else go(m, null, null, { push: true });
   });
   $("n-mehr").addEventListener("change", function (e) { if (e.target.matches('[data-m="autodw"]')) { M.autoDw = e.target.checked; saveM(); } });
-  // Suchfeld oben: öffnet die Suche mit dem Getippten
-  $("n-mehr").addEventListener("input", function (e) { if (e.target.id === "mehrq" && e.target.value.trim() && C()) { var q = e.target.value; e.target.value = ""; e.target.blur(); C().palette(q); } });
+  // Zustand aktuell halten: nach jedem Sicherungslauf, bei Datenänderungen und stündlich (7-Tage-Grenze)
+  addEventListener("sg-sync", function () { mehrBadge(); if (cur.v === "mehr") renderMehr(); });
+  setInterval(mehrBadge, 36e5);
+  // Einträge von „Mehr“ sind auch über die Suche erreichbar
+  function mehrCommands() {
+    var c = C(); if (!c || !c.addCommands) return setTimeout(mehrCommands, 200);
+    var M_ = function (m) { return function () { go("mehr"); setTimeout(function () { var b = document.querySelector('#n-mehr [data-m="' + m + '"]'); if (b) b.click(); }, 80); }; };
+    c.addCommands([["Handykalender abgleichen", "handy"], ["Erinnerungen einstellen", "erinnern"], ["Cloud-Sicherung", "sync"], ["Alles als Datei sichern", "backup"], ["Sicherung einspielen", "restore"],
+      [window.SGNative ? "Daten aus Chrome übernehmen" : "In die Android-App umziehen", window.SGNative ? "umzugin" : "umzug"], ["Standardwoche übernehmen", "std"], ["Was ist neu", "neu"], ["Fehlerprotokoll", "diag"],
+      ["Seitenmenü automatisch öffnen (Mehr)", "autodw"], ["Version und Update", "update"]].map(function (x) { return { g: "Einstellungen", label: x[0], run: x[1] === "autodw" ? function () { go("mehr"); } : M_(x[1]) }; }));
+  }
+  mehrCommands();
 
   /* ---------- Blatt von unten, Hinweis ---------- */
   var sheetEl = $("sheet"), sheetOpen = false, sheetCb = null;
@@ -1150,14 +1181,14 @@
     s.classList.add("on"); if (undo) s.querySelector("button").onclick = function () { undo(); s.classList.remove("on"); };
     clearTimeout(snackT); snackT = setTimeout(function () { s.classList.remove("on"); }, undo ? 6000 : 3500);
   }
-  addEventListener("sg-update", function (e) { window.SGNewVer = e.detail; if (cur.v === "mehr") renderMehr(); snack("Version " + e.detail + " ist da.", function () { window.SGUpdate.install(function (t) { snack(t); }, e.detail); }, "Aktualisieren"); });
+  addEventListener("sg-update", function (e) { window.SGNewVer = e.detail; try { localStorage.setItem("sg-update-neu", e.detail); } catch (x) {} if (cur.v === "mehr") renderMehr(); snack("Version " + e.detail + " ist da.", function () { window.SGUpdate.install(function (t) { snack(t); }, e.detail); }, "Aktualisieren"); });
 
   /* ---------- Kopf, Plus, Suche ---------- */
   actsEl.addEventListener("click", function (e) { var b = e.target.closest("[data-act]"); if (b && b.dataset.act === "search" && C()) C().palette(); });
   fab.addEventListener("click", function () { if (cur.v === "notizen") noteSheet(null); else addSheet(); });
 
   /* ---------- Aktualisieren, wenn sich Daten ändern ---------- */
-  function refresh() { var v = V[cur.v]; if (!v || !v.native) return; if (v.native === "kalender") renderCal(); else if (v.native === "notizen") renderNotes(); else renderMehr(); }
+  function refresh() { mehrBadge(); var v = V[cur.v]; if (!v || !v.native) return; if (v.native === "kalender") renderCal(); else if (v.native === "notizen") renderNotes(); else renderMehr(); }
   addEventListener("storage", function () { clearTimeout(refresh.t); refresh.t = setTimeout(refresh, 150); });
   /* Untere Leiste absichern: Seite darf nie verschoben sein, Leiste muss im Bild stehen. Auffälligkeiten landen im
      Fehlerprotokoll (sg-diag-v1, abrufbar mit SGShellDiag()), damit man später sieht, wann und wobei es passiert ist. */
