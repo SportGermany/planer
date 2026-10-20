@@ -143,6 +143,46 @@ button { cursor: pointer; }
 ul.wn { margin: 0 16px 12px; padding-left: 18px; color: var(--muted); font-size: 14px; }
 ul.wn li { margin: 0 0 4px; }
 textarea.diag { display: block; width: calc(100% - 32px); margin: 0 16px; min-height: 180px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: 12px/1.45 ui-monospace, monospace; padding: 10px; }
+/* ---------- Suche (Vollbild, Höhe folgt visualViewport – die Tastatur verdeckt nichts) ---------- */
+.sx { position: fixed; left: 0; right: 0; top: 0; height: 100%; z-index: 960; background: var(--bg); display: none; flex-direction: column;
+  padding: var(--top) var(--safe-area-inset-right, env(safe-area-inset-right, 0px)) 0 var(--safe-area-inset-left, env(safe-area-inset-left, 0px)); }
+.sx.on { display: flex; }
+.sxh { display: flex; align-items: center; gap: 4px; padding: 8px 10px 6px 6px; flex: none; }
+.sxi { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 4px 0 14px; border-radius: 24px; background: var(--s1); }
+.sxi > svg { width: 20px; height: 20px; flex: none; color: var(--muted); }
+.sxi input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; outline: none; font-size: 16.5px; color: var(--ink); }
+.sxi input::-webkit-search-cancel-button { display: none; }
+.sxc { width: 40px; height: 40px; font-size: 16px; color: var(--muted); }
+.sxf { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 14px 8px; flex: none; }
+.sxf .chip { height: 32px; padding: 0 12px; font-size: 13px; }
+.sxl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.sxbody { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 14px calc(24px + var(--bot)); }
+.sxg { margin: 10px 0 16px; }
+.sxg > header { display: flex; align-items: center; margin: 0 4px 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
+.sxg > header span { flex: 1; }
+.sxr { display: flex; align-items: center; border-radius: 16px; background: var(--s1); margin-bottom: 4px; }
+.sxr.on { outline: 2px solid var(--acc); outline-offset: -2px; }
+.sxm { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 12px; border: 0; background: none; text-align: left; }
+.sxm .ic { width: 36px; height: 36px; border-radius: 11px; flex: none; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--c) 20%, transparent); color: var(--c); }
+.sxm .ic svg { width: 20px; height: 20px; }
+.sxm .tx { flex: 1; min-width: 0; }
+.sxm b { display: block; font-weight: 600; font-size: 15px; line-height: 1.3; overflow-wrap: anywhere; }
+.sxm b.done { color: var(--muted); text-decoration: line-through; }
+.sxm small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--muted); font-size: 12.5px; }
+.sxm mark { background: color-mix(in srgb, var(--acc) 30%, transparent); color: inherit; border-radius: 3px; }
+.sxa { width: 48px; height: 48px; flex: none; border: 0; background: none; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+.sxa svg, .sxa-c svg { width: 20px; height: 20px; }
+.sxa-c { width: 36px; flex: none; color: var(--faint); display: flex; justify-content: center; }
+.sxchips { display: flex; flex-wrap: wrap; gap: 8px; }
+.sxe { color: var(--muted); font-size: 13.5px; margin: 16px 4px; }
+.qprev { margin: 8px 0 6px; padding: 14px; border-radius: 18px; background: color-mix(in srgb, var(--acc) 12%, var(--s1)); }
+.qprev > b { display: block; font-size: 15.5px; line-height: 1.35; overflow-wrap: anywhere; }
+.qcs { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 2px; }
+.qc { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 10px; border-radius: 12px; background: var(--s2); color: var(--muted); font-size: 14px; }
+.qc svg { width: 16px; height: 16px; }
+.qc input, .qc select { border: 0; background: none; color: var(--ink); font-size: 14.5px; min-height: 36px; color-scheme: dark; }
+.qprev .btns { margin-top: 12px; }
+.qalt { margin-top: 8px; font-size: 13.5px; color: var(--muted); }
 /* ---------- Bausteine ---------- */
 .grp { margin: 0 0 22px; }
 .grp > header { display: flex; align-items: baseline; margin: 0 4px 8px; font-size: 13.5px; color: var(--muted); font-weight: 600; }
@@ -305,6 +345,12 @@ textarea.diag { display: block; width: calc(100% - 32px); margin: 0 16px; min-he
 <!-- verbund-design:start -->
 <script data-design="bahn" data-sync="" data-dir="1" src="../sg/design.js?v=3.7.0"></script>
 <!-- verbund-design:end -->
+<!-- suche:start -->
+<script src="../sg/schnell.js?v=3.7.0"></script>
+<script src="../sg/suche.js?v=3.7.0"></script>
+<script src="../sg/bibelstelle.js?v=3.7.0"></script>
+<script src="../sg/suche-daten.js?v=3.7.0"></script>
+<!-- suche:end -->
 </head>
 <body>
 <header class="top"><button class="ib back" id="back" aria-label="Zurück" hidden></button><button class="ib menu" id="menu" aria-label="Bereichsmenü öffnen" aria-expanded="false" aria-controls="dwpn" hidden></button><div class="ttl"><h1 id="title" tabindex="-1">Kalender</h1><button class="path" id="path" hidden></button></div><span id="acts"></span></header>

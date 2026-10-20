@@ -65,6 +65,13 @@ planer/
   Befehlsmenü (Suche), Design- und Sync-Fenster, Cloud-Sicherung (GitHub-Gist). In eingebetteten Seiten ohne Sync/Knopf.
   API u. a.: `allItems(from,to)`, `add/update/remove`, `tasks.*`, `notes.*`, `open(date)`, `newEvent(date)`, `editEvent(id,date)`,
   `weekPlan()`, `weekPlanStd()`, `weekPlanConfig()`, `palette()`, `openDesign()`, `openSync()`, `askNotify()`.
+  `newEvent(date, vorgabe)` füllt das Terminblatt vor (title, time, end, remind, rep); das Blatt hat ein Feld Wiederholung.
+  `setPalette(fn)` ersetzt die Suche – die Hülle setzt dort ihre Vollbild-Suche ein; `install()`/`installed()` für „App installieren“.
+- Suche der Hülle (nur `app/`): `schnell.js` (`SGQuick.parseQuick`, Schnelleingabe in einem Satz), `suche.js` (`SGSuche`:
+  norm, score mit Tippfehlern, marks), `bibelstelle.js` (`SGBibelstelle.parse`, „Joh 3,16“ → Buch/Kapitel/Vers),
+  `suche-daten.js` (Bahnen, Mobility-/Gym-/Dehnübungen – erzeugt von `quellen/suchdaten.js` beim Build, nicht von Hand ändern).
+  Bibel und Sportwissenschaft durchsucht ein Worker aus der Datei `app/js/suche-worker.js` (nie aus blob:).
+  Bibelstelle öffnen: `bibel/#stelle=<Buch 0–65>.<Kapitel>.<Vers>`. Verlauf/Zähler: `sg-suche-v1` (nur Gerät: MOVE_SKIP, nicht in DATA).
 - `training-suite.js`: Integration im Training (Heute-Karten „Dazu heute“, Module; in der Hülle öffnet `openMod` das Ziel Mobility/Rodeln).
 - `install.js`: Installieren-Hinweis der Bibel.
 
@@ -152,6 +159,9 @@ node werkzeuge/tests/suite3.js [Filter]   # Gesamt-Suite (Stand 3.2.0: 47 Tests)
 node werkzeuge/tests/offline3.js          # Offline wie installiert: einmal online, Server aus, alles prüfen (42 Prüfungen)
 node werkzeuge/tests/bahnplan-1.js / bahnplan-2.js   # Bahnplan (ERR_FAILED-Meldungen = absichtlich gesperrte Wikipedia)
 node werkzeuge/tests/upd.js               # echter Update-Weg in der Hülle (baut kurz 9.9.8, danach wieder zurück)
+node werkzeuge/tests/schnell.js           # Schnelleingabe parseQuick (ohne Browser)
+node werkzeuge/tests/suche-kern.js        # Such-Kern und Bibelstellen (ohne Browser)
+node werkzeuge/tests/inventar.js datei.json   # Bestandsaufnahme aller Seiten, Menüs, Befehle; --vergleich a b
 ```
 `seed.js` füllt Testdaten (Schule, Mobility, Atmung, Training, Termine).
 

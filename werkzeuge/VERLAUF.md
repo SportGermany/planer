@@ -233,6 +233,29 @@ Prüfung Phase 5 (Prüf-Agent, 16 Befunde):
 | H15 | Schalter „Seitenmenü automatisch“ auf dem Tablet wirkungslos | dort ausgeblendet |
 | H16 | Sportwissenschaft ohne %, Erinnerungen-Zeile | % wieder da; Erinnerungen nur, wenn die APK sie kann (wie vorher) |
 
+### Phase 6 – Suche und Befehle neu (in Arbeit)
+Umgesetzt (Abschnitt „Suche (Vollbild)“ in app/js/1-app.js, CSS in app/index.html):
+- Vollbild-Suche statt Palette (`SharedCalendar.setPalette`): Lupe, `#befehle`, Strg K, Suchfeld in Mehr öffnen sie; fällt sie aus, bleibt die alte Palette.
+  Zurück-Pfeil, Feld mit Löschen-Knopf, Trefferzahl für Vorlesen (aria-live), Filter-Chips umbrechend, Höhe über visualViewport,
+  Android-Zurück schließt zuerst die Suche (eigener Verlaufseintrag; Folgeaktion erst danach, wie beim Seitenmenü).
+- Leer: Zuletzt (8, Löschen), Schnell anlegen, Häufig (Zähler). Treffer in Gruppen (3 + „Alle N anzeigen“), Treffer hervorgehoben,
+  Aufgabe direkt abhaken, Termin direkt im Kalender öffnen. Gruppe des Bereichs, aus dem die Suche kam, zuerst.
+- Schnelleingabe: Vorschaukarte „Neuer Termin · Mi 21.10., 15:00 · Zahnarzt“ mit Datum/Zeit/Wiederholung zum Korrigieren,
+  Speichern (mit Rückgängig), Bearbeiten (volles Blatt vorausgefüllt, `newEvent(date, vorgabe)`), „als Aufgabe/Notiz“.
+- Befehlskatalog neu nach Gruppen mit Stichwörtern und Zustand (Aufgaben „N offen“, Cloud „zuletzt …“, Karteikarten „N fällig“);
+  APK-Befehle nur in der APK, „App installieren“ nur im Browser. Alle alten Befehle bleiben findbar (Test).
+- Inhalte: Termine ±1 Jahr (Serien: nächstes Vorkommen), Aufgaben, Notizen, Bahnen (Katalog + eigene), Mobility-/Gym-/Dehnübungen,
+  Schule (Fächer, Prüfungen, Hausaufgaben), Sportwissenschaft (öffnet die Stelle im Lesemodus), Bibelstellen („Joh 3,16“) und Bibeltext.
+- Kurzbefehle: / nur Befehle · + neu · @ Datum · ? Beispiele zum Antippen.
+- Neue Bausteine mit Node-Tests: `suche.js` (55 Tests in suche-kern.js zusammen mit `bibelstelle.js`), `suchdaten.js` (Build).
+Fehler und Ursachen:
+| Fehler | Ursache | Lösung |
+|---|---|---|
+| Vorschau erschien nicht | Schnelleingabe heißt `SGQuick.parseQuick`, nicht `window.parseQuick` | richtiger Name |
+| Bibeltext: 60 ms Hauptthread beim ersten Suchen | 4,4 MB JSON auf dem Hauptthread eingelesen | Worker `app/js/suche-worker.js` lädt und durchsucht Bibel und Buch |
+| Messung zeigte weiter lange Aufgaben | das Vorladen der Training-Seite (3,5 s nach Start) lief in die Messung | Test misst nach dem Vorladen; Suche selbst: keine Aufgabe > 50 ms |
+| „Monatsübersicht“ und „Planer als App installieren“ fehlten im neuen Katalog | beim Neuaufbau vergessen | ergänzt; Test vergleicht mit dem alten Katalog |
+
 ## 3.5.0 – erste veröffentlichte Android-App
 
 Secret `APK_PASSWORT` vom Nutzer eingetragen (Passwort bekam er als PDF, weil er die .txt nicht öffnen konnte).

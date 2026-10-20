@@ -10,12 +10,16 @@ HERE=os.path.dirname(os.path.abspath(__file__))
 SP=os.path.join(HERE,'quellen')+'/'  # Quellen der gemeinsamen Skripte und des Sportwissenschafts-Generators
 R=os.path.dirname(HERE)+'/'  # Wurzel des Repositorys
 SHARED={'design.js':open(SP+'design.js').read().replace('__SGVERSION__',VERSION),'verbund.js':open(SP+'verbund.js').read(),
-  'training-suite.js':open(SP+'training_suite.js').read(),'install.js':open(SP+'install.js').read()}
+  'training-suite.js':open(SP+'training_suite.js').read(),'install.js':open(SP+'install.js').read(),
+  # Suche der Hülle: Schnelleingabe, Such-Kern, Bibelstellen (reine Bausteine, mit Node getestet)
+  'schnell.js':open(SP+'schnell.js').read(),'suche.js':open(SP+'suche.js').read(),'bibelstelle.js':open(SP+'bibelstelle.js').read()}
 if os.path.exists(R+'sg/uebersicht.js'): os.remove(R+'sg/uebersicht.js')  # frühere Übersicht, ersetzt durch die Hülle
 # Sportwissenschaft: Buchinhalt aus wissen/buch.md neu erzeugen
 import subprocess; subprocess.run(['python3', SP+'gen_wissen.py'], check=True, stdout=subprocess.DEVNULL)
 os.makedirs(R+'sg',exist_ok=True)
 for k,v in SHARED.items(): open(R+'sg/'+k,'w').write(v)
+# Suchdaten (Bahnen, Übungen) aus den Seiten auslesen → sg/suche-daten.js
+subprocess.run(['node', SP+'suchdaten.js', R], check=True, stdout=subprocess.DEVNULL)
 # Seite: (data-app, Design-Variablen, Sync-Gruppe, Extra-Attribute)
 PAGES={
   'index.html':                   ('planer',   'kalender', '',          ' data-fab="off"'),
@@ -30,7 +34,7 @@ PAGES={
   'app/index.html':               ('planer',   'bahn',     '',          ' data-fab="off"'),
 }
 def strip(s):
-    for a,b in [('<!-- verbund-design:start -->','<!-- verbund-design:end -->\n'),('<!-- gemeinsamer-kalender:start -->','<!-- gemeinsamer-kalender:end -->\n'),('<!-- training-suite:start -->','<!-- training-suite:end -->\n'),('<!-- uebersicht:start -->','<!-- uebersicht:end -->\n')]:
+    for a,b in [('<!-- suche:start -->','<!-- suche:end -->\n'),('<!-- verbund-design:start -->','<!-- verbund-design:end -->\n'),('<!-- gemeinsamer-kalender:start -->','<!-- gemeinsamer-kalender:end -->\n'),('<!-- training-suite:start -->','<!-- training-suite:end -->\n'),('<!-- uebersicht:start -->','<!-- uebersicht:end -->\n')]:
         s=re.sub(re.escape(a)+r'.*?'+re.escape(b),'',s,flags=re.S)
     return s
 for path,(aid,dm,sid,extra) in PAGES.items():
@@ -40,6 +44,7 @@ for path,(aid,dm,sid,extra) in PAGES.items():
     s=re.sub(r'<link rel="preconnect" href="https://fonts\.g[^>]*>\n|<link rel="stylesheet" href="https://fonts\.googleapis[^>]*>\n','',s)
     MAIN=path=='app/index.html'  # die Hülle: eine Navigation für alles (ersetzt die frühere Übersicht)
     block='<!-- verbund-design:start -->\n<script data-design="'+dm+'" data-sync="'+sid+'"'+(' data-dir="1"' if MAIN else '')+' src="'+src('design.js')+'"></script>\n<!-- verbund-design:end -->\n'
+    if MAIN: block+='<!-- suche:start -->\n'+''.join('<script src="'+src(f)+'"></script>\n' for f in ['schnell.js','suche.js','bibelstelle.js','suche-daten.js'])+'<!-- suche:end -->\n'
     i=s.index('</head>'); s=s[:i]+block+s[i:]
     tail=''
     if aid=='training': tail+='<!-- training-suite:start -->\n<script src="'+src('training-suite.js')+'"></script>\n<!-- training-suite:end -->\n'

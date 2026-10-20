@@ -892,6 +892,14 @@ function bibleHash(){
   if(h === "lesen"){ tab("heute"); readToday(); document.getElementById("passageHeute").scrollIntoView({ behavior: "smooth" }); }
   else if(h === "zufall"){ tab("meinebibel"); document.getElementById("randomVerseBtn").click(); }
   else if(["heute", "bibliothek", "meinebibel", "mehr"].indexOf(h) > -1) tab(h);
+  else if(/^stelle=/.test(h)){
+    // Bibelstelle aus der Suche: stelle=<Buch>.<Kapitel>[.<Vers>] (Buch als Nummer 0–65) → Abschnitt mit diesem Vers öffnen
+    const p = decodeURIComponent(h.slice(7)).split("."), bk = BOOKS[+p[0]], ch = bk && bk.chapters[(+p[1] || 1) - 1];
+    if(!ch) return;
+    const list = CHUNKS_BY_CH[ch.ref] || [], v = +p[2] || 1;
+    const chunk = list.find(r => r.verses.some(x => x[0] === v)) || list[0];
+    if(chunk){ tab("heute"); openOverlay(chunk); }
+  }
 }
 window.addEventListener("hashchange", bibleHash);
 bibleHash();

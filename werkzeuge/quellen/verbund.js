@@ -1094,6 +1094,9 @@
       "<div><label>Bis (optional)</label><input type='time' name='end' value='" + esc(e.end || "") + "'></div></div>";
     h += "<label>Erinnerung</label><select name='remind'>" + REMIND.map(function (r) {
       return "<option value='" + r[0] + "'" + (String(e.remind == null ? "" : e.remind) === r[0] ? " selected" : "") + ">" + r[1] + "</option>"; }).join("") + "</select>";
+    var rf = e.rep && e.rep.f || "";
+    h += "<label>Wiederholung</label><select name='rep'>" + [["", "Keine"], ["d", "Täglich"], ["w", "Wöchentlich"], ["2w", "Alle 2 Wochen"], ["m", "Monatlich"], ["y", "Jährlich"]].map(function (r) {
+      return "<option value='" + r[0] + "'" + (rf === r[0] ? " selected" : "") + ">" + r[1] + "</option>"; }).join("") + "</select>";
     h += "<label>Notiz</label><textarea name='note' maxlength='1000'>" + esc(e.note || "") + "</textarea>";
     h += "<label>Farbe</label><select name='color'><option value=''>Farbe der App</option>" +
       COLORS.map(function (c, i) { return "<option value='" + c + "'" + (e.color === c ? " selected" : "") + ">" + CNAMES[i] + "</option>"; }).join("") + "</select>";
@@ -1163,7 +1166,9 @@
       if (v.remind != null) askNotify();
       if (!v.title) { box.querySelector("[name=title]").focus(); return; }
       if (!/^\d{4}-\d{2}-\d{2}$/.test(v.date)) { box.querySelector("[name=date]").focus(); return; }
-      if (state.edit.id) api.update(state.edit.id, v); else api.add(v);
+      var rp = box.querySelector("[name=rep]"), rv = rp ? rp.value : "", old = state.edit.rep || null;
+      v.rep = rv ? Object.assign({}, old && old.f === rv ? old : {}, { f: rv }) : null;
+      if (state.edit.id) api.update(state.edit.id, v); else { var ne = api.add(v); if (ne && v.rep) api.update(ne.id, { rep: v.rep }); }
       state.sel = v.date; var d = parse(v.date); state.month = new Date(d.getFullYear(), d.getMonth(), 1);
       state.edit = null;
     }
@@ -1773,7 +1778,8 @@
   if (!EMBED) { window.addEventListener("hashchange", hashCmd); setTimeout(hashCmd, 300); }
   api.palette = openPalette;
   // Neuer Termin an einem Tag / bestehenden Termin bearbeiten (für den Kalender der Hülle)
-  api.newEvent = function (date) { openPanel(date); state.edit = { date: date || iso(new Date()), app: APP }; render(); };
+  // vorgabe: erkannte Werte aus der Schnelleingabe (title, time, end, remind, rep, note) – das Formular zeigt sie vorausgefüllt
+  api.newEvent = function (date, vorgabe) { openPanel(date); state.edit = Object.assign({ date: date || iso(new Date()), app: APP }, vorgabe || {}); render(); };
   api.editEvent = function (id, date) { var e = load().events.find(function (x) { return x.id === id && !x.deleted; }); openPanel(date || (e && e.date)); if (e) { state.edit = Object.assign({}, e); render(); } };
   api.openDesign = function () { openPanel(null, "design"); };
   api.openSync = function () { openPanel(null, "sync"); };
@@ -1781,6 +1787,9 @@
   api.commands = globalCommands;
   api.addCommands = function (list) { CMD_EXTRA = CMD_EXTRA.concat(list); };
   api.setPalette = function (fn) { PAL_OVERRIDE = fn; };
+  // für die Suche der Hülle: „App installieren“ (Browser), auch ohne Installations-Ereignis mit Anleitung
+  api.install = function () { installNow(); };
+  api.installed = function () { return standalone(); };
   api.weekPlan = function (view, mon) { if (EMBED) { try { return window.top.SharedCalendar.weekPlan(view, mon); } catch (e) {} } openWeekPlan(view, mon); };
   api.weekPlanned = function (mon) { return wpCfg().planned[mondayOf(mon)] || 0; };
   api.weekPlanConfig = wpCfg;

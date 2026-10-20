@@ -550,10 +550,9 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     await p.click('#sheet [data-s=clear]'); await wait(p, 400); assert(await p.evaluate(() => !localStorage.getItem('sg-diag-v1')), 'Leeren');
     // Suchfeld öffnet die Suche; Einträge von „Mehr“ sind dort zu finden, Enter legt keine Aufgabe an
     await p.click('#mehrq'); await wait(p, 300);
-    const pal = () => p.evaluate(() => { const r = document.getElementById('sg-shared-calendar'); return (r.shadowRoot || r); });
-    assert(await p.evaluate(() => { const r = document.getElementById('sg-shared-calendar'), i = (r.shadowRoot || r).querySelector('.palin'); return !!i && i.offsetParent !== null; }), 'Suche geht nicht auf');
-    await p.keyboard.type('Fehlerproto'); await wait(p, 200);
-    const first = await p.evaluate(() => { const r = document.getElementById('sg-shared-calendar'), x = (r.shadowRoot || r).querySelector('.pali.on'); return x ? x.textContent : ''; });
+    assert(await p.isVisible('#sx.on #sxq'), 'Suche geht nicht auf');
+    await p.keyboard.type('Fehlerproto'); await wait(p, 300);
+    const first = await p.evaluate(() => { const x = document.querySelector('#sx .sxr b'); return x ? x.textContent : ''; });
     assert(/Fehlerprotokoll/.test(first), 'erster Treffer ' + first);
     await p.keyboard.press('Enter'); await wait(p, 600);
     assert(/Fehlerprotokoll/.test(await p.textContent('#sheet')), 'Befehl öffnet Fehlerprotokoll');
@@ -614,6 +613,113 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     await p.click('#n-mehr [data-m=handy]'); await wait(p, 400);
     assert(await p.evaluate(() => document.querySelectorAll('#sheet input.swi[role=switch]').length >= 2 && !document.querySelector('#sheet input[type=checkbox]:not(.swi)')), 'Handykalender-Blatt ohne einheitliche Schalter');
     assert(!e.length, e.join(' | ')); await c.close();
+  });
+  /* ---------- P6: Suche ---------- */
+  const sxOpen = async p => { await p.click('[data-act=search]'); await wait(p, 300); };
+  const sxType = async (p, q, ms) => { await p.fill('#sxq', q); await wait(p, ms || 450); };
+  const sxRows = p => p.evaluate(() => [...document.querySelectorAll('#sx .sxg')].map(g => ({ g: (g.querySelector('header span') || {}).textContent, rows: [...g.querySelectorAll('.sxr b')].map(b => b.textContent) })));
+  const sxPrev = p => p.evaluate(() => { const b = document.querySelector('#sx .qprev > b'); return b ? b.textContent : ''; });
+  await test('P6 Suche: Abnahme-Tabelle (Schnelleingabe, @Datum, Bibelstelle, /Befehle, Inhalte, Tippfehler, leer)', async () => {
+    const c = await ctxFor(Object.assign({ timezoneId: 'Europe/Berlin' }, SMALL)), p = await c.newPage(), e = watch(p), bad = [];
+    await p.clock.install({ time: new Date('2026-10-20T10:00:00+02:00') });
+    await open(p, '#kalender'); await sxOpen(p);
+    // leer: Zuletzt (nach einer Suche), Schnell anlegen, Häufig (nach einem Befehl)
+    await sxType(p, '/design graph'); const d1 = await sxRows(p);
+    if (!d1.length || d1[0].rows[0] !== 'Design: Graphit' || d1.some(g => g.rows.some(r => !/^Design|^Glaseffekt/.test(r)))) bad.push('/design graph ' + JSON.stringify(d1));
+    await p.keyboard.press('Enter'); await wait(p, 400);
+    if (await p.evaluate(() => localStorage.getItem('sg-theme')) !== 'graphit' && !(await p.evaluate(() => JSON.stringify(localStorage)).then(t => /graphit/.test(t)))) bad.push('Design nicht gesetzt');
+    await sxOpen(p); await sxType(p, '');
+    const empty = (await sxRows(p)).map(g => g.g).join('|');
+    if (!/Zuletzt/.test(empty) || !/Schnell anlegen/.test(empty) || !/Häufig/.test(empty)) bad.push('leer: ' + empty);
+    const cases = [
+      ['Zahnarzt morgen 15 Uhr', r => /^Neuer Termin · Mi 21\.10\., 15:00 · Zahnarzt$/.test(r.prev)],
+      ['Mathe Hausaufgaben bis Freitag', r => /^Neue Aufgabe · Fr 23\.10\. · Mathe Hausaufgaben$/.test(r.prev)],
+      ['jeden Montag 17:30 Krafttraining', r => /^Neuer Termin · Mo 26\.10\., 17:30 · Krafttraining$/.test(r.prev) && r.rep === 'w'],
+      ['Notiz: Kurve 9 früher einlenken', r => /^Neue Notiz/.test(r.prev) && /Kurve 9 früher einlenken/.test(r.prev)],
+      ['@24.12.', r => /Kalender: Do 24\.12\. öffnen/.test(r.first)],
+      ['Joh 3,16', r => r.first === 'Johannes 3,16'],
+      ['rodeln bahn', r => ['Rodeln: Kurvenbuch', 'Rodeln: Bahnen'].every(x => r.all.indexOf(x) >= 0) && /Altenberg|Königssee|Oberhof/.test(r.all)],
+      ['atem', r => /Atemübung starten/.test(r.all) && (r.all.match(/Atem/g) || []).length >= 4],
+      ['zahnartz', r => /Zahnarzt/.test(r.all)],
+    ];
+    // ein Zahnarzt-Termin, damit „zahnartz“ etwas findet
+    await p.evaluate(() => SharedCalendar.add({ title: 'Zahnarzt Kontrolle', date: '2026-11-03', time: '08:00' }));
+    for (const [q, ok] of cases) {
+      await sxType(p, q, 600);
+      const g = await sxRows(p), all = g.map(x => x.g + ': ' + x.rows.join(', ')).join(' / '), first = (g[0] || { rows: [] }).rows[0] || '';
+      const r = { prev: await sxPrev(p), first, all, rep: await p.evaluate(() => { const s = document.querySelector('#sx [data-q=rep]'); return s ? s.value : ''; }) };
+      if (!ok(r)) bad.push(q + ' → ' + JSON.stringify(r).slice(0, 300));
+    }
+    // @24.12. öffnet den Tag, Joh 3,16 die Bibelstelle
+    await sxType(p, '@24.12.'); await p.keyboard.press('Enter'); await wait(p, 600);
+    if (await p.evaluate(() => (document.querySelector('#dayplan header') || {}).textContent || '').then(t => !/24\./.test(t))) bad.push('@24.12. springt nicht');
+    await sxOpen(p); await sxType(p, 'Joh 3,16'); await p.keyboard.press('Enter'); await wait(p, 5000);
+    const bib = await (async () => { const f = frameOf(p, 'bibel/'); return f ? f.evaluate(() => { const o = document.querySelector('#passageOverlay.show'); return o ? o.textContent : ''; }) : ''; })();
+    if (!/also hat Gott die Welt geliebt/i.test(bib)) bad.push('Bibelstelle öffnet nicht: ' + bib.slice(0, 80));
+    assert(!bad.length, bad.join(' || '));
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('P6 Schnelleingabe speichern (mit Rückgängig), Bearbeiten öffnet das volle Blatt vorausgefüllt', async () => {
+    const c = await ctxFor(Object.assign({ timezoneId: 'Europe/Berlin' }, SMALL)), p = await c.newPage(), e = watch(p);
+    await p.clock.install({ time: new Date('2026-10-20T10:00:00+02:00') });
+    await open(p, '#kalender'); await sxOpen(p); await sxType(p, 'jeden Montag 17:30 Krafttraining'); await p.keyboard.press('Enter'); await wait(p, 500);
+    const ev = await p.evaluate(() => SharedCalendar.list().find(x => x.title === 'Krafttraining'));
+    assert(ev && ev.date === '2026-10-26' && ev.time === '17:30' && ev.rep && ev.rep.f === 'w', 'Termin ' + JSON.stringify(ev));
+    assert(/Termin gespeichert/.test(await p.textContent('#snack')), 'Hinweis');
+    await p.click('#snack button'); await wait(p, 300);
+    assert(await p.evaluate(() => !SharedCalendar.list().some(x => x.title === 'Krafttraining')), 'Rückgängig');
+    await sxOpen(p); await sxType(p, 'Zahnarzt morgen 15 Uhr 30 min vorher'); await p.click('#sx [data-qa=edit]'); await wait(p, 700);
+    const f = await p.evaluate(() => { const r = document.getElementById('sg-shared-calendar'), b = r.shadowRoot || r; const v = n => (b.querySelector('[name=' + n + ']') || {}).value; return [v('title'), v('date'), v('time'), v('remind')]; });
+    assert(f.join('|') === 'Zahnarzt|2026-10-21|15:00|30', 'Blatt ' + f);
+    // Aufgabe und Notiz
+    await p.keyboard.press('Escape'); await p.goto(APP + '#kalender'); await wait(p, 1500);
+    await sxOpen(p); await sxType(p, 'Mathe Hausaufgaben bis Freitag'); await p.keyboard.press('Enter'); await wait(p, 400);
+    assert(await p.evaluate(() => SharedCalendar.tasks.list().some(t => t.title === 'Mathe Hausaufgaben' && t.due === '2026-10-23')), 'Aufgabe');
+    await sxOpen(p); await sxType(p, 'Notiz: Kurve 9 früher einlenken'); await p.keyboard.press('Enter'); await wait(p, 400);
+    assert(await p.evaluate(() => SharedCalendar.notes.list().some(n => /Kurve 9 früher einlenken/.test(n.text))), 'Notiz');
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('P6 Suche: kein alter Befehl verloren, Filter, Zurück schließt zuerst, Strg K, offline, flüssig', async () => {
+    const c = await ctxFor(SMALL), p = await c.newPage(), e = watch(p), bad = [];
+    await open(p, '#training/heute');
+    // alle Befehle der alten Palette (ihr Katalog liegt weiter im Verbund) sind über ihre Wörter zu finden
+    const old = await p.evaluate(() => { const L = []; const pal = SharedCalendar; pal.setPalette(null); const list = pal.commands().map(x => x.label); return list; });
+    await p.evaluate(() => location.reload()); await wait(p, 2200);
+    const STOP = /^(offnen|starten|alle|apps|als|app|der|die|das|dieser|und|vor|nach|dem|von|mit|im|in|fur|jetzt)$/;
+    await sxOpen(p);
+    for (const l of old) {
+      if (/Aufgabe anlegen/.test(l)) continue;
+      const w = l.toLowerCase().replace(/[äöüß]/g, ch => ({ ä: 'a', ö: 'o', ü: 'u', ß: 'ss' }[ch])).replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(x => x.length > 2 && !STOP.test(x)).slice(0, 2).join(' ');
+      await sxType(p, '/' + w, 250);
+      const rows = (await sxRows(p)).reduce((a, g) => a.concat(g.rows), []);
+      if (!rows.length) bad.push(l + ' (/' + w + ')');
+    }
+    // aus Training geöffnet: Training-Gruppe vorn bei gleichwertigen Treffern; Filter „Bibel“ zeigt nur Bibel
+    await sxType(p, 'kraft'); const g1 = await sxRows(p);
+    if (!g1.length) bad.push('kraft nichts');
+    await p.click('#sx .sxf [data-f=befehle]'); await wait(p, 300);
+    if ((await sxRows(p)).some(g => g.g !== 'Befehle')) bad.push('Filter Befehle');
+    // Zurück schließt die Suche, die Seite bleibt
+    const h0 = (await state(p)).hash; await p.goBack(); await wait(p, 400);
+    if (await p.isVisible('#sx.on') || (await state(p)).hash !== h0) bad.push('Zurück: ' + (await state(p)).hash);
+    // Strg K (Tablet-Tastatur) öffnet dieselbe Suche
+    await p.keyboard.press('Control+k'); await wait(p, 300);
+    if (!(await p.isVisible('#sx.on'))) bad.push('Strg K');
+    await p.keyboard.press('Escape'); await wait(p, 300);
+    // offline: Suche und Bibeltext funktionieren (Bibel ist im Speicher)
+    await c.setOffline(true); await sxOpen(p); await sxType(p, 'gnade', 3000);
+    if (!(await sxRows(p)).some(g => g.g === 'Bibel' && g.rows.length)) bad.push('offline Bibelsuche');
+    await c.setOffline(false);
+    // flüssig: nach dem Vorladen der Seiten blockiert die Suche den Hauptthread nie länger als 50 ms (Bibel/Buch laufen im Worker)
+    await p.keyboard.press('Escape'); await wait(p, 14000); await sxOpen(p);
+    const longT = await p.evaluate(async () => { const obs = []; new PerformanceObserver(l => l.getEntries().forEach(x => obs.push(Math.round(x.duration)))).observe({ type: 'longtask' });
+      const inp = document.getElementById('sxq'); for (const q of ['z', 'zah', 'zahnarzt', 'atem', 'gnade', 'kraftraum', 'Joh 3,16', '/design', '@morgen']) { inp.value = q; inp.dispatchEvent(new Event('input')); await new Promise(r => setTimeout(r, 450)); }
+      await new Promise(r => setTimeout(r, 2500)); return obs; });
+    if (longT.some(x => x > 50)) bad.push('lange Aufgaben ' + longT);
+    // Verlauf bleibt auf dem Gerät: nicht in der Umzugsdatei
+    if (await p.evaluate(() => SGMove.data().then(d => 'sg-suche-v1' in d.ls))) bad.push('Suchverlauf in Umzugsdatei');
+    assert(!bad.length, bad.join(' | '));
+    assert(!e.filter(x => !/ERR_INTERNET_DISCONNECTED/.test(x)).length, e.join(' | ')); await c.close();
   });
   await test('K Kalender: Reihenfolge Wochenleiste · Tagesplan · Monat, auf 360×800 ohne Scrollen sichtbar', async () => {
     const c = await ctxFor({ viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true }), p = await c.newPage(), e = watch(p);

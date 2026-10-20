@@ -214,6 +214,9 @@
   }
   // Zurück: erst das Seitenmenü zu, dann das Blatt, erst dann wird navigiert
   addEventListener("popstate", function () {
+    // Reihenfolge: Suche (liegt ganz oben) → Seitenmenü → Blatt → Navigation
+    if (window.SGShellSearch && SGShellSearch.isOpen()) { closeSearch(true); return; }
+    if (sxAfter) { var sa = sxAfter; sxAfter = null; sa(); return; }
     if (drawerOpen) { closeDrawer(null, true); return; }
     if (dwAfter) { var a = dwAfter; dwAfter = null; a(); return; }
     if (sheetOpen) { closeSheet(true); return; }
@@ -340,6 +343,7 @@
     if (p === "training/mobility/") return openModule("mobility", h0);
     if (p === "training/atmung/") return openModule("atmung", h0);
     if (p === "training/bahnplan/") return openModule("bahnplan", h0);
+    if (p === "bibel/" && /^stelle=/.test(h0)) return go("bibel", "heute", null, { push: true, sub: h0 });
     if (p === "bibel/") return go("bibel", { lesen: "lesen", bibliothek: "bibliothek", meinebibel: "meine", mehr: "einst" }[h0] || "heute", null, { push: true });
     if (p === "schule/") return go("schule");
     if (p === "pause/") return go("pause", null, null, { push: true });
@@ -717,9 +721,9 @@
       else if (act === "std") { closeSheet(); C().weekPlanStd(); }
     });
   }
-  function taskSheet() {
-    sheet('<h3>Neue Aufgabe</h3><label class="f"><span>Was ist zu tun?</span><input type="text" id="tq" autocomplete="off" enterkeyhint="done"></label>' +
-      '<label class="f"><span>Fällig</span><input type="date" id="td" value="' + calSel + '"></label><div class="btns"><button class="btn" data-s="x">Abbrechen</button><button class="btn p" data-s="save">Speichern</button></div>', function (act) {
+  function taskSheet(pre) {
+    sheet('<h3>Neue Aufgabe</h3><label class="f"><span>Was ist zu tun?</span><input type="text" id="tq" autocomplete="off" enterkeyhint="done" value="' + esc(pre && pre.title || "") + '"></label>' +
+      '<label class="f"><span>Fällig</span><input type="date" id="td" value="' + (pre ? pre.due || "" : calSel) + '"></label><div class="btns"><button class="btn" data-s="x">Abbrechen</button><button class="btn p" data-s="save">Speichern</button></div>', function (act) {
       if (act === "x") return closeSheet();
       var t = $("tq").value.trim(); if (!t) { $("tq").focus(); return; }
       C().tasks.add({ title: t, due: $("td").value }); closeSheet(); snack("Aufgabe gespeichert"); renderCal();
@@ -749,11 +753,12 @@
     var n = e.target.closest("[data-note]"); if (n) noteSheet(n.dataset.note);
   });
   // Notiz anlegen oder bearbeiten: Text, optional Zeitpunkt und Erinnerung
-  function noteSheet(id, day) {
+  // pre: Vorgabe aus der Schnelleingabe { text, at }
+  function noteSheet(id, day, pre) {
     var c = C(), n = id ? c.notes.list().find(function (x) { return x.id === id; }) : null;
-    var at = n ? n.at || "" : "", rem = n ? !!n.remind : true;
+    var at = n ? n.at || "" : pre && pre.at || "", rem = n ? !!n.remind : true;
     var k = day || today(), quick = [["Ohne Zeit", ""], ["In 1 Std.", (function () { var d = new Date(Date.now() + 36e5); d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0); return iso(d) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes()); })()], ["18:00", pAt(k, "18:00")], ["Morgen 8:00", pAt(plus(k, 1), "08:00")]];
-    sheet("<h3>" + (n ? "Notiz" : "Neue Notiz") + '</h3><label class="f"><textarea id="nt" aria-label="Text">' + esc(n ? n.text : "") + "</textarea></label>" +
+    sheet("<h3>" + (n ? "Notiz" : "Neue Notiz") + '</h3><label class="f"><textarea id="nt" aria-label="Text">' + esc(n ? n.text : pre && pre.text || "") + "</textarea></label>" +
       '<div class="qt">' + quick.map(function (q) { return '<button class="chip' + (at === q[1] ? " on" : "") + '" data-at="' + q[1] + '">' + q[0] + "</button>"; }).join("") + "</div>" +
       '<label class="f"><span>Zeitpunkt</span><input type="datetime-local" id="nat" value="' + esc(at) + '"></label>' +
       '<label class="f" style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="nrem"' + (rem ? " checked" : "") + ' style="width:20px;height:20px"> Zum Zeitpunkt erinnern</label>' +
@@ -925,7 +930,7 @@
   /* ---------- Umzug Chrome → Android-App ----------
      Die APK hat einen eigenen Speicher. Die Chrome-App schreibt alles in eine Umzugsdatei (localStorage + die Datei-Speicher
      von Bahnplan und Schule), die APK liest sie ein. Gerätebezogenes (Fehlerprotokoll, Handykalender-Merkliste) bleibt zurück. */
-  var MOVE_SKIP = /^(sg-update-check|sg-update-neu|sg-diag-v1|sg-handykalender-v1|sg-apply-on-boot:.*|sg-umzug-v1|sg-umzug-raus-v1)$/;
+  var MOVE_SKIP = /^(sg-update-check|sg-update-neu|sg-diag-v1|sg-suche-v1|sg-handykalender-v1|sg-apply-on-boot:.*|sg-umzug-v1|sg-umzug-raus-v1)$/;
   var MOVE_DB = [["bahnplan", "img"], ["lernplan-dateien", "files"]], MOVE_STORES = { bahnplan: ["img"], "lernplan-dateien": ["files", "inbox"] };
   function idbAll(name, store) {
     return new Promise(function (ok) {
@@ -1155,7 +1160,7 @@
       [window.SGNative ? "Daten aus Chrome übernehmen" : "In die Android-App umziehen", window.SGNative ? "umzugin" : "umzug"], ["Standardwoche übernehmen", "std"], ["Was ist neu", "neu"], ["Fehlerprotokoll", "diag"],
       ["Seitenmenü automatisch öffnen (Mehr)", "autodw"], ["Version und Update", "update"]].map(function (x) { return { g: "Einstellungen", label: x[0], run: x[1] === "autodw" ? function () { go("mehr"); } : M_(x[1]) }; }));
   }
-  mehrCommands();
+  if (!window.SGSuche) mehrCommands();   // nur für die alte Palette (Rückfall)
 
   /* ---------- Blatt von unten, Hinweis ---------- */
   var sheetEl = $("sheet"), sheetOpen = false, sheetCb = null;
@@ -1210,6 +1215,373 @@
   document.addEventListener("visibilitychange", function () { if (!document.hidden) setTimeout(function () { keepNav("zurueck"); }, 150); });
   document.addEventListener("visibilitychange", function () { if (!document.hidden) { dayRoll(); refresh(); } });
 
+  /* ---------- Suche (Vollbild) ----------
+   * Findet Inhalte (Termine, Aufgaben, Notizen, Übungen, Bahnen, Schule, Bibel, Sportwissenschaft), führt Befehle aus und legt
+   * mit einem Satz Einträge an (parseQuick). Ersetzt die Befehlspalette des Verbunds (SharedCalendar.setPalette) – jeder bisherige
+   * Aufruf (Lupe, #befehle, Strg K) öffnet sie. Kurzbefehle: /Befehle · +neu · @Datum · ?Hilfe.
+   * Verlauf und Zähler nur auf dem Gerät (sg-suche-v1, nicht in Cloud oder Umzug). */
+  var SX_KEY = "sg-suche-v1", sx = null, sxEl = null;
+  var SXF = [["alles", "Alles"], ["termine", "Termine"], ["aufgaben", "Aufgaben"], ["notizen", "Notizen"], ["training", "Training"], ["schule", "Schule"], ["bibel", "Bibel"], ["wissen", "Wissen"], ["befehle", "Befehle"]];
+  var SXG = { befehle: ["Befehle", "wand", "var(--acc)"], termine: ["Termine", "cal", "var(--c-termin)"], aufgaben: ["Aufgaben", "check", "var(--c-aufgabe)"], notizen: ["Notizen", "note", "var(--c-notiz)"],
+    training: ["Training", "run", "var(--c-training)"], schule: ["Schule", "school", "var(--c-schule)"], bibel: ["Bibel", "book", "var(--c-bibel)"], wissen: ["Sportwissenschaft", "star", "#5ac8fa"] };
+  function sxStore() { try { return JSON.parse(localStorage.getItem(SX_KEY) || "{}") || {}; } catch (e) { return {}; } }
+  function sxSave(o) { try { localStorage.setItem(SX_KEY, JSON.stringify(o)); } catch (e) {} }
+  function sxRemember(entry, key) {
+    var o = sxStore(); o.recent = (o.recent || []).filter(function (x) { return x.l !== entry.l; }); o.recent.unshift(entry); o.recent = o.recent.slice(0, 8);
+    if (key) { o.count = o.count || {}; o.count[key] = (o.count[key] || 0) + 1; }
+    sxSave(o);
+  }
+  // nach dem Wechsel in eine Seite einen Knopf darin drücken (sobald sie geladen ist)
+  function fclick(path, sel) {
+    var n = 0;
+    (function t() {
+      var f = frames[path], el = null; try { el = f && f.dataset.ready && f.contentDocument.querySelector(sel); } catch (e) {}
+      if (el) return el.click();
+      if (++n < 60) setTimeout(t, 150);
+    })();
+  }
+  function toDay(k) { setSel(k); go("kalender"); renderCal(); setTimeout(function () { scrollCal(0); }, 50); }
+  /* Befehlskatalog: [Gruppe, Titel, Stichwörter, Ausführen, Zustand?, Bedingung?] */
+  function sxCommands() {
+    var c = C(), L = [], nat = !!window.SGNative;
+    function add(g, t, kw, run, st, show) { if (show === false) return; L.push({ kind: "befehle", g: g, t: t, kw: kw || "", run: run, st: st || "", key: "c:" + t }); }
+    var t0 = today();
+    add("Kalender", "Heute", "kalender start tag briefing", function () { toDay(t0); });
+    add("Kalender", "Morgen", "kalender tag", function () { toDay(plus(t0, 1)); });
+    add("Kalender", "Monatskalender", "monat monatsübersicht übersicht alle apps", function () { go("kalender"); setTimeout(function () { $("tomonth").click(); }, 80); });
+    add("Kalender", "Woche planen", "wochenplanung planen training", function () { c.weekPlan(); });
+    add("Kalender", "Nächste Woche planen", "wochenplanung", function () { var d = parse(t0); c.weekPlan("", plus(t0, 7 - ((d.getDay() + 6) % 7))); });
+    add("Kalender", "Standardwoche übernehmen", "standard woche", function () { c.weekPlanStd(); });
+    add("Kalender", "Wochenplanung: Einstellungen", "planen einstellungen", function () { c.weekPlan("settings"); });
+    add("Kalender", "Neuer Termin", "anlegen eintragen", function () { c.newEvent(calSel); });
+    add("Kalender", "Neue Aufgabe", "anlegen todo", function () { go("kalender"); taskSheet(); });
+    add("Kalender", "Neue Notiz", "anlegen idee", function () { go("kalender"); noteSheet(null, calSel); });
+    add("Kalender", "Aufgaben", "todo liste offen", function () { go("aufgaben", null, null, { push: true }); }, (c && c.tasks ? c.tasks.list().filter(function (q) { return !q.done; }).length : 0) + " offen");
+    add("Kalender", "Notizen", "ideen", function () { go("notizen", null, null, { push: true }); });
+    add("Training", "Training starten", "heute einheit zirkel", function () { openUrl("training/#start"); });
+    add("Training", "Laufen starten (GPS)", "lauf live tracken gps puls", function () { go("training", "lauf"); fclick("training/", "#btnRunTrackStart"); });
+    add("Training", "Gym starten", "kraft gerät fitnessstudio", function () { go("training", "kraft"); fclick("training/", "#btnGymStart"); });
+    add("Training", "Dehnen starten", "dehnprogramm stretching 120 übungen", function () { go("training", "kraft"); fclick("training/", "#btnStretchStart"); });
+    add("Training", "Rodeln vorbereiten", "aufwärmen rodeln", function () { go("training", "kraft"); fclick("training/", "#btnRodelnStart"); });
+    add("Training", "Laufen", "lauf distanz", function () { go("training", "lauf"); });
+    add("Training", "Kraft", "gym dehnen", function () { go("training", "kraft"); });
+    add("Training", "Rodeln: Kurvenbuch", "bahn strecke bahnplan plan kurven", function () { go("training", "rodeln", "plan"); });
+    add("Training", "Rodeln: Bahnen", "bahn strecke katalog", function () { go("training", "rodeln", "bahnen"); });
+    add("Training", "Rodeln: Läufe und Zeiten", "bahn zeit lauf", function () { go("training", "rodeln", "laeufe"); });
+    add("Training", "Rodeln: Drucken", "bahn kurvenbuch drucken buch", function () { go("training", "rodeln", "buch"); });
+    add("Training", "Auswertung: Fitness", "fitness analyse wert", function () { go("training", "auswertung", "fitness"); });
+    add("Training", "Auswertung: Analyse", "daten import", function () { go("training", "auswertung", "analyse"); });
+    add("Training", "Auswertung: Kalender & Rückblick", "training kalender", function () { go("training", "auswertung", "rueckblick"); });
+    add("Training", "Training einstellen", "einstellungen ziele ruhetage", function () { go("tset", null, null, { push: true }); });
+    add("Mobility und Atmung", "Mobility Tagesblock", "mobility block dehnen", function () { go("mobility", "mobility", "heute"); });
+    add("Mobility und Atmung", "Mobility Wettkampf", "vor nach dem wettkampf", function () { go("mobility", "mobility", "wettkampf"); });
+    add("Mobility und Atmung", "Mobility Übungen", "mobility übungen", function () { go("mobility", "mobility", "uebungen"); });
+    add("Mobility und Atmung", "Mobility Fortschritt", "mobility test", function () { go("mobility", "mobility", "fortschritt"); });
+    add("Mobility und Atmung", "Atemübung starten", "atmung atem üben resonanz", function () { go("mobility", "atmung", "hrv"); });
+    add("Mobility und Atmung", "Morgen-HRV messen", "atmung atem hrv puls morgen", function () { go("mobility", "atmung", "heute"); });
+    add("Mobility und Atmung", "Atemplan der Woche", "atmung atem woche", function () { go("mobility", "atmung", "woche"); });
+    add("Mobility und Atmung", "Atem-Verlauf", "atmung atem verlauf", function () { go("mobility", "atmung", "verlauf"); });
+    add("Mobility und Atmung", "Atem 12-Wochen-Plan", "atmung atem plan", function () { go("mobility", "atmung", "plan"); });
+    add("Schule", "Schultag", "schule heute stunde", function () { go("schule", "heute"); });
+    add("Schule", "Stundenplan", "schule plan stunden", function () { go("schule", "plan"); });
+    add("Schule", "Aufgaben und Prüfungen", "schule hausaufgaben prüfung test", function () { go("schule", "aufgaben"); });
+    add("Schule", "Lernzeit", "schule lernen timer", function () { go("schule", "lernzeit"); });
+    add("Schule", "Ablage", "schule dokumente scan", function () { go("schule", "ablage"); });
+    add("Schule", "Lernplan", "schule lehrgang", function () { go("schule", "lernplan"); });
+    add("Schule", "Schuljahr und Ferien", "schule ferien termine", function () { go("schule", "ferien"); });
+    var w = null; try { w = JSON.parse(localStorage.getItem("sg-wissen-v1") || "null"); } catch (e) {}
+    add("Wissen und Bibel", "Sportwissenschaft: Lesen", "buch lehrbuch wissen", function () { go("training", "wissen", "lesen"); });
+    add("Wissen und Bibel", "Sportwissenschaft: Karteikarten", "karten lernen wissen", function () { go("training", "wissen", "karten"); }, w && w.sum && w.sum.due ? w.sum.due + " fällig" : "");
+    add("Wissen und Bibel", "Sportwissenschaft: Quiz", "wissen fragen", function () { go("training", "wissen", "quiz"); });
+    add("Wissen und Bibel", "Sportwissenschaft: Suche", "wissen buch suchen", function () { go("training", "wissen", "suche"); });
+    add("Wissen und Bibel", "Bibel heute lesen", "bibel lesen heute", function () { go("bibel", "heute", null, { push: true }); });
+    add("Wissen und Bibel", "Bibel weiterlesen", "bibel lesen", function () { go("bibel", "lesen", null, { push: true }); });
+    add("Wissen und Bibel", "Bibel: Bibliothek", "bibel bücher alle", function () { go("bibel", "bibliothek", null, { push: true }); });
+    add("Wissen und Bibel", "Bibel: Zufallsvers", "bibel vers zufall", function () { openUrl("bibel/#zufall"); });
+    add("Wissen und Bibel", "Meine Bibel", "bibel favoriten notizen", function () { go("bibel", "meine", null, { push: true }); });
+    add("Wissen und Bibel", "Pause starten", "pause ablenken", function () { go("pause", null, null, { push: true }); });
+    if (window.SGTheme) {
+      window.SGTheme.list.forEach(function (th) { add("Design", "Design: " + th.name, "farbwelt thema " + (th.info || ""), function () { window.SGTheme.set(th.id); snack("Design: " + th.name); }); });
+      add("Design", "Glaseffekt " + (window.SGTheme.glass() ? "ausschalten" : "einschalten"), "glas design", function () { window.SGTheme.setGlass(!window.SGTheme.glass()); });
+    }
+    add("Design", "Design wählen", "farbwelt", function () { c.openDesign(); });
+    var cl = cloudState(), cst = c && c.status ? c.status() : {};
+    add("Daten", cst.connected ? "Cloud jetzt sichern" : "Cloud-Sicherung einrichten", "sync synchronisieren github", function () { if (cst.connected && c.sync) { c.sync(); snack("Sichere …"); } else c.openSync(); }, cst.connected ? "zuletzt " + cl.val : "");
+    add("Daten", "Frühere Stände zurückholen", "sicherung wiederherstellen cloud", function () { c.openSync(); });
+    add("Daten", "Alles als Datei sichern", "backup sicherung datei", function () { moveOut("backup"); });
+    add("Daten", "Sicherung einspielen", "wiederherstellen datei", function () { moveInSheet("restore"); });
+    add("Daten", nat ? "Daten aus Chrome übernehmen" : "In die Android-App umziehen", "umzug apk", function () { if (nat) moveInSheet(false); else moveOut("umzug"); });
+    add("Daten", "Kalender als .ics exportieren", "export ics datei", function () { var x = c.phone && c.phone.ics ? c.phone.ics(c.phone.pending("alle")) : ""; if (!x) return; var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([x], { type: "text/calendar" })); a.download = "planer-kalender.ics"; document.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); }, 1000); });
+    add("Daten", nat ? "Handykalender jetzt abgleichen" : "Handykalender", "handy kalender abgleich", function () { if (nat && c.handy && c.handy.state().on) { c.handy.sync(true); snack("Gleiche ab …"); } else phoneSheet(); });
+    if (nat && c.erinnern && c.erinnern.available()) { var on = c.erinnern.state().on; add("Daten", "Erinnerungen " + (on ? "ausschalten" : "einschalten"), "benachrichtigung", function () { if (on) { c.erinnern.disable(); snack("Erinnerungen aus"); } else remindSheet(); }); }
+    add("Daten", "Erinnerungen als Benachrichtigung erlauben", "benachrichtigung", function () { if (c.askNotify) c.askNotify(); }, "", !nat && "Notification" in window && Notification.permission === "default");
+    add("Daten", "Planer als App installieren", "startbildschirm installieren", function () { if (window.SGInstallEvt) window.SGInstallEvt.prompt(); else if (c.install) c.install(); }, "", !nat && !(c.installed && c.installed()));
+    add("Über die App", "Version aktualisieren", "update version neu", function () { if (window.SGUpdate) window.SGUpdate.check(function (x) { snack(x); }); }, window.SGVersion || "");
+    add("Über die App", "Was ist neu", "neuigkeiten version", function () { whatsNewSheet(); });
+    add("Über die App", "Fehlerprotokoll", "fehler diagnose log", function () { diagSheet(); });
+    add("Über die App", "Mehr", "einstellungen", function () { go("mehr"); });
+    return L;
+  }
+  /* Inhalte – erst beim Öffnen gesammelt, bei Datenänderungen neu */
+  function sxContent() {
+    var c = C(), out = [], t0 = today(), seen = {};
+    try {
+      c.allItems(plus(t0, -365), plus(t0, 365)).forEach(function (e) {
+        // Serien: nur das nächste (sonst letzte) Vorkommen
+        var k = e.id || e.title + e.date, prev = seen[k];
+        if (prev && (prev.date >= t0 || e.date < t0)) return;
+        if (prev) out.splice(out.indexOf(prev), 1);
+        var a = area(e), x = { kind: a === "notiz" ? "notizen" : a === "schule" ? "schule" : /^(training|mobility|atmung)$/.test(a) ? "termine" : "termine", t: e.title, x: e.note || "", date: e.date, time: e.time,
+          st: fmtDay(e.date) + (e.time ? " · " + e.time : "") + " · " + (e.ro || e.app || ""), key: "e:" + k, ic: AREA[a] ? AREA[a].ic : "cal", c: AREA[a] ? AREA[a].c : "var(--c-termin)", e: e,
+          run: function () { toDay(e.date); } };
+        seen[k] = x; out.push(x);
+      });
+    } catch (e) {}
+    try { c.tasks.list().forEach(function (q) { out.push({ kind: "aufgaben", t: q.title, x: q.note || "", date: q.due, done: q.done, task: q, st: (q.done ? "erledigt" : q.due ? "fällig " + fmtDay(q.due) : "ohne Datum"), key: "t:" + q.id, run: function () { go("aufgaben", null, null, { push: true }); } }); }); } catch (e) {}
+    try { c.notes.list().forEach(function (n) { out.push({ kind: "notizen", t: n.text.split("\n")[0].slice(0, 90), x: n.text, done: n.done, st: n.at ? fmtDay(n.at.slice(0, 10)) + " " + n.at.slice(11, 16) : "Notiz", key: "n:" + n.id, run: function () { go("notizen", null, null, { push: true }); setTimeout(function () { noteSheet(n.id); }, 80); } }); }); } catch (e) {}
+    var D = window.SG_SUCHDATEN || {};
+    (D.bahnen || []).forEach(function (b) { out.push({ kind: "training", t: b[1], x: "bahn rodeln kurvenbuch strecke " + b[2] + " " + b[3], st: "Bahn · " + b[2] + ", " + b[3], ic: "sled", key: "b:" + b[0], run: function () { go("training", "rodeln", "bahnen"); } }); });
+    try { var bp = JSON.parse(localStorage.getItem("bahnplan.v1") || "null"); (bp && bp.tracks || []).forEach(function (tr) { if (tr.name) out.push({ kind: "training", t: tr.name, x: "bahn kurvenbuch meine", st: "Meine Bahn · Kurvenbuch", ic: "sled", key: "mb:" + tr.id, run: function () { go("training", "rodeln", "plan"); } }); }); } catch (e) {}
+    (D.mob || []).forEach(function (m) { out.push({ kind: "training", t: m[1], x: "mobility übung " + m[2], st: "Mobility-Übung", ic: "stretch", c: "var(--c-mobility)", key: "m:" + m[0], run: function () { go("mobility", "mobility", "uebungen"); } }); });
+    (D.gym || []).forEach(function (m) { out.push({ kind: "training", t: m[1], x: "gym kraft übung gerät", st: "Gym-Übung", key: "g:" + m[0], run: function () { go("training", "kraft"); } }); });
+    (D.dehn || []).forEach(function (m) { out.push({ kind: "training", t: m[1], x: "dehnen dehnübung " + m[2], st: "Dehnübung · " + m[2], key: "d:" + m[0], run: function () { go("training", "kraft"); } }); });
+    try {
+      var db = JSON.parse(localStorage.getItem("schulkalender-bayern-v1") || "null") || {}, subj = function (id) { return (db.subjects || []).find(function (s) { return s.id === id; }) || {}; };
+      (db.subjects || []).forEach(function (s) { if (s.name) out.push({ kind: "schule", t: s.name, x: "fach " + (s.room || ""), st: "Fach" + (s.room ? " · Raum " + s.room : ""), ic: "school", key: "sf:" + s.id, run: function () { go("schule", "plan"); } }); });
+      (db.events || []).forEach(function (e) { if (!e.date) return; var sn = subj(e.subject).name || ""; out.push({ kind: "schule", t: (e.title || sn || "Schultermin"), x: sn + " prüfung " + (e.notes || ""), date: e.date, st: fmtDay(e.date) + (sn ? " · " + sn : ""), ic: "school", key: "se:" + e.id, run: function () { go("schule", "aufgaben"); } }); });
+      (db.homework || []).forEach(function (h) { var sn = subj(h.subject).name || ""; out.push({ kind: "schule", t: h.text || "Hausaufgabe", x: sn + " hausaufgabe " + (h.notes || ""), date: h.due, done: h.done, st: (h.due ? "fällig " + fmtDay(h.due) : "Hausaufgabe") + (sn ? " · " + sn : ""), ic: "school", key: "sh:" + h.id, run: function () { go("schule", "aufgaben"); } }); });
+    } catch (e) {}
+    return out;
+  }
+  // Große Texte (Bibel, Sportwissenschaft) werden im Hintergrund geladen und durchsucht – die Oberfläche bleibt flüssig
+  var sxW = null, sxJob = 0, sxCb = {};
+  function sxWorker(art, q, done) {
+    var job = ++sxJob;
+    if (sxW == null) {
+      try { sxW = new Worker("js/suche-worker.js?v=" + (window.SGVersion || "")); } catch (e) { sxW = false; }
+      if (sxW) sxW.onmessage = function (ev) { var cb = sxCb[ev.data.id]; delete sxCb[ev.data.id]; if (cb) cb(ev.data.list || []); };
+    }
+    if (!sxW) return done([]);
+    sxCb[job] = done;
+    sxW.postMessage({ id: job, art: art, q: q, v: window.SGVersion || "" });
+  }
+  function sxBibel(q, done) {
+    sxWorker("bibel", q, function (list) {
+      done(list.map(function (x) { return { kind: "bibel", t: x[3] + " " + x[1] + "," + x[2], x: x[4], st: x[4].slice(0, 110), key: "bv:" + x[0] + "." + x[1] + "." + x[2], run: function () { openUrl("bibel/#stelle=" + x[0] + "." + x[1] + "." + x[2]); } }; }));
+    });
+  }
+  function sxWissen(q, done) {
+    sxWorker("wissen", q, function (list) {
+      done(list.map(function (x) { return { kind: "wissen", t: x[3].slice(0, 90), st: x[2], sc: x[4], key: "w:" + x[1], run: function () { openUrl("wissen/#lesen/" + x[0] + "@" + x[1]); } }; }));
+    });
+  }
+  /* Kurzbefehl „@…“: Datum öffnen (@24.12., @morgen, @nov) */
+  function sxAtDate(s) {
+    s = s.trim().toLowerCase(); if (!s) return null;
+    var M3 = ["jan", "feb", "mär", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez"], mi = M3.indexOf(s.slice(0, 3).replace("mar", "mär"));
+    if (mi >= 0 && /^[a-zä]+$/.test(s)) { var d = parse(today()), y = d.getFullYear() + (mi < d.getMonth() ? 1 : 0); return y + "-" + pad(mi + 1) + "-01"; }
+    var r = window.SGQuick ? window.SGQuick.parseQuick(s, new Date()) : null;
+    return r && r.date || null;
+  }
+  function sxRun(item, q) {
+    if (!item) return;
+    sxRemember({ l: item.t, q: q || "" }, item.key);
+    closeSearch(false, function () { try { item.run(); } catch (e) { snack("Das ging nicht: " + e.message); } });
+  }
+  /* Schnelleingabe: Vorschau und Speichern */
+  function sxQuick(q) {
+    var force = q[0] === "+", txt = force ? q.slice(1) : q;
+    if (!window.SGQuick || txt.trim().length < 2) return null;
+    var r = window.SGQuick.parseQuick(txt, new Date());
+    if (!force && !r.explicit && !r.date && !r.time && !r.rep) return null;
+    if (!r.title) return null;
+    r.kind = r.kind || (r.time || r.rep ? "termin" : "aufgabe");
+    return r;
+  }
+  function sxSaveQuick(r, how) {
+    var c = C(), kind = how || r.kind, undo = null, date = r.date || today();
+    if (kind === "termin") {
+      var ev = c.add({ title: r.title, date: date, time: r.time || "", end: r.end || "", remind: r.remind });
+      if (ev && r.rep) c.update(ev.id, { rep: r.rep });
+      if (r.remind != null && c.askNotify) c.askNotify();
+      undo = function () { c.remove(ev.id); }; setSel(date);
+    } else if (kind === "aufgabe") { var tk = c.tasks.add({ title: r.title, due: r.date || "" }); undo = function () { c.tasks.remove(tk.id); }; }
+    else { var nt = c.notes.add({ text: r.title, at: r.date && r.time ? r.date + "T" + r.time : "", remind: r.remind != null }); undo = function () { c.notes.remove(nt.id); }; }
+    sxRemember({ l: "+ " + r.title, q: "" }, "q:" + kind);
+    closeSearch(); refresh(); if (cur.v === "kalender") renderCal();
+    snack({ termin: "Termin", aufgabe: "Aufgabe", notiz: "Notiz" }[kind] + " gespeichert", function () { undo(); refresh(); if (cur.v === "kalender") renderCal(); });
+  }
+  function sxEditQuick(r, how) {
+    var kind = how || r.kind, c = C();
+    closeSearch(false, function () {
+      if (kind === "termin") c.newEvent(r.date || today(), { title: r.title, time: r.time || "", end: r.end || "", remind: r.remind, rep: r.rep });
+      else if (kind === "aufgabe") taskSheet({ title: r.title, due: r.date || "" });
+      else noteSheet(null, r.date, { text: r.title, at: r.date && r.time ? r.date + "T" + r.time : "" });
+    });
+  }
+  var REPN = { d: "täglich", w: "wöchentlich", "2w": "alle 2 Wochen", m: "monatlich", y: "jährlich" }, KN = { termin: "Termin", aufgabe: "Aufgabe", notiz: "Notiz" };
+  function quickHTML(r) {
+    var d = r.date ? parse(r.date) : null;
+    var line = "Neue" + (r.kind === "termin" ? "r Termin" : r.kind === "aufgabe" ? " Aufgabe" : " Notiz") + (d ? " · " + WD[d.getDay()] + " " + d.getDate() + "." + (d.getMonth() + 1) + "." : "") + (r.time ? ", " + r.time : "") + " · " + esc(r.title);
+    var chips = '<label class="qc">' + ico("cal") + '<input type="date" data-q="date" value="' + (r.date || "") + '" aria-label="Datum"></label>' +
+      (r.kind !== "aufgabe" ? '<label class="qc">' + ico("clock") + '<input type="time" data-q="time" value="' + (r.time || "") + '" aria-label="Uhrzeit"></label>' : "") +
+      (r.kind === "termin" ? '<label class="qc">↻<select data-q="rep" aria-label="Wiederholung"><option value="">einmal</option>' + Object.keys(REPN).map(function (k) { return '<option value="' + k + '"' + (r.rep && r.rep.f === k ? " selected" : "") + ">" + REPN[k] + "</option>"; }).join("") + "</select></label>" : "");
+    var other = ["termin", "aufgabe", "notiz"].filter(function (k) { return k !== r.kind; });
+    return '<div class="qprev" role="group" aria-label="Schnell anlegen"><b>' + line + '</b><div class="qcs">' + chips + '</div><div class="btns"><button class="btn" data-qa="edit">Bearbeiten</button><button class="btn p" data-qa="save">Speichern</button></div>' +
+      '<div class="qalt">' + other.map(function (k) { return '<button class="lnk" data-qa="as-' + k + '">als ' + KN[k] + "</button>"; }).join(" · ") + "</div></div>";
+  }
+  /* Ergebnisse */
+  function hl(text, q) {
+    var m = window.SGSuche.marks(text, q), s = String(text || ""), out = "", at = 0;
+    m.forEach(function (r) { out += esc(s.slice(at, r[0])) + "<mark>" + esc(s.slice(r[0], r[1])) + "</mark>"; at = r[1]; });
+    return out + esc(s.slice(at));
+  }
+  function rowHTML(it, q, i) {
+    var g = SXG[it.kind] || SXG.befehle;
+    return '<div class="sxr" role="option" data-i="' + i + '"><button class="sxm" data-i="' + i + '" style="--c:' + (it.c || g[2]) + '"><span class="ic">' + ico(it.ic || (it.kind === "befehle" ? "chev" : g[1])) + '</span><span class="tx"><b' + (it.done ? ' class="done"' : "") + ">" + hl(it.t, q) + "</b>" +
+      (it.st || it.g ? "<small>" + esc([it.g, it.st].filter(Boolean).join(" · ")) + "</small>" : "") + "</span></button>" +
+      (it.task ? '<button class="sxa" data-tk="' + i + '" aria-label="' + (it.task.done ? "Wieder offen" : "Erledigt") + '">' + ico(it.task.done ? "check" : "ok") + "</button>" : it.e ? '<button class="sxa" data-cal="' + i + '" aria-label="Im Kalender öffnen">' + ico("cal") + "</button>" : '<span class="sxa-c">' + ico("chev") + "</span>") + "</div>";
+  }
+  function sxSearch() {
+    var q = sx.q.trim(), f = sx.f, list = [], quick = null, mode = q[0];
+    var body = sxEl.querySelector(".sxb"), live = sxEl.querySelector(".sxl"), qprev = sxEl.querySelector(".sxq");
+    sx.items = [];
+    if (!q) { qprev.innerHTML = ""; return sxEmpty(); }
+    if (mode === "?") { qprev.innerHTML = ""; return sxHelp(); }
+    var S = window.SGSuche, cnt = (sxStore().count || {});
+    function rank(it, words, base) { var sc = S.score(words, it.t, ((it.g || "") + " " + (it.kw || "") + " " + (it.x || "")).trim()); if (!sc) return 0; sc += base || 0; sc += Math.min(30, (cnt[it.key] || 0) * 6);
+      if (it.date) { var dd = Math.abs((parse(it.date) - parse(today())) / 864e5); sc += dd === 0 ? 25 : dd < 8 ? 12 : dd > 120 ? -10 : 0; } if (it.done) sc -= 30; return sc; }
+    if (mode === "@") {
+      var d = sxAtDate(q.slice(1)); qprev.innerHTML = "";
+      if (d) list.push({ kind: "termine", t: "Kalender: " + fmtDay(d) + " öffnen", st: "Tag im Kalender", key: "at", sc: 999, run: function () { toDay(d); } });
+    } else if (mode === "/") {
+      var qq = q.slice(1).trim(); qprev.innerHTML = "";
+      sxCommands().forEach(function (it) { var sc = qq ? rank(it, qq) : 1; if (sc) { it.sc = sc; list.push(it); } });
+    } else {
+      // Bibelstelle („Joh 3,16“) zuerst
+      var br = window.SGBibelstelle && window.SGBibelstelle.parse(q);
+      if (br) list.push({ kind: "bibel", t: br.ref, st: "Bibelstelle öffnen", ic: "book", key: "br:" + br.ref, sc: 1000, run: function () { openUrl("bibel/#stelle=" + br.b + "." + br.c + (br.v ? "." + br.v : "")); } });
+      quick = sxQuick(q);
+      qprev.innerHTML = quick ? quickHTML(quick) : ""; sx.quick = quick;
+      if (mode === "+") { sx.items = []; body.innerHTML = ""; live.textContent = "Neuer Eintrag"; return; }
+      if (!sx.content) sx.content = sxContent();
+      var cmdBase = f === "befehle" ? 0 : 5;
+      sxCommands().forEach(function (it) { var sc = rank(it, q, cmdBase); if (sc) { it.sc = sc; list.push(it); } });
+      sx.content.forEach(function (it) { var sc = rank(it, q); if (sc) { it.sc = sc; list.push(it); } });
+      // Ergebnisse aus dem Hintergrund kommen nach und werden dann eingereiht
+      if (sx.wis && sx.wis.q === q) list = list.concat(sx.wis.list);
+      else if (q.length >= 3 && (f === "alles" || f === "wissen")) sxWissen(q, function (res) { if (sx && sx.q.trim() === q) { sx.wis = { q: q, list: res }; sxSearch(); } });
+      if (sx.bib && sx.bib.q === q) list = list.concat(sx.bib.list.map(function (x) { x.sc = 5; return x; }));
+      else if (q.length >= 3 && (f === "alles" || f === "bibel") || f === "bibel" && q.length >= 2) sxBibel(q, function (res) { if (sx && sx.q.trim() === q) { sx.bib = { q: q, list: res }; sxSearch(); } });
+    }
+    if (f !== "alles") list = list.filter(function (it) { return it.kind === f; });
+    list.sort(function (a, b) { return b.sc - a.sc; });
+    // Gruppen: höchstens drei Zeilen (außer im Filter), Gruppe des Bereichs, aus dem die Suche kam, zuerst bei Gleichstand
+    var groups = {}, order = [], home = { training: "training", mobility: "training", schule: "schule", bibel: "bibel", notizen: "notizen", aufgaben: "aufgaben" }[sx.from];
+    list.forEach(function (it) { if (!groups[it.kind]) { groups[it.kind] = []; order.push(it.kind); } groups[it.kind].push(it); });
+    order.sort(function (a, b) { return (groups[b][0].sc + (b === home ? 15 : 0)) - (groups[a][0].sc + (a === home ? 15 : 0)); });
+    var h = "", n = 0;
+    order.forEach(function (k) {
+      var all = groups[k], show = f === "alles" && !sx.open[k] ? all.slice(0, 3) : all.slice(0, 80);
+      h += '<div class="sxg"><header><span>' + SXG[k][0] + "</span>" + (all.length > show.length ? '<button class="lnk" data-more="' + k + '">Alle ' + all.length + " anzeigen</button>" : "") + "</header>";
+      show.forEach(function (it) { sx.items.push(it); h += rowHTML(it, mode === "/" || mode === "@" ? q.slice(1) : q, sx.items.length - 1); n++; });
+      h += "</div>";
+    });
+    if (!list.length && !quick) h = '<p class="sxe">Nichts gefunden. Tipp: mit „+“ vorne wird es ein neuer Eintrag, „?“ zeigt Beispiele.</p>';
+    if (!list.length && !quick && q.length >= 2 && mode !== "/" && mode !== "@") {
+      h += '<div class="sxg"><div class="cells">' + '<button class="row" data-qa="as-aufgabe" style="--c:var(--c-aufgabe)"><span class="ic">' + ico("check") + '</span><span class="tx"><b>Aufgabe anlegen: ' + esc(q) + "</b></span></button></div></div>";
+      sx.quick = { kind: "aufgabe", title: q.charAt(0).toUpperCase() + q.slice(1), date: null };
+    }
+    body.innerHTML = h;
+    live.textContent = (list.length ? list.length + (list.length === 1 ? " Treffer" : " Treffer") : "Keine Treffer") + (quick ? ", Vorschau: neuer Eintrag" : "");
+    sx.sel = 0;
+  }
+  function sxEmpty() {
+    var o = sxStore(), body = sxEl.querySelector(".sxb"), h = "", cmds = sxCommands(), byKey = {};
+    cmds.forEach(function (x) { byKey[x.key] = x; });
+    if (o.recent && o.recent.length) h += '<div class="sxg"><header><span>Zuletzt</span><button class="lnk" data-clear="1">Löschen</button></header><div class="sxchips">' +
+      o.recent.map(function (r, i) { return '<button class="chip" data-recent="' + i + '">' + esc(r.q || r.l) + "</button>"; }).join("") + "</div></div>";
+    h += '<div class="sxg"><header><span>Schnell anlegen</span></header><div class="sxchips">' + [["Termin", "+Termin "], ["Aufgabe", "+Aufgabe "], ["Notiz", "+Notiz "]].map(function (x) { return '<button class="chip" data-ins="' + x[1] + '">' + x[0] + "</button>"; }).join("") +
+      '<button class="chip" data-cmd="c:Woche planen">Woche planen</button></div></div>';
+    var top = Object.keys(o.count || {}).filter(function (k) { return byKey[k]; }).sort(function (a, b) { return o.count[b] - o.count[a]; }).slice(0, 6);
+    sx.items = top.map(function (k) { return byKey[k]; });
+    if (top.length) h += '<div class="sxg"><header><span>Häufig</span></header>' + sx.items.map(function (it, i) { return rowHTML(it, "", i); }).join("") + "</div>";
+    h += '<p class="sxe">Tipp: „/“ nur Befehle · „+“ neu anlegen · „@“ Datum öffnen · „?“ Beispiele</p>';
+    body.innerHTML = h; sxEl.querySelector(".sxl").textContent = "Suche bereit";
+  }
+  function sxHelp() {
+    var ex = ["Zahnarzt morgen 15 Uhr", "Mathe Hausaufgaben bis Freitag", "jeden Montag 17:30 Krafttraining", "Notiz: Kurve 9 früher einlenken", "@24.12.", "Joh 3,16", "/design graphit", "rodeln bahn", "atem"];
+    sxEl.querySelector(".sxb").innerHTML = '<div class="sxg"><header><span>Beispiele – antippen fügt ein</span></header><div class="sxchips">' + ex.map(function (x) { return '<button class="chip" data-ins="' + esc(x) + '">' + esc(x) + "</button>"; }).join("") + "</div></div>" +
+      '<p class="sxe">„/“ nur Befehle · „+“ neu anlegen · „@“ Datum öffnen. Tippfehler sind erlaubt (ein Fehler ab 5 Buchstaben).</p>';
+    sxEl.querySelector(".sxl").textContent = "Hilfe";
+  }
+  function sxFit() {
+    if (!sxEl) return; var vv = window.visualViewport;
+    sxEl.style.height = (vv ? vv.height : innerHeight) + "px"; sxEl.style.top = (vv ? vv.offsetTop : 0) + "px";
+  }
+  function openSearch(text) {
+    if (!sxEl) {
+      sxEl = document.createElement("div"); sxEl.id = "sx"; sxEl.className = "sx"; sxEl.setAttribute("role", "dialog"); sxEl.setAttribute("aria-modal", "true"); sxEl.setAttribute("aria-label", "Suche");
+      sxEl.innerHTML = '<div class="sxh"><button class="ib" data-x="1" aria-label="Suche schließen">' + ico("back") + '</button><div class="sxi">' + ico("search") +
+        '<input type="search" id="sxq" placeholder="Suchen, Befehl oder „Zahnarzt morgen 15 Uhr“" autocomplete="off" autocapitalize="sentences" spellcheck="false" enterkeyhint="search" aria-label="Suchen" role="combobox" aria-controls="sxbody" aria-expanded="true">' +
+        '<button class="ib sxc" data-clr="1" aria-label="Eingabe löschen" hidden>✕</button></div></div>' +
+        '<div class="sxf" role="tablist" aria-label="Bereich">' + SXF.map(function (x) { return '<button class="chip" role="tab" data-f="' + x[0] + '">' + x[1] + "</button>"; }).join("") + "</div>" +
+        '<div class="sxl" aria-live="polite"></div><div class="sxbody" id="sxbody"><div class="sxq"></div><div class="sxb" role="listbox"></div></div>';
+      document.body.appendChild(sxEl);
+      var inp = sxEl.querySelector("#sxq"), tmr = 0;
+      inp.addEventListener("input", function () { sxEl.querySelector(".sxc").hidden = !inp.value; if (sx) sx.q = inp.value; clearTimeout(tmr); tmr = setTimeout(function () { if (sx) { sx.open = {}; sxSearch(); } }, 100); });
+      inp.addEventListener("keydown", function (e) {
+        if (!sx) return;
+        if (e.key === "Enter") { e.preventDefault(); clearTimeout(tmr); sx.q = inp.value; if (!sx.items.length && !sx.quick) sxSearch(); if (sx.quick && (sx.q.trim()[0] === "+" || sx.quick.explicit || sx.quick.date || sx.quick.time || !sx.items.length)) return sxSaveQuick(sx.quick); sxRun(sx.items[sx.sel || 0], sx.q); }
+        else if (e.key === "Escape") { e.preventDefault(); closeSearch(); }
+        else if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); var n = sx.items.length; if (!n) return; sx.sel = (sx.sel + (e.key === "ArrowDown" ? 1 : n - 1)) % n; Array.prototype.forEach.call(sxEl.querySelectorAll(".sxr"), function (r) { r.classList.toggle("on", +r.dataset.i === sx.sel); }); }
+      });
+      sxEl.addEventListener("click", function (e) {
+        var t = e.target.closest("button, [data-i]"); if (!t || !sx) return;
+        if (t.dataset.x) return closeSearch();
+        if (t.dataset.clr) { inp.value = ""; sx.q = ""; t.hidden = true; sxSearch(); return inp.focus(); }
+        if (t.dataset.f) { sx.f = t.dataset.f; sx.open = {}; sxSetF(); sxSearch(); return; }
+        if (t.dataset.more) { sx.f = t.dataset.more; sxSetF(); sxSearch(); return; }
+        if (t.dataset.clear) { var o = sxStore(); o.recent = []; sxSave(o); return sxSearch(); }
+        if (t.dataset.recent != null) { var r = (sxStore().recent || [])[+t.dataset.recent]; if (r) { inp.value = r.q || r.l; sx.q = inp.value; sxSearch(); } return; }
+        if (t.dataset.ins != null) { inp.value = t.dataset.ins; sx.q = inp.value; sxEl.querySelector(".sxc").hidden = false; sxSearch(); return inp.focus(); }
+        if (t.dataset.cmd) { var cm = sxCommands().find(function (x) { return x.key === t.dataset.cmd; }); return sxRun(cm, ""); }
+        if (t.dataset.qa) { var how = t.dataset.qa.replace(/^as-/, ""); if (t.dataset.qa === "save") return sxSaveQuick(sx.quick); if (t.dataset.qa === "edit") return sxEditQuick(sx.quick); return sxEditQuick(Object.assign({}, sx.quick, { kind: how }), how); }
+        if (t.dataset.tk != null) { var it = sx.items[+t.dataset.tk]; C().tasks.update(it.task.id, { done: !it.task.done }); it.task.done = !it.task.done; it.done = it.task.done; sx.content = null; snack(it.done ? "Erledigt" : "Wieder offen"); return sxSearch(); }
+        if (t.dataset.cal != null) { var ev = sx.items[+t.dataset.cal]; sxRemember({ l: ev.t, q: sx.q }, ev.key); return closeSearch(false, function () { toDay(ev.date); }); }
+        if (t.dataset.i != null) return sxRun(sx.items[+t.dataset.i], sx.q);
+      });
+      // Vorschau korrigieren: Datum, Zeit, Wiederholung
+      sxEl.addEventListener("change", function (e) {
+        var k = e.target.dataset.q; if (!k || !sx || !sx.quick) return;
+        if (k === "rep") sx.quick.rep = e.target.value ? { f: e.target.value } : null; else sx.quick[k] = e.target.value || null;
+        if (k === "time" && sx.quick.time && sx.quick.kind === "aufgabe") sx.quick.kind = "termin";
+        sxEl.querySelector(".sxq").innerHTML = quickHTML(sx.quick);
+      });
+      if (window.visualViewport) { visualViewport.addEventListener("resize", sxFit); visualViewport.addEventListener("scroll", sxFit); }
+      C().onChange(function () { if (sx) { sx.content = null; } });
+    }
+    var from = cur.v;
+    sx = { q: text || "", f: "alles", items: [], sel: 0, open: {}, from: from, content: null, bib: null, wis: null };
+    sxSetF();
+    var inp2 = sxEl.querySelector("#sxq"); inp2.value = sx.q; sxEl.querySelector(".sxc").hidden = !sx.q;
+    sxEl.classList.add("on"); sxFit();
+    if (drawerOpen) closeDrawer();
+    history.pushState({ app: 1, sx: 1 }, "", location.hash);
+    sxSearch();
+    setTimeout(function () { inp2.focus(); }, 30);
+  }
+  function sxSetF() { Array.prototype.forEach.call(sxEl.querySelectorAll(".sxf [data-f]"), function (b) { var on = b.dataset.f === sx.f; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); }); }
+  // after: Aktion nach dem Schließen – erst wenn der Verlaufseintrag der Suche weg ist (sonst landet die Navigation im falschen Eintrag)
+  function closeSearch(fromPop, after) {
+    if (!sx) { if (after) after(); return; } sx = null; sxJob++;
+    sxEl.classList.remove("on"); sxEl.querySelector("#sxq").blur();
+    if (!fromPop && history.state && history.state.sx) { sxAfter = after || function () {}; history.back(); }
+    else if (after) after();
+  }
+  var sxAfter = null;
+  window.SGShellSearch = { open: openSearch, close: closeSearch, isOpen: function () { return !!sx; } };
+
   /* ---------- Start ---------- */
   navEl.innerHTML = TABS.map(function (t) { return '<button data-tab="' + t[0] + '"><span class="pill">' + ico(t[2]) + "</span>" + t[1] + "</button>"; }).join("");
   // Offline-Speicher für die ganze App (Service Worker liegt in /planer/, gilt für alle Seiten)
@@ -1218,6 +1590,8 @@
   function start() {
     if (!C()) return setTimeout(start, 30);
     C().onChange(function () { clearTimeout(refresh.t); refresh.t = setTimeout(refresh, 100); });
+    // neue Vollbild-Suche statt der Befehlspalette (fällt sie aus, bleibt die alte als Rückfall)
+    if (C().setPalette && window.SGSuche) C().setPalette(function (text) { try { openSearch(text); } catch (e) { diag("Suche: " + e.message); C().setPalette(null); C().palette(text); } });
     if (location.hash.length > 1) fromHash(); else { history.replaceState({ app: 1 }, "", "#kalender"); render(); }
     if (window.SGNative && !localStorage.getItem("sg-umzug-v1")) setTimeout(function () { moveInSheet(true); }, 600);
     else if (window.SGNative && !localStorage.getItem("sg-apk-setup")) setTimeout(setupSheet, 900);

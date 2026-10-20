@@ -1,0 +1,69 @@
+// Kern der Suche und Bibelstellen – ohne Browser: node werkzeuge/tests/suche-kern.js
+const S = require('../quellen/suche.js'), B = require('../quellen/bibelstelle.js');
+let ok = 0, bad = 0;
+const t = (name, got, want) => { const g = JSON.stringify(got), w = JSON.stringify(want); if (g === w) ok++; else { bad++; console.log('✗', name, '→', g, 'statt', w); } };
+const hit = (q, title, text) => S.score(q, title, text) > 0;
+// Vereinheitlichen
+t('Umlaute', S.norm('Größe Übung Äpfel'), 'grosse ubung apfel');
+t('Satzzeichen', S.norm('Rodeln: Kurvenbuch – Bahnen!'), 'rodeln kurvenbuch bahnen');
+t('akzent', S.norm('Café'), 'cafe');
+// Treffer
+t('ganzes Wort', hit('zahnarzt', 'Zahnarzt'), true);
+t('Wortanfang', hit('zahn', 'Zahnarzt Termin'), true);
+t('Teilwort', hit('arzt', 'Zahnarzt'), true);
+t('alle Wörter', hit('zahn termin', 'Zahnarzt Termin'), true);
+t('ein Wort fehlt', hit('zahn urlaub', 'Zahnarzt Termin'), false);
+t('Tippfehler 1 ab 5', hit('zahnartz', 'Zahnarzt'), true);
+t('Vertauschung', hit('zhanarzt', 'Zahnarzt'), true);
+t('kein Tippfehler unter 5', hit('zahb', 'Zahnarzt'), false);
+t('zwei Fehler ab 9', hit('krafttrainnig', 'Krafttraining'), true);
+t('zwei Fehler unter 9 nein', hit('atmng uebg', 'Atemübung'), false);
+t('Umlaut in Suche', hit('übung', 'Atemuebung starten'.replace('ue', 'ü')), true);
+t('ae ohne Umlaut', hit('atemubung', 'Atemübung'), true);
+t('Zusatztext', hit('bahn', 'Rodeln: Kurvenbuch', 'bahn strecke'), true);
+t('Zusatztext nicht', hit('bahn', 'Rodeln: Kurvenbuch', 'strecke'), false);
+t('tippen mitten im Wort', hit('mathem', 'Mathematik Schulaufgabe'), true);
+t('fuzzy Wortanfang', hit('mathr', 'Mathematik'), true);
+// Rangfolge
+const rank = (q, list) => list.map(x => [x, S.score(q, x)]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]).map(x => x[0]);
+t('genau vor Anfang', rank('atmung', ['Atmung & HRV', 'Atmung', 'Bauchatmung üben'])[0], 'Atmung');
+t('Anfang vor Teilwort', rank('kraft', ['Krafttraining', 'Oberkörper Kraft', 'Schnellkraft'])[0], 'Krafttraining');
+t('Titel vor Zusatz', S.score('bahn', 'Bahnen') > S.score('bahn', 'Kurvenbuch', 'bahn'), true);
+t('Wortanfang vor unscharf', S.score('mathe', 'Mathe') > S.score('mathr', 'Mathe'), true);
+// Hervorheben
+t('marks', S.marks('Zahnarzt Termin', 'zahn'), [[0, 4]]);
+t('marks Umlaut', S.marks('Übung starten', 'ubung'), [[0, 5]]);
+t('marks zwei', S.marks('Mathe Hausaufgabe', 'haus mathe'), [[0, 5], [6, 10]]);
+t('marks ß', S.marks('Große Pause', 'gross'), [[0, 4]]);
+// Bibelstellen
+const ref = s => { const r = B.parse(s); return r && r.ref; };
+t('Joh 3,16', ref('Joh 3,16'), 'Johannes 3,16');
+t('1. Mose 1,1-3', ref('1. Mose 1,1-3'), '1. Mose 1,1–3');
+t('1Mo 1', ref('1Mo 1'), '1. Mose 1');
+t('Gen 3', ref('Gen 3'), '1. Mose 3');
+t('Ps 23', ref('Ps 23'), 'Psalm 23');
+t('Psalm 23,1', ref('Psalm 23,1'), 'Psalm 23,1');
+t('Psalmen 91', ref('Psalmen 91'), 'Psalm 91');
+t('Römer 8:28', ref('Römer 8:28'), 'Römer 8,28');
+t('Röm ohne Umlaut', ref('rom 12'), 'Römer 12');
+t('1 Kor 13', ref('1 Kor 13'), '1. Korinther 13');
+t('1.Kor 13,4–7', ref('1.Kor 13,4–7'), '1. Korinther 13,4–7');
+t('Offb 21', ref('Offb 21'), 'Offenbarung 21');
+t('1. Johannes 4,8', ref('1. Johannes 4,8'), '1. Johannes 4,8');
+t('erste Petrus 5', ref('erster Petrus 5'), '1. Petrus 5');
+t('Mt 5,3', ref('Mt 5,3'), 'Matthäus 5,3');
+t('Matthäus 28', ref('Matthäus 28'), 'Matthäus 28');
+t('Spr 3,5', ref('Spr 3,5'), 'Sprüche 3,5');
+t('Hiob 1', ref('Hiob 1'), 'Hiob 1');
+t('Jona 2', ref('Jona 2'), 'Jona 2');
+t('Apg 2,1', ref('Apg 2,1'), 'Apostelgeschichte 2,1');
+t('Hebr 11,1', ref('Hebr 11,1'), 'Hebräer 11,1');
+t('kein Buch', ref('Zahnarzt 15'), null);
+t('ohne Kapitel', ref('Johannes'), null);
+t('Kapitel zu groß', ref('am 24'), null);
+t('Amos gültig', ref('Am 5,24'), 'Amos 5,24');
+t('Vers rückwärts', ref('Joh 3,16-10'), null);
+t('Mose ohne Zahl', ref('Mose 1'), null);
+t('Text drumherum', ref('lies Joh 3,16'), null);
+console.log(bad ? `${ok}/${ok + bad} Kern-Tests grün – FEHLER` : `${ok}/${ok} Kern-Tests grün`);
+process.exit(bad ? 1 : 0);
