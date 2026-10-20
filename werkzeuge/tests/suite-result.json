@@ -2,241 +2,241 @@
  [
   true,
   "A Hülle lädt ohne Fehler (Handy)",
-  2498
+  2602
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Handy): /planer/",
-  1841
+  1759
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Handy): /planer/schule/",
-  1928
+  1918
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Handy): /planer/pause/",
-  1764
+  1757
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Handy): /planer/training/",
-  1899
+  1947
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Handy): /planer/training/mobility/",
-  1762
+  1739
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Handy): /planer/training/atmung/",
-  1702
+  1697
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Handy): /planer/training/bahnplan/",
-  1668
+  1692
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Handy): /planer/bibel/",
-  1666
+  1681
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Handy): /planer/wissen/",
-  1647
+  1676
  ],
  [
   true,
   "A Hülle lädt ohne Fehler (Tablet)",
-  2420
+  2427
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Tablet): /planer/",
-  1803
+  1804
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Tablet): /planer/schule/",
-  1869
+  1828
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Tablet): /planer/pause/",
-  1696
+  1709
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Tablet): /planer/training/",
-  1937
+  1911
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Tablet): /planer/training/mobility/",
-  1829
+  1736
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Tablet): /planer/training/atmung/",
-  1687
+  1671
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Tablet): /planer/training/bahnplan/",
-  1729
+  1676
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Tablet): /planer/bibel/",
-  1706
+  1724
  ],
  [
   true,
   "A Seite einzeln ohne Fehler (Tablet): /planer/wissen/",
-  1710
+  1661
  ],
  [
   true,
   "A Alte Adressen landen in der Hülle an der richtigen Stelle",
-  23252
+  23247
  ],
  [
   true,
   "A Offline-Speicher: frisches Gerät öffnet nur die Hülle → Service Worker aktiv, alles gespeichert",
-  425
+  391
  ],
  [
   true,
   "S Alle Ziele und jeder Unterpunkt öffnen die richtige Seite",
-  48316
+  48312
  ],
  [
   true,
   "S Eingebettete Seiten ohne eigene Leisten, Hülle ohne Überlauf",
-  15907
+  15982
  ],
  [
   true,
   "S Kalender: Woche, Monat, Tag wählen, Wischen, Danach",
-  3514
+  3401
  ],
  [
   true,
   "S Kalender verknüpft: Starten führt in Training und Atmung, Zurück-Geste zum Kalender",
-  8238
+  8205
  ],
  [
   true,
   "S Bereiche verknüpft: „Dazu heute“ im Training öffnet Mobility in der Hülle",
-  7791
+  7764
  ],
  [
   true,
   "S Plus: Aufgabe, Notiz und Termin für den gewählten Tag",
-  13293
+  13241
  ],
  [
   true,
   "S Notizen: anlegen, bearbeiten, erledigen, löschen",
-  7880
+  7829
  ],
  [
   true,
   "S Mehr: Aufgaben, Bibel, Pause, Sportwissenschaft, Training einstellen, Design, Cloud",
-  16590
+  16508
  ],
  [
   true,
   "S Zurück: Kalender → Ziel → Zurück = Kalender; zwischen Zielen wird ersetzt",
-  6863
+  6773
  ],
  [
   true,
   "S Tablet: Seitenleiste links, Inhalt rechts",
-  2442
+  2456
  ],
  [
   true,
   "S Design: Pillen mittig, Schnellkarten im Bildschirm, eine Akzentfarbe in allen Bereichen",
-  6956
+  7016
  ],
  [
   true,
   "S Leiste: immer sichtbar – alle Bereiche, Tastatur, Drehen, Hinweise, Rückkehr",
-  26629
+  26576
  ],
  [
   true,
   "S Speicher: höchstens 7 Bereiche gleichzeitig geladen, geschlossene laden beim Öffnen neu",
-  11558
+  11534
  ],
  [
   true,
   "E Version in Mehr, Aktualisieren lädt neue Fassung",
-  3695
+  3656
  ],
  [
   true,
   "F Alte Adressen in gespeicherten Daten zeigen in die App",
-  2380
+  2424
  ],
  [
   true,
   "G Standardwoche festlegen und mit einem Tipp aus dem Kalender übernehmen",
-  5215
+  5132
  ],
  [
   true,
   "H Handykalender: Export nur Neues/Geändertes, Schule wählbar, gültige .ics",
-  2376
+  2350
  ],
  [
   true,
   "H Handykalender: Samsung-Datei (vCalendar, Umlaute), iCal mit Zeitzone/Wiederholung/ganztägig, keine Doppelten",
-  2363
+  2379
  ],
  [
   true,
   "H Handykalender: geteilter Text wird erkannt",
-  2368
+  2354
  ],
  [
   true,
   "H Handykalender: Teilen › Planer (Share Target) und Mehr › Handykalender",
-  3861
+  3799
  ],
  [
   true,
   "J Manifest startet in der Hülle, alles im Bereich der App",
-  193
+  198
  ],
  [
   true,
   "L Lesen: 8 Kapitel, Fortschritt und Leseposition bleiben gespeichert",
-  5214
+  5218
  ],
  [
   true,
   "L Inhalt und Schriftgröße im Lesemodus",
-  1687
+  1695
  ],
  [
   true,
   "L Karteikarten: Merksätze und Mach/Lass, Nochmal kommt wieder, Gewusst wird fällig später",
-  1785
+  1777
  ],
  [
   true,
   "L Quiz: Auswertung, falsche Antworten kommen wieder und verschwinden bei richtiger Antwort",
-  2687
+  2533
  ],
  [
   true,
   "L Suche über das ganze Buch (Eisbad, Dehnen, Umlaute) und Sprung zur Stelle",
-  1811
+  1823
  ]
 ]

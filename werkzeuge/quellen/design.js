@@ -368,7 +368,8 @@
   function nativeCheck(status, auto) {
     if (!navigator.onLine) { status("Ohne Internet kann nicht nach einer neuen Version gesucht werden. Die App läuft offline ganz normal weiter."); return Promise.resolve("offline"); }
     status("Suche nach einer neuen Version …");
-    return fetch(REL, { cache: "no-store", headers: { Accept: "application/vnd.github+json" } }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (j) {
+    return fetch(REL, { cache: "no-store", headers: { Accept: "application/vnd.github+json" } }).then(function (r) { if (r.status === 404) return {}; if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (j) {
+      // 404 = noch kein Release veröffentlicht → nichts Neueres
       var v = String(j.tag_name || "").replace(/^v/, ""), a = (j.assets || []).find(function (x) { return /\.apk$/.test(x.name); });
       if (!a || !newer(v, window.SGVersion)) { status("Du hast die neueste Version (" + window.SGVersion + ")."); return "aktuell"; }
       apkUrl = a.browser_download_url;

@@ -16,6 +16,9 @@ Ergebnisse (Bildschirmfotos, Protokoll) zusätzlich im Branch `emulator-ergebnis
 | Verbindung zur App brach beim 12. Bereich ab | alle besuchten Bereiche blieben als iframes geladen (Speicher) | höchstens 7 (APK: 5) Bereiche geladen, der älteste wird geschlossen (`trimFrames`) |
 | 404 im Emulator | `sw.js` fehlte in der APK, Seiten fragen ihn ab | `sw.js` wird mitkopiert (nicht registriert) |
 | Test: Start-Adresse „falsch“ | Adresse endet auf `#kalender` | Prüfung angepasst |
+| App hätte sich nach Absturz des Seiten-Prozesses ganz beendet | Android-Standard bei `onRenderProcessGone` | App baut sich neu auf (`recreate`) |
+| Test hing an einer unsichtbaren WebView (Höhe 0) | mehrere WebView-Seiten im Emulator | Test wählt die sichtbare Seite |
+| Update-Prüfung meldete 404 | noch kein Release auf GitHub | 404 = nichts Neueres |
 
 Im Emulator geprüft (grün): Start in der Hülle, Leiste über der Android-Gestenleiste, Willkommen/Umzug, Einrichtung,
 Kalender „Planer“ im Android-Kalender angelegt und befüllt, Handytermin aus „Mein Kalender“ erscheint in der App, Erinnerungen geplant,
