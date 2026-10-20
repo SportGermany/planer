@@ -528,6 +528,64 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(Math.abs(r.stTop - r.chipsBottom) <= 1, 'Abstand Kopf/Inhalt ' + JSON.stringify(r));
     assert(!e.length, e.join(' | ')); await c.close();
   });
+  /* ---------- P5: Mehr neu geordnet ---------- */
+  const mehrCtx = async (init) => { const c = await ctxFor(SMALL); if (init) await c.addInitScript(init); const p = await c.newPage(); return { c, p, e: watch(p) }; };
+  const valOf = (p, m) => p.evaluate(m => { const r = document.querySelector('#n-mehr [data-m="' + m + '"] .val'); return r ? r.textContent : ''; }, m);
+  await test('P5 Mehr: fünf Gruppen nach Zweck, alles von früher erreichbar, höchstens zwei Bildschirmhöhen', async () => {
+    const { c, p, e } = await mehrCtx(); await open(p, '#mehr');
+    const r = await p.evaluate(() => ({ grp: [...document.querySelectorAll('#n-mehr .grp > header')].map(x => x.textContent).join('|'), ms: [...document.querySelectorAll('#n-mehr [data-m]')].map(x => x.dataset.m),
+      h: document.getElementById('n-mehr').scrollHeight, minRow: Math.min(...[...document.querySelectorAll('#n-mehr .row')].map(x => x.getBoundingClientRect().height)),
+      links: [...document.querySelectorAll('#n-mehr .lnk-ic')].map(x => x.closest('[data-m]').dataset.m).join() }));
+    assert(r.grp === 'Planen|Lesen und Lernen|Abgleich und Sicherung|Darstellung und Einstellungen|Über die App', 'Gruppen ' + r.grp);
+    const fehlt = ['aufgaben', 'notizen', 'week', 'std', 'handy', 'bibel', 'wissen', 'pause', 'design', 'sync', 'tset', 'update', 'umzug', 'backup', 'neu', 'diag', 'autodw'].filter(m => r.ms.indexOf(m) < 0);
+    assert(!fehlt.length, 'fehlt ' + fehlt);
+    assert(r.links === 'wissen,tset', 'Verknüpfungen ' + r.links);
+    assert(r.h <= 2 * 800 && r.minRow >= 59.5, 'Höhe ' + r.h + ' Zeile ' + r.minRow);
+    // „Was ist neu“, Fehlerprotokoll (mit Leeren)
+    await p.click('#n-mehr [data-m=neu]'); await wait(p, 300); assert(/Version 3\.7\.0/.test(await p.textContent('#sheet')), 'Was ist neu'); await p.goBack(); await wait(p, 300);
+    await p.evaluate(() => localStorage.setItem('sg-diag-v1', JSON.stringify([{ at: Date.now(), t: 'Test-Eintrag', v: 'kalender', on: true }])));
+    await p.evaluate(() => { location.hash = 'kalender'; }); await wait(p, 300); await p.evaluate(() => { location.hash = 'mehr'; }); await wait(p, 400);
+    await p.click('#n-mehr [data-m=diag]'); await wait(p, 300); assert(/Test-Eintrag/.test(await p.inputValue('#sheet textarea.diag')), 'Protokoll');
+    await p.click('#sheet [data-s=clear]'); await wait(p, 400); assert(await p.evaluate(() => !localStorage.getItem('sg-diag-v1')), 'Leeren');
+    // Suchfeld öffnet die Suche mit dem Getippten
+    await p.fill('#mehrq', 'Bibel'); await wait(p, 400);
+    assert(await p.evaluate(() => { const r = document.getElementById('sg-shared-calendar'), i = (r.shadowRoot || r).querySelector('.palin'); return i && i.value === 'Bibel'; }), 'Suche vorbefüllt');
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('P5 Zustände: Cloud (aus, frisch, alt mit Warnpunkt), Umzug groß nur bis erledigt, Aufgaben/Notizen-Zahl, neue Version', async () => {
+    const bad = [];
+    let { c, p, e } = await mehrCtx(() => localStorage.removeItem('sg-shared-calendar-sync')); await open(p, '#mehr');
+    if (await valOf(p, 'sync') !== 'Aus' || await p.$('#nav [data-tab=mehr] .warn')) bad.push('aus: ' + await valOf(p, 'sync'));
+    if (!(await p.$('#n-mehr .grp:first-of-type [data-m=umzug].big')) && !(await p.$('#n-mehr [data-m=umzug].big'))) bad.push('Umzug nicht groß');
+    if (!/\d+ offen/.test(await valOf(p, 'aufgaben'))) bad.push('Aufgaben-Zahl ' + await valOf(p, 'aufgaben'));
+    await p.evaluate(() => window.dispatchEvent(new CustomEvent('sg-update', { detail: '9.9.9' }))); await wait(p, 200);
+    if (!/Neu: 9\.9\.9/.test(await valOf(p, 'update'))) bad.push('neue Version ' + await valOf(p, 'update'));
+    bad.push(...e); await c.close();
+    ({ c, p, e } = await mehrCtx(() => { localStorage.setItem('sg-shared-calendar-sync', JSON.stringify({ token: 'x', user: 'u', last: Date.now() - 2 * 36e5 })); localStorage.setItem('sg-umzug-v1', '{"at":1}'); }));
+    await c.route('https://api.github.com/**', r => r.abort()); await open(p, '#mehr');
+    const v1 = await valOf(p, 'sync'); if (!/^vor 2 Std\.$/.test(v1) || await p.$('#nav [data-tab=mehr] .warn')) bad.push('frisch: ' + v1);
+    if (await p.$('#n-mehr [data-m=umzug].big') || !(await p.$('#n-mehr [data-m=umzug]'))) bad.push('Umzug erledigt, aber groß');
+    await c.close();
+    ({ c, p, e } = await mehrCtx(() => localStorage.setItem('sg-shared-calendar-sync', JSON.stringify({ token: 'x', user: 'u', last: Date.now() - 9 * 864e5 }))));
+    await c.route('https://api.github.com/**', r => r.abort()); await open(p, '#kalender');
+    if (!(await p.$('#nav [data-tab=mehr] .warn'))) bad.push('kein Warnpunkt am Tab');
+    await p.click('#nav [data-tab=mehr]'); await wait(p, 400); const v2 = await valOf(p, 'sync');
+    if (!/^! (vor 9 Tagen|Fehler)$/.test(v2)) bad.push('alt: ' + v2);
+    await c.close();
+    assert(!bad.length, bad.join(' | '));
+  });
+  await test('P5 Schalter: einheitlich, „Seitenmenü automatisch öffnen“ (Standard aus) wirkt und bleibt', async () => {
+    const { c, p, e } = await mehrCtx(); await open(p, '#mehr');
+    assert(!(await p.isChecked('#n-mehr [data-m=autodw]')), 'Standard nicht aus');
+    await p.click('#n-mehr .row.tgl'); await wait(p, 200);
+    await p.click('#nav [data-tab=training]'); await wait(p, 900);
+    assert(await dwOpen(p), 'Menü geht nicht automatisch auf');
+    await p.reload(); await wait(p, 2000); await p.evaluate(() => { location.hash = 'mehr'; }); await wait(p, 500);
+    assert(await p.isChecked('#n-mehr [data-m=autodw]'), 'Einstellung nicht gemerkt');
+    await p.click('#n-mehr [data-m=handy]'); await wait(p, 400);
+    assert(await p.evaluate(() => document.querySelectorAll('#sheet input.swi[role=switch]').length >= 2 && !document.querySelector('#sheet input[type=checkbox]:not(.swi)')), 'Handykalender-Blatt ohne einheitliche Schalter');
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
   await test('K Kalender: Reihenfolge Wochenleiste · Tagesplan · Monat, auf 360×800 ohne Scrollen sichtbar', async () => {
     const c = await ctxFor({ viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true }), p = await c.newPage(), e = watch(p);
     await open(p, '#kalender');

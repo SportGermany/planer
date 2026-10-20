@@ -154,6 +154,7 @@
     if (lostFocus) (v.up ? backEl : titleEl).focus({ preventScroll: true });
     // Navigation
     Array.prototype.forEach.call(navEl.children, function (b) { b.classList.toggle("on", b.dataset.tab === v.tab); });
+    mehrBadge();
     // Kopf-Aktionen
     actsEl.innerHTML = '<button class="ib" data-act="search" aria-label="Suchen">' + ico("search") + "</button>";
     fab.classList.toggle("on", cur.v === "kalender" || cur.v === "notizen");
@@ -225,6 +226,7 @@
     if (t === cur.v) { if (t === "kalender") { setSel(today()); renderCal(); $("n-kalender").scrollTop = 0; } else if (hasDw(V[t])) openDrawer(); return; }
     pushedFromCal = cur.v === "kalender";
     go(t, null, null, { push: cur.v === "kalender" });
+    if (M.autoDw && hasDw(V[t]) && !wideMQ.matches) setTimeout(openDrawer, 60);
   });
   var pushedFromCal = false;
   backEl.addEventListener("click", function () { var v = V[cur.v]; if (history.state && history.state.app && history.length > 1) history.back(); else go(v.up || "kalender"); });
@@ -790,8 +792,8 @@
       '<button class="row" data-s="in" style="--c:var(--c-schule)"><span class="ic">' + ico("download") + '</span><span class="tx"><b>Kalenderdatei öffnen</b><small>.ics oder .vcs, z. B. exportierter Kalender</small></span></button>' +
       '</div></div>' +
       '<div class="grp"><header><span>Mit übertragen</span></header><div class="cells">' +
-      '<label class="row" style="cursor:pointer"><span class="tx"><b>Schule</b><small>Prüfungen, Schultermine, Lehrgänge</small></span><input type="checkbox" data-o="schule"' + (st.opt.schule ? " checked" : "") + ' style="width:22px;height:22px"></label>' +
-      '<label class="row" style="cursor:pointer"><span class="tx"><b>Atemübungen</b><small>geplante Übungen aus Atmung & HRV</small></span><input type="checkbox" data-o="atmung"' + (st.opt.atmung ? " checked" : "") + ' style="width:22px;height:22px"></label>' +
+      toggleRow('data-o="schule"', "Schule", "Prüfungen, Schultermine, Lehrgänge", st.opt.schule) +
+      toggleRow('data-o="atmung"', "Atemübungen", "geplante Übungen aus Atmung & HRV", st.opt.atmung) +
       '</div></div><p class="s">Gelöschte Termine bitte auf beiden Seiten löschen – Kalenderdateien können nur hinzufügen und ändern.</p>', function (act) {
       if (act === "out" && neu.length) sendPhone(neu);
       else if (act === "outall") sendPhone(alle);
@@ -802,7 +804,7 @@
   // Android-App: echter Abgleich mit dem Kalender des Handys
   function handySheet() {
     var H = C().handy, s = H.state();
-    function chk(k, t, sub, on) { return '<label class="row" style="cursor:pointer"><span class="tx"><b>' + t + "</b>" + (sub ? "<small>" + sub + "</small>" : "") + '</span><input type="checkbox" ' + k + (on ? " checked" : "") + ' style="width:22px;height:22px"></label>'; }
+    var chk = toggleRow;
     if (!s.on) {
       sheet('<h3>Handykalender</h3><p class="s">Die App gleicht sich mit dem Kalender auf deinem Handy ab – automatisch, in beide Richtungen, auch offline:</p>' +
         '<p class="s">• Termine aus der App stehen im Handy in einem eigenen Kalender „Planer“ (ein- und ausblendbar, eigene Farbe).<br>• Termine aus deinen Handykalendern erscheinen in der App und lassen sich dort ändern oder löschen.</p>' +
@@ -835,7 +837,7 @@
   // Android-App: Erinnerungen als echte Benachrichtigungen
   function remindSheet() {
     var R = C().erinnern, s = R.state();
-    function chk(k, t, sub, on) { return '<label class="row" style="cursor:pointer"><span class="tx"><b>' + t + "</b><small>" + sub + '</small></span><input type="checkbox" data-r="' + k + '"' + (on ? " checked" : "") + ' style="width:22px;height:22px"></label>'; }
+    function chk(k, t, sub, on) { return toggleRow('data-r="' + k + '"', t, sub, on); }
     sheet('<h3>Erinnerungen</h3><p class="s">' + (s.on ? "An · " + (s.n || 0) + " Erinnerungen in den nächsten 14 Tagen geplant" + (s.err ? '<br><span style="color:#e5484d">Fehler: ' + esc(s.err) + "</span>" : "") : "Benachrichtigungen kommen zur richtigen Zeit – auch wenn die App geschlossen ist und ohne Internet.") + "</p>" +
       '<div class="grp"><div class="cells">' + chk("termine", "Termine & Notizen", "so viele Minuten vorher, wie beim Termin eingestellt; Notizen zum Zeitpunkt", s.opt.termine) +
       chk("training", "Training & Mobility", "zur geplanten Uhrzeit – antippen startet die Einheit", s.opt.training) + "</div></div>" +
@@ -1015,46 +1017,114 @@
   window.SGMove = { data: moveData, apply: moveIn };
 
   /* ---------- Mehr ---------- */
+  /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
+   * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
+  var WHATSNEW = [
+    ["3.7.0", ["Seitenmenü statt Chip-Leisten (☰ oben links, Pfadzeile unter dem Titel)", "Training aufgeräumt: Hauptaktion oben, Kennzahlen, Karten zum Aufklappen; Laufen und Kraft getrennt",
+      "Schule: „Jetzt / Nächste Stunde“, Offen · Prüfungen · Erledigt, Lernzeit und Ablage im Menü", "Lernblöcke aus dem Lernplan im Kalender, Bibel „Gelesen ✓“ in „Auf einen Blick“"]],
+    ["3.6.0", ["Neue Kalender-Startseite: Wochenleiste, Tagesplan, großer Monatskalender", "Langer Druck auf einen Tag trägt etwas ein"]],
+    ["3.5.0", ["Erste Android-App: Handykalender, Erinnerungen, Umzug aus Chrome"]]
+  ];
+  function cloudState() {
+    var c = C(), st = c && c.status ? c.status() : {};
+    if (!st.connected) return { val: "Aus", warn: false };
+    if (st.error) return { val: "Fehler", warn: true };
+    var age = st.last ? Date.now() - st.last : Infinity;
+    return { val: st.last ? "vor " + agoShort(st.last) : "noch nie", warn: age > 7 * 864e5 };
+  }
+  function agoShort(t) { var m = Math.round((Date.now() - t) / 6e4); return m < 60 ? Math.max(1, m) + " Min." : m < 1440 * 2 ? Math.round(m / 60) + " Std." : Math.round(m / 1440) + " Tagen"; }
+  // Warnpunkt am Tab „Mehr“, wenn die Sicherung zu alt ist oder hakt
+  function mehrBadge() {
+    var b = navEl.querySelector('[data-tab="mehr"]'); if (!b) return;
+    var w = cloudState().warn, d = b.querySelector(".warn");
+    if (w && !d) { d = document.createElement("i"); d.className = "warn"; d.setAttribute("aria-label", "Sicherung prüfen"); b.appendChild(d); }
+    else if (!w && d) d.remove();
+  }
+  function umzugDone() { try { return !!(localStorage.getItem("sg-umzug-v1") || localStorage.getItem("sg-umzug-raus-v1")); } catch (e) { return true; } }
   function renderMehr() {
     var c = C(), notes = c && c.notes ? c.notes.list().filter(function (n) { return !n.done; }).length : 0;
     var open = c && c.tasks ? c.tasks.list().filter(function (q) { return !q.done; }).length : 0;
-    var w = null; try { w = JSON.parse(localStorage.getItem("sg-wissen-v1") || "null"); } catch (e) {}
-    function r(go, ic, col, t, s, val) { return '<button class="row" data-m="' + go + '" style="--c:' + col + '"><span class="ic">' + ico(ic) + '</span><span class="tx"><b>' + t + "</b><small>" + s + "</small></span>" + (val ? '<span class="val">' + val + "</span>" : "") + '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></button>'; }
+    function r(go, ic, col, t, s, val, cls) { return '<button class="row' + (cls ? " " + cls : "") + '" data-m="' + go + '" style="--c:' + col + '"><span class="ic">' + ico(ic) + '</span><span class="tx"><b>' + t + "</b><small>" + s + "</small></span>" + (val ? '<span class="val">' + val + "</span>" : "") + '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>'; }
+    var link = '<span class="lnk-ic" aria-label="Verknüpfung">↗</span>';
+    // Abgleich und Sicherung
+    var hk = "", er = "", cl = cloudState(), nat = !!window.SGNative;
+    if (c && c.handy && c.handy.available()) { var hs = c.handy.state(); hk = hs.err ? '<em class="bad">! Fehler</em>' : hs.on ? "An · " + ago(hs.last) : "Aus"; }
+    else if (c && c.phone) { var ps = c.phone.state(), neu = c.phone.pending("neu").length; hk = neu ? neu + " neu" : ps.last ? "zuletzt " + ago(ps.last) : ""; }
+    if (c && c.erinnern && c.erinnern.available()) { var rs = c.erinnern.state(); er = rs.err ? '<em class="bad">! Fehler</em>' : rs.on ? "An · " + (rs.n || 0) + " geplant" : "Aus"; }
+    var big = !umzugDone();
+    var umz = nat ? r("umzugin", "download", "var(--c-training)", "Daten aus Chrome übernehmen", "Umzugsdatei aus der Chrome-App einlesen", "", big ? "big" : "")
+      : r("umzug", "phone", "var(--c-training)", "In die Android-App umziehen", "Umzugsdatei für die APK erstellen", "", big ? "big" : "");
+    var newVer = window.SGNewVer && window.SGNewVer !== window.SGVersion ? window.SGNewVer : "";
     $("n-mehr").firstElementChild.innerHTML =
+      '<label class="msearch">' + ico("search") + '<input type="search" id="mehrq" placeholder="Einstellungen und Seiten suchen" autocomplete="off" enterkeyhint="search" aria-label="Einstellungen und Seiten suchen"></label>' +
+      (big ? '<div class="grp"><div class="cells">' + umz + "</div></div>" : "") +
       '<div class="grp"><header><span>Planen</span></header><div class="cells">' +
-      r("aufgaben", "check", "var(--c-aufgabe)", "Aufgaben", "Heute, Geplant, Wichtig, Erledigt", open || "") +
-      r("notizen", "note", "var(--c-notiz)", "Notizen", "Ideen, optional mit Erinnerung", notes || "") +
-      r("week", "wand", "var(--c-training)", "Woche planen", "Training, Mobility, Atmung, Lernen eintragen", "") +
-      r("handy", "phone", "var(--c-termin)", "Handykalender", "Termine mit dem Kalender auf dem Handy abgleichen", c && c.phone ? (c.phone.pending("neu").length || "") : "") + "</div></div>" +
-      '<div class="grp"><header><span>Lesen & Lernen</span></header><div class="cells">' +
-      r("bibel", "book", "var(--c-bibel)", "Bibel", "Abschnitt von heute, Bibliothek, Favoriten", "") +
-      r("wissen", "star", "#5ac8fa", "Sportwissenschaft", "Lehrbuch, Karteikarten, Quiz", w && w.sum && w.sum.pct ? w.sum.pct + " %" : "") +
+      r("aufgaben", "check", "var(--c-aufgabe)", "Aufgaben", "Heute, geplant, wichtig, erledigt", open ? open + " offen" : "") +
+      r("notizen", "note", "var(--c-notiz)", "Notizen", "Ideen, optional mit Erinnerung", notes ? notes + " offen" : "") +
+      r("week", "wand", "var(--c-training)", "Woche planen", "Training, Mobility, Atmung, Lernen", "") +
+      r("std", "clock", "var(--c-training)", "Standardwoche übernehmen", "deine übliche Woche mit einem Tipp", "") + "</div></div>" +
+      '<div class="grp"><header><span>Lesen und Lernen</span></header><div class="cells">' +
+      r("bibel", "book", "var(--c-bibel)", "Bibel", "Abschnitt von heute, Bibliothek", "") +
+      r("wissen", "star", "#5ac8fa", "Sportwissenschaft", "Hauptort: Training › Seitenmenü", link) +
       r("pause", "coffee", "#e5a04b", "Pause", "Ablenken, Wissen, Quiz", "") + "</div></div>" +
-      '<div class="grp"><header><span>Einstellungen</span></header><div class="cells">' +
-      r("design", "palette", "#8f7cf7", "Design", "10 Farbwelten", "") +
-      r("sync", "cloud", "#5ac8fa", "Cloud-Sicherung", "Abgleich über GitHub – die App läuft immer offline", "") +
-      r("tset", "gear", "var(--c-training)", "Training einstellen", "Ziele, Ruhetage, Erinnerungen, Daten", "") +
-      (window.SGInstallEvt ? r("install", "download", "var(--muted)", "App installieren", "Auf den Startbildschirm", "") : "") +
-      (window.SGNative && c && c.erinnern ? r("erinnern", "bell", "#e5a04b", "Erinnerungen", c.erinnern.state().on ? "An – " + (c.erinnern.state().n || 0) + " geplant (14 Tage)" : "Aus – Benachrichtigungen auch bei geschlossener App", "") : "") +
-      (window.SGNative ? r("umzugin", "download", "var(--c-training)", "Daten aus Chrome übernehmen", "Umzugsdatei aus der Chrome-App einlesen", "")
-        : r("umzug", "phone", "var(--c-training)", "In die Android-App umziehen", "Alle Daten als Umzugsdatei für die APK", "")) +
-      r("update", "download", "var(--muted)", "Version " + esc(window.SGVersion || ""), window.SGNative ? "Neue Version von GitHub holen" : "Version aktualisieren", "") + "</div></div>";
+      '<div class="grp"><header><span>Abgleich und Sicherung</span></header><div class="cells">' +
+      r("handy", "phone", "var(--c-termin)", "Handykalender", nat ? "Abgleich mit dem Kalender des Handys" : "Termine mit dem Handy austauschen", hk) +
+      (er ? r("erinnern", "bell", "#e5a04b", "Erinnerungen", "Benachrichtigungen, auch offline", er) : "") +
+      r("sync", "cloud", "#5ac8fa", "Cloud-Sicherung", "Abgleich über GitHub", cl.warn ? '<em class="bad">! ' + cl.val + "</em>" : cl.val) +
+      r("backup", "download", "var(--muted)", "Alles als Datei sichern", "alle Daten in einer Datei", "") +
+      (big ? "" : umz) + "</div></div>" +
+      '<div class="grp"><header><span>Darstellung und Einstellungen</span></header><div class="cells">' +
+      r("design", "palette", "#8f7cf7", "Design", "Farbwelt und Glaseffekt", "") +
+      r("tset", "gear", "var(--c-training)", "Training einstellen", "Hauptort: Training › Seitenmenü", link) +
+      (window.SGInstallEvt && !nat ? r("install", "download", "var(--muted)", "App installieren", "auf den Startbildschirm", "") : "") +
+      toggleRow('data-m="autodw"', "Seitenmenü automatisch öffnen", "beim Wechsel zu Training, Schule …", !!M.autoDw) + "</div></div>" +
+      '<div class="grp"><header><span>Über die App</span></header><div class="cells">' +
+      r("update", "download", "var(--muted)", "Version " + esc(window.SGVersion || ""), nat ? "neue Version von GitHub holen" : "Version aktualisieren", newVer ? '<em class="hi">Neu: ' + esc(newVer) + "</em>" : "") +
+      r("neu", "star", "var(--muted)", "Was ist neu", "Änderungen der letzten Versionen", "") +
+      r("diag", "pulse", "var(--muted)", "Fehlerprotokoll", "für die Fehlersuche am Handy", (window.SGShellDiag() || []).length || "") + "</div></div>";
+    mehrBadge();
+  }
+  // einheitlicher Schalter (Zeile mit Schalter rechts) für Mehr und die Einstellungs-Blätter
+  function toggleRow(attrs, t, sub, on) {
+    return '<label class="row tgl"><span class="tx"><b>' + t + "</b>" + (sub ? "<small>" + sub + "</small>" : "") + '</span><input type="checkbox" role="switch" class="swi" ' + attrs + (on ? " checked" : "") + "></label>";
+  }
+  function whatsNewSheet() {
+    sheet("<h3>Was ist neu</h3>" + WHATSNEW.map(function (v) { return '<p class="s"><b>Version ' + v[0] + "</b></p><ul class=\"wn\">" + v[1].map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>"; }).join("") +
+      '<div class="btns"><button class="btn p" data-s="x">Fertig</button></div>', function () { closeSheet(); });
+  }
+  function diagSheet() {
+    var l = window.SGShellDiag() || [], txt = l.map(function (x) { var d = new Date(x.at); return iso(d) + " " + pad(d.getHours()) + ":" + pad(d.getMinutes()) + " · " + x.t + " · " + (x.v || "") + (x.on === false ? " · offline" : ""); }).reverse().join("\n");
+    sheet('<h3>Fehlerprotokoll</h3><p class="s">Hier merkt sich die App Auffälligkeiten (z. B. wenn die untere Leiste verrutscht war). Version ' + esc(window.SGVersion || "") + " · " + esc(navigator.userAgent.replace(/^.*?\(|\).*$/g, "").slice(0, 60)) + "</p>" +
+      (l.length ? '<textarea class="diag" readonly>' + esc(txt) + "</textarea>" : '<p class="s">Keine Einträge – alles in Ordnung.</p>') +
+      '<div class="btns">' + (l.length ? '<button class="btn" data-s="clear">Leeren</button><button class="btn p" data-s="copy">Kopieren</button>' : '<button class="btn p" data-s="x">Fertig</button>') + "</div>", function (act) {
+      if (act === "clear") { try { localStorage.removeItem("sg-diag-v1"); } catch (e) {} closeSheet(); renderMehr(); snack("Protokoll geleert"); }
+      else if (act === "copy") { var t = sheetEl.querySelector("textarea"); t.select(); try { (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).then(function () { snack("Kopiert"); }, function () { document.execCommand("copy"); snack("Kopiert"); }); } catch (e) { snack("Bitte markieren und kopieren"); } }
+      else closeSheet();
+    });
   }
   $("n-mehr").addEventListener("click", function (e) {
-    var b = e.target.closest("[data-m]"); if (!b) return;
+    var b = e.target.closest("[data-m]"); if (!b || b.tagName === "INPUT") return;
     var m = b.dataset.m, c = C();
+    if (m === "autodw") return;
     if (m === "week") c.weekPlan();
+    else if (m === "std") c.weekPlanStd();
     else if (m === "handy") phoneSheet();
     else if (m === "wissen") go("training", "wissen");
     else if (m === "design") c.openDesign();
     else if (m === "sync") c.openSync();
     else if (m === "install") { if (window.SGInstallEvt) window.SGInstallEvt.prompt(); }
     else if (m === "erinnern") remindSheet();
-    else if (m === "umzug") moveOut();
+    else if (m === "backup") moveOut();
+    else if (m === "umzug") { try { localStorage.setItem("sg-umzug-raus-v1", String(Date.now())); } catch (x) {} moveOut(); }
     else if (m === "umzugin") moveInSheet(false);
+    else if (m === "neu") whatsNewSheet();
+    else if (m === "diag") diagSheet();
     else if (m === "update") { if (window.SGUpdate) window.SGUpdate.check(function (t) { snack(t); }); }
     else go(m, null, null, { push: true });
   });
+  $("n-mehr").addEventListener("change", function (e) { if (e.target.matches('[data-m="autodw"]')) { M.autoDw = e.target.checked; saveM(); } });
+  // Suchfeld oben: öffnet die Suche mit dem Getippten
+  $("n-mehr").addEventListener("input", function (e) { if (e.target.id === "mehrq" && e.target.value.trim() && C()) { var q = e.target.value; e.target.value = ""; e.target.blur(); C().palette(q); } });
 
   /* ---------- Blatt von unten, Hinweis ---------- */
   var sheetEl = $("sheet"), sheetOpen = false, sheetCb = null;
@@ -1080,7 +1150,7 @@
     s.classList.add("on"); if (undo) s.querySelector("button").onclick = function () { undo(); s.classList.remove("on"); };
     clearTimeout(snackT); snackT = setTimeout(function () { s.classList.remove("on"); }, undo ? 6000 : 3500);
   }
-  addEventListener("sg-update", function (e) { snack("Version " + e.detail + " ist da.", function () { window.SGUpdate.install(function (t) { snack(t); }, e.detail); }, "Aktualisieren"); });
+  addEventListener("sg-update", function (e) { window.SGNewVer = e.detail; if (cur.v === "mehr") renderMehr(); snack("Version " + e.detail + " ist da.", function () { window.SGUpdate.install(function (t) { snack(t); }, e.detail); }, "Aktualisieren"); });
 
   /* ---------- Kopf, Plus, Suche ---------- */
   actsEl.addEventListener("click", function (e) { var b = e.target.closest("[data-act]"); if (b && b.dataset.act === "search" && C()) C().palette(); });

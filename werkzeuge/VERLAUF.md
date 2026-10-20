@@ -191,6 +191,29 @@ Prüfung Phase 4 (Prüf-Agent, 12 Befunde):
 | (Test) | Kapitel-Auswahl im Quiz änderte den Filter der Karteikarten | gemeinsamer Baustein: Auswahlfeld trägt jetzt, welcher Filter gemeint ist (`data-fsel`) – vom Test „L Quiz“ gefunden |
 Version 3.7.0.
 
+### Phase 5 – Mehr neu ordnen (in Arbeit)
+Umgesetzt (app/js/1-app.js `renderMehr`, app/index.html):
+- Oben Suchfeld „Einstellungen und Seiten suchen“ – öffnet die vorhandene Suche mit dem Getippten (keine zweite Suche).
+- Fünf Gruppen; jede Zeile zeigt rechts ihren Zustand (`.val`), Untertitel einzeilig, Zeilen ≥ 60 px.
+- Cloud-Sicherung: „Aus“ / „vor 2 Std.“ / „! vor 9 Tagen“ bzw. „! Fehler“ in Warnfarbe; dazu roter Punkt am Tab „Mehr“ (`mehrBadge()`, bei jeder Darstellung).
+- Handykalender: APK „An · heute 08:12“ / „Aus“ / „! Fehler“, Browser „N neu“ oder „zuletzt …“. Erinnerungen (nur APK): „An · 12 geplant“ / „Aus“.
+- Umzug groß oben, solange nicht erledigt (`sg-umzug-v1`, im Browser zusätzlich `sg-umzug-raus-v1` nach dem Erstellen der Umzugsdatei), danach kleine Zeile in „Abgleich und Sicherung“.
+- Neu: „Standardwoche übernehmen“, „Alles als Datei sichern“ (gleiche Datei wie der Umzug), „Was ist neu“, „Fehlerprotokoll“ (SGShellDiag, Kopieren/Leeren),
+  Schalter „Seitenmenü automatisch öffnen“ (Standard aus, `sg-app-v1.autoDw`). Version zeigt „Neu: x.y.z“, sobald eine neuere bekannt ist.
+- Ein Schalter-Baustein für alle Blätter (`toggleRow`, `input.swi role=switch`) statt nackter Kontrollkästchen in Handykalender/Erinnerungen/Handy-Optionen.
+- Höhe auf 360 × 800: 1391 px (≤ 2 × 800).
+Neue Orte (alles von früher erreichbar):
+| Früher | Jetzt |
+|---|---|
+| Planen: Aufgaben, Notizen, Woche planen | gleich, Zahl der offenen rechts; dazu „Standardwoche übernehmen“ |
+| Planen: Handykalender | Abgleich und Sicherung |
+| Lesen & Lernen: Bibel, Sportwissenschaft, Pause | Lesen und Lernen; Sportwissenschaft als Verknüpfung ↗ (Hauptort Training › Seitenmenü) |
+| Einstellungen: Design | Darstellung und Einstellungen |
+| Einstellungen: Cloud-Sicherung, Erinnerungen, Umzug | Abgleich und Sicherung |
+| Einstellungen: Training einstellen | Darstellung und Einstellungen, Verknüpfung ↗ (Hauptort Training › Seitenmenü) |
+| Einstellungen: App installieren | Darstellung und Einstellungen (nur im Browser) |
+| Einstellungen: Version | Über die App |
+
 ## 3.5.0 – erste veröffentlichte Android-App
 
 Secret `APK_PASSWORT` vom Nutzer eingetragen (Passwort bekam er als PDF, weil er die .txt nicht öffnen konnte).
