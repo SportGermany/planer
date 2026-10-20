@@ -19,7 +19,9 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   await wait(8000);
   const wv = await dev.webView({ pkg: PKG }, { timeout: 60000 });
   const page = await wv.page();
-  const errs = []; page.on('pageerror', e => errs.push(e.message)); page.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
+  const errs = []; page.on('pageerror', e => errs.push(e.message)); page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push('console: ' + m.text()); });
+  page.on('response', r => { if (r.status() >= 400) errs.push('Datei fehlt (' + r.status() + '): ' + r.url()); });
+  page.on('requestfailed', r => { if (!/^https:\/\/(api\.github|github)\.com/.test(r.url())) errs.push('Laden fehlgeschlagen: ' + r.url() + ' ' + (r.failure() || {}).errorText); });
   const logcat = async (name) => {
     const lc = execSync('adb logcat -d -t 1500', { encoding: 'utf8', maxBuffer: 1 << 24 }).split('\n').filter(l => /Capacitor|chromium|Console|WebView|AndroidRuntime|planer|FATAL|lowmemory|ActivityManager.*(Kill|died)|crash|renderer/i.test(l)).slice(-200).join('\n');
     fs.writeFileSync(OUT + '/logcat-' + name + '.txt', lc); console.log('--- logcat ' + name + ' ---\n' + lc.split('\n').slice(-60).join('\n'));
