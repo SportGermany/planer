@@ -7,8 +7,8 @@ const U = 'http://localhost:8765';
   { const p = await b.newPage({ viewport: { width: 700, height: 900 } });
     let svg = '<svg xmlns="http://www.w3.org/2000/svg" width="700" height="900" style="background:#fff"><path d="M80 60 C 300 60 300 200 120 260 S 200 480 520 420 S 620 700 300 760 L 200 860" stroke="#333" stroke-width="18" fill="none"/>';
     [[220,90],[260,200],[150,300],[380,440],[560,520],[470,720],[260,800]].forEach((q,i)=>svg+=`<circle cx="${q[0]}" cy="${q[1]}" r="18" fill="#c00"/><text x="${q[0]}" y="${q[1]+6}" font-size="18" text-anchor="middle" fill="#fff" font-family="sans-serif">${i+1}</text>`);
-    await p.setContent('<body style="margin:0">' + svg + '</svg></body>'); await p.screenshot({ path: 'fakemap.png' }); await p.close(); }
-  const IMG = fs.readFileSync('fakemap.png');
+    await p.setContent('<body style="margin:0">' + svg + '</svg></body>'); await p.screenshot({ path: require('os').tmpdir() + '/fakemap.png' }); await p.close(); }
+  const IMG = fs.readFileSync(require('os').tmpdir() + '/fakemap.png');
   const errs = [];
   async function mock(ctx, ok = true) {
     await ctx.route(/wikipedia\.org|wikimedia\.org/, async route => {
@@ -29,10 +29,10 @@ const U = 'http://localhost:8765';
   }
   for (const [w, h, sz] of [[360, 780, 'p'], [800, 1280, 'tp'], [1280, 800, 'tl']]) {
     const ctx = await b.newContext({ viewport: { width: w, height: h }, isMobile: w < 1000, hasTouch: true });
-    await ctx.addInitScript(fs.readFileSync('seed.js', 'utf8')); await mock(ctx);
+    await ctx.addInitScript(fs.readFileSync(__dirname + '/seed.js', 'utf8')); await mock(ctx);
     const p = await ctx.newPage(); p.on('pageerror', e => errs.push(sz + ' ' + e.message));
     p.on('console', m => m.type() === 'error' && !/favicon/.test(m.text()) && errs.push(sz + ' console ' + m.text()));
-    await p.goto(U + '/planer/training/bahnplan/'); await p.waitForTimeout(600);
+    await p.goto(U + '/planer/training/bahnplan/?einzeln'); await p.waitForTimeout(600);
     await p.locator('[data-a=add]').first().click(); await p.locator('[data-cat=winterberg]').click(); await p.waitForTimeout(1500);
     const st1 = await p.evaluate(() => [track().map && track().map.src, track().map && track().map.title, !!document.querySelector('#imgwrap img'), !!document.querySelector('.placebar'), document.querySelector('.credit') && document.querySelector('.credit').textContent]);
     console.log(sz, 'Auto-Wiki:', JSON.stringify(st1));
@@ -96,11 +96,11 @@ const U = 'http://localhost:8765';
     await p.locator('#cuName').fill('Naturbahn Test'); await p.locator('[data-a=custom]').click(); await p.waitForTimeout(800);
     console.log(sz, 'ohne Netz:', (await p.locator('#wikiRes').textContent()).slice(0, 50));
     await p.locator('#sheetPane [data-a=close]').click(); await p.waitForTimeout(200);
-    await p.locator('#imgIn').setInputFiles('fakemap.png'); await p.waitForTimeout(800);
+    await p.locator('#imgIn').setInputFiles(require('os').tmpdir() + '/fakemap.png'); await p.waitForTimeout(800);
     console.log(sz, 'eigenes Bild:', await p.evaluate(() => [track().map.src, !!document.querySelector('.placebar')]).then(JSON.stringify));
     await p.close();
     const q = await ctx.newPage(); q.on('pageerror', e => errs.push(sz + ' emb ' + e.message));
-    await q.goto(U + '/planer/training/#bahnplan/buch'); await q.waitForTimeout(2200);
+    await q.goto(U + '/planer/training/?einzeln#bahnplan/buch'); await q.waitForTimeout(2200);
     const fr = q.frameLocator('iframe[src="bahnplan/"]');
     console.log(sz, 'eingebettet Buch:', await fr.locator('.tabs [data-v=buch]').getAttribute('class'));
     await q.screenshot({ path: `w-${sz}-emb.png` });

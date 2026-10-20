@@ -7,8 +7,8 @@ const U = 'http://localhost:8765';
   { const p = await b.newPage({ viewport: { width: 700, height: 900 } });
     let svg = '<svg xmlns="http://www.w3.org/2000/svg" width="700" height="900" style="background:#fff"><path d="M80 60 C 300 60 300 200 120 260 S 200 480 520 420 S 620 700 300 760 L 200 860" stroke="#333" stroke-width="18" fill="none"/>';
     [[220,90],[260,200],[150,300],[380,440],[560,520],[470,720],[260,800]].forEach((q,i)=>svg+=`<circle cx="${q[0]}" cy="${q[1]}" r="18" fill="#c00"/><text x="${q[0]}" y="${q[1]+6}" font-size="18" text-anchor="middle" fill="#fff" font-family="sans-serif">${i+1}</text>`);
-    await p.setContent('<body style="margin:0">' + svg + '</svg></body>'); await p.screenshot({ path: 'fakemap.png' }); await p.close(); }
-  const IMG = fs.readFileSync('fakemap.png');
+    await p.setContent('<body style="margin:0">' + svg + '</svg></body>'); await p.screenshot({ path: require('os').tmpdir() + '/fakemap.png' }); await p.close(); }
+  const IMG = fs.readFileSync(require('os').tmpdir() + '/fakemap.png');
   const errs = [];
   async function mock(ctx, ok = true) {
     await ctx.route(/wikipedia\.org|wikimedia\.org/, async route => {
@@ -29,11 +29,11 @@ const U = 'http://localhost:8765';
   }
   for (const [w, h, sz] of [[360, 780, 'p'], [800, 1280, 'tp'], [1280, 800, 'tl']]) {
     const ctx = await b.newContext({ viewport: { width: w, height: h }, isMobile: w < 1000, hasTouch: true });
-    await ctx.addInitScript(fs.readFileSync('seed.js', 'utf8')); await mock(ctx);
+    await ctx.addInitScript(fs.readFileSync(__dirname + '/seed.js', 'utf8')); await mock(ctx);
     const p = await ctx.newPage(); p.on('pageerror', e => errs.push(sz + ' ' + e.message));
     p.on('console', m => m.type() === 'error' && errs.push(sz + ' console ' + m.text()));
     // alte Daten (ohne Starts, mit lenkart) müssen übernommen werden
-    await p.goto(U + '/planer/training/bahnplan/');
+    await p.goto(U + '/planer/training/bahnplan/?einzeln');
     await p.evaluate(() => { localStorage.setItem('bahnplan.v1', JSON.stringify({ tracks: [{ id: 'old1', cat: 'koenigssee', name: 'Königssee alt', ort: '', land: 'Deutschland', len: 1251, note: '', map: null, curves: [1,2,3,4,5,6].map(n => ({ n, name: '', dir: 'L', type: 'Kurve', angle: 90, diff: 3, status: 'neu', cue: n === 2 ? 'alte Ansage' : '', o: n === 2 ? { lenkart: 'Schultern', radius: 'eng' } : {}, f: {}, runs: [], line: [], x: null, y: null })) }], cur: 'old1' })); S = JSON.parse(localStorage.getItem('bahnplan.v1')); });
     await p.reload(); await p.waitForTimeout(600);
     console.log(sz, 'Altdaten:', await p.evaluate(() => { const t = track(); return JSON.stringify([t.starts.map(s => s.name + '@' + s.from), t.curves[1].o.lenkmittel, t.curves[1].cue]); }));
@@ -108,7 +108,7 @@ const U = 'http://localhost:8765';
     console.log(sz, 'Überlauf:', await p.evaluate(w => innerWidth - w + document.documentElement.scrollWidth - innerWidth, w));
     if (sz === 'p') { await p.locator('.tabs [data-v=buch]').click(); await p.waitForTimeout(200); await p.emulateMedia({ media: 'print' }); await p.pdf({ path: 'bahnplan-druck2.pdf', format: 'A4', printBackground: true }); await p.emulateMedia({ media: 'screen' }); }
     const q = await ctx.newPage(); q.on('pageerror', e => errs.push(sz + ' emb ' + e.message));
-    await q.goto(U + '/planer/training/#bahnplan/laeufe'); await q.waitForTimeout(2200);
+    await q.goto(U + '/planer/training/?einzeln#bahnplan/laeufe'); await q.waitForTimeout(2200);
     console.log(sz, 'eingebettet Läufe:', await q.frameLocator('iframe[src="bahnplan/"]').locator('.tabs [data-v=laeufe]').getAttribute('class'));
     await q.screenshot({ path: `s-${sz}-emb.png` });
     await ctx.close();

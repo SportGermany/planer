@@ -5,6 +5,22 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## 4.0.0 (in Arbeit) – Umbau nach `werkzeuge/UMBAU-4.md`
+
+Auftrag des Nutzers als Claude-Doc, im Repo gesichert als `werkzeuge/UMBAU-4.md` (10 Phasen, Abnahme in Abschnitt 12).
+Entscheidungen: alle Standardwerte aus Abschnitt 2 übernommen (keine Rückfragen nötig): Laufen und Kraft getrennt ·
+Mobility behält Chips (Feld `nav` in V) · Tipp auf Tag wählt ihn und scrollt nach oben, langer Druck = Neu · Bibel/Pause mit Seitenmenü ·
+Seitenmenü nur über Symbol/Pfadzeile/erneuten Tab-Tipp (kein Randwischen) · Tablet ≥ 900 px Seitenmenü als feste Spalte · Zielversion 4.0.0.
+
+### Phase 0 – Vorbereitung (erledigt)
+- `werkzeuge/tests/inventar.js` erstellt; `inventar-vorher.json`: 41 Seiten, 41 Menüpunkte (Chips), 44 Befehle, 12 Mehr-Einträge.
+  Vergleich später: `node werkzeuge/tests/inventar.js --vergleich werkzeuge/tests/inventar-vorher.json werkzeuge/tests/inventar-nachher.json`.
+- Ausgangstests grün: suite3 48/48, offline3 44/44, apk.js, upd.js, bahnplan-1, bahnplan-2.
+
+| Fehler | Ursache | Lösung |
+| --- | --- | --- |
+| bahnplan-1/-2 liefen nicht | Pfade relativ zum Arbeitsordner (`seed.js`, `fakemap.png`), Seite wurde in die Hülle umgeleitet | `__dirname`/Temp-Ordner, Seiten mit `?einzeln` öffnen |
+
 ## 3.5.0 – erste veröffentlichte Android-App
 
 Secret `APK_PASSWORT` vom Nutzer eingetragen (Passwort bekam er als PDF, weil er die .txt nicht öffnen konnte).
