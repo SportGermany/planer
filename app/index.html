@@ -408,6 +408,12 @@ html.m3 .mc.s .n { background: var(--acc); color: var(--accfg); }
 html.m3 .seg2 { border-radius: 20px; border-color: var(--faint); }
 html.m3 .seg2 button[aria-pressed="true"] { background: var(--sec); }
 html.m3 .calhd b { font-weight: 500; font-size: 18px; }
+/* „Starten“ als runder Symbolknopf (M3): der Titel behält den Platz, auch bei großer Schrift; der Text bleibt für die Bedienhilfe */
+.go svg { display: none; }
+.go em { font-style: normal; }
+html.m3 .ev .go { width: 44px; height: 44px; padding: 0; border-radius: 50%; background: color-mix(in srgb, var(--c) 30%, var(--s2)); }
+html.m3 .ev .go svg { display: block; width: 20px; height: 20px; }
+html.m3 .ev .go em { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* Tablet und Handy quer: Leiste links bleibt so hoch wie der Bildschirm */
 @media (min-width: 900px) { html.m3 .nav { height: auto; border-right: 0; } }
 </style>

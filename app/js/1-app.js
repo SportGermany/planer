@@ -13,6 +13,7 @@
 
   /* ---------- Symbole ---------- */
   var P = {
+    play: '<path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/>',
     cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
     run: '<circle cx="14.5" cy="4.5" r="2"/><path d="M8 21l3-6 3 2 1 4M10.5 15l1-5 4 2 3-1M8 10l3-2"/>',
     stretch: '<circle cx="12" cy="4.5" r="2"/><path d="M12 7v6l-4 7M12 13l4 7M5 10l7-1 7 1"/>',
@@ -692,7 +693,7 @@
     if (e.of > 1) tm = (e.time ? esc(e.time) : e.end ? "<small>bis</small>" + esc(e.end) : "") + "<small>Tag " + e.day + "/" + e.of + "</small>";
     var sub = A.label + (e.of > 1 ? " · Tag " + e.day + " von " + e.of : "") + (e.st === "done" ? " · erledigt" : e.st === "skip" ? " · ausgelassen" + (e.why ? " (" + e.why + ")" : "") : "") + (e.note && a !== "notiz" ? " · " + e.note.split("\n")[0].slice(0, 50) : "");
     return '<button class="ev' + (e.st === "done" ? " evd" : e.st === "skip" ? " skip" : "") + '" data-ev="' + e._k + '" style="--c:' + A.c + '"><span class="tm">' + tm + '</span><span class="bar"></span><span class="tx"><b>' + (e.st === "done" ? '<span class="ck1" aria-hidden="true">✓</span> ' : "") + (e.star ? '<span class="st1" aria-label="wichtig">★</span> ' : "") + esc(e.title || "(ohne Titel)") + "</b><small>" + esc(sub) + "</small></span>" +
-      (A.act && isToday && !e.st ? '<span class="go" data-start="' + e._k + '">' + A.act + "</span>" : "") + "</button>";
+      (A.act && isToday && !e.st ? '<span class="go" data-start="' + e._k + '">' + ico("play") + "<em>" + A.act + "</em></span>" : "") + "</button>";
   }
   function taskRow(q) {
     var late = q.due < today() && !q.done;

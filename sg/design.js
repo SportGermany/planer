@@ -88,7 +88,7 @@
     panel: { bg: "bg", panel: "s1", "panel-2": "s2", "panel-3": "s3", line: "line", text: "ink", "text-dim": "muted", "text-faint": "faint" },
     bibel: { bg: "bg", surface: "s1", surface2: "s2", ink: "ink", muted: "muted", accent: "acc", "accent-bright": "acc" },
     rodeln: { bg: "bg", surface: "s1", surface2: "s2", ink: "ink", muted: "muted", line: "line", accent: "acc", "accent-soft": "accsoft", "accent-ink": "accfg", mat: "s2", floor: "s3", far: "faint" },
-    lernplan: { bg: "bg", surface: "s1", surface2: "s2", text: "ink", muted: "muted", line: "line", weekend: "bg", grid: "line", accent: "acc", "accent-soft": "accsoft" },
+    lernplan: { bg: "bg", surface: "s1", surface2: "s2", text: "ink", muted: "muted", line: "line", weekend: "bg", grid: "line", accent: "acc", "accent-soft": "accsoft", "accent-ink": "accfg" },
     puls: { bg: "bg", surface: "s1", ink: "ink", muted: "muted", line: "line", breath: "acc", "breath-soft": "accsoft" },
     kalender: { bg: "bg", s1: "s1", s2: "s2", s3: "s3", line: "line", line2: "s2", ink: "ink", muted: "muted", faint: "faint", acc: "acc", accfg: "accfg" },
     bahn: { bg: "bg", s1: "s1", s2: "s2", s3: "s3", line: "line", ink: "ink", muted: "muted", faint: "faint", acc: "acc", accfg: "accfg" }
@@ -176,7 +176,8 @@
     var g = "html:not(.sg-noglass)";
     var css = "";
     var cards = GLASS_CARDS[MODE];
-    if (cards) css += cards + "{background-color:" + t.s1 + "!important;border:0!important;border-radius:14px!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}";
+    // Material You: Karten als Tonfläche (Fläche mit etwas Akzent) und runder
+    if (cards) css += cards + "{background-color:" + (t.m3 ? mix(t.s1, t.acc, .06) : t.s1) + "!important;border:0!important;border-radius:" + (t.m3 ? 16 : 14) + "px!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}";
     var nav = GLASS_NAV[MODE];
     // In der Übersicht-Navigation steuert die Übersicht die Unterseiten der Bereiche – deren eigene Leiste entfällt
     if (nav && DIRPARENT) return css + nav[0] + "{display:none!important}" + (SHELLHIDE[MODE] || "");
@@ -284,7 +285,8 @@
   }
   // Android-App, oberstes Fenster: Leisten in der Flächenfarbe; Farben aus dem Hintergrundbild holen (ändern sich mit dem Hintergrund)
   function SP() { try { if (window.top !== window) return null; var C = window.Capacitor; return C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.PlanerSystem || null; } catch (e) { return null; } }
-  function bars(t) { var P = SP(); if (P && P.bars) P.bars({ bg: t.bg, light: false }).catch(function () {}); }
+  // oben Fläche, unten Farbe der unteren Leiste (M3: Fläche mit 8 % Akzent) – sonst zweifarbiger Streifen bei 3-Tasten-Navigation
+  function bars(t) { var P = SP(); if (P && P.bars) P.bars({ bg: t.bg, nav: t.m3 ? mix(t.s1, t.acc, .08) : t.s1, light: false }).catch(function () {}); }
   function loadMonet() {
     var P = SP(); if (!P || !P.colors) return;
     P.colors().then(function (m) {
@@ -295,8 +297,10 @@
   function glassOn() { try { return localStorage.getItem("sg-glass") !== "0"; } catch (e) { return true; } }
   document.documentElement.classList.toggle("sg-noglass", !glassOn());
   window.SGNav = (GLASS_NAV[MODE] || [])[0] || "";
-  setTimeout(loadMonet, 600);
-  document.addEventListener("visibilitychange", function () { if (!document.hidden) loadMonet(); });
+  // ohne gespeicherte Farben sofort holen (sonst erst Violett, dann Umfärben)
+  try { if (!localStorage.getItem(MONET_KEY)) loadMonet(); else setTimeout(loadMonet, 600); } catch (e) { setTimeout(loadMonet, 600); }
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) { loadMonet(); bars(get(currentId())); } });
+  window.addEventListener("resize", function () { clearTimeout(bars.t); bars.t = setTimeout(function () { bars(get(currentId())); }, 300); });   // nach Drehen setzt Android die Leisten zurück
   // kurze Rückmeldung per Vibration (Android-App); im Browser still
   window.SGHaptic = function (kind) { var P = SP() || (function () { try { return window.top.Capacitor.Plugins.PlanerSystem; } catch (e) { return null; } })(); if (P && P.haptic) P.haptic({ kind: kind || "tap" }).catch(function () {}); };
   window.SGTheme = {
