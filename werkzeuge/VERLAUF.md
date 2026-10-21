@@ -338,6 +338,9 @@ Prüfung Phase 7 (Prüf-Agent, 21 Befunde):
 | 20 | Wochentag folgte Datum nicht; Knöpfe 40 px | folgt bei einem gewählten Tag; 44 px |
 | 21 | Rückgängig hinterließ `null`-Felder | stellt den alten Eintrag genau wieder her |
 
+Veröffentlichung 3.8.0: Erster Emulator-Lauf brach ab – im Emulator starben die Google-Play-Dienste, Android beendete die App mit
+(„depends on provider …FontsProvider in dying proc“); kein Fehler der App. Einmal neu gestartet: grün, Release v3.8.0 mit planer-3.8.0.apk.
+
 ### Phase 8 – Design „Material You“ (in Arbeit, Version 3.9.0)
 Wahl der Nutzerin: Vorschlag 1 „Material You“ (Designvorschläge mit je zwei Bildern als Artefakt). Plan:
 - Zentrale Farbwelt `material` in design.js (Standard, einmalig umgestellt; andere Designs wählbar), dunkles M3-Schema.
