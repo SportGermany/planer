@@ -1585,6 +1585,33 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(await p.evaluate(() => SharedCalendar.abo.list().length) === 0 && hits >= 1, 'entfernt');
     assert(!e.length, e.join(' | ')); await c.close();
   });
+  /* ---------- P8: Design Material You ---------- */
+  await test('P8 Material You: Standard für alle Seiten, Roboto, Tonflächen; Blatt lässt sich nach unten wegziehen; Mobility unverändert mit Chips', async () => {
+    const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
+    await open(p, '#kalender');
+    const r = await p.evaluate(() => ({ id: SGTheme.current().id, m3: document.documentElement.classList.contains('m3'), font: getComputedStyle(document.body).fontFamily, nav: getComputedStyle(document.querySelector('.nav')).borderTopWidth, acc: getComputedStyle(document.documentElement).getPropertyValue('--acc').trim() }));
+    assert(r.id === 'material' && r.m3 && /^Roboto/.test(r.font) && r.nav === '0px' && r.acc === '#d0bcff', 'Material You ' + JSON.stringify(r));
+    // eingebettete Seite bekommt dieselbe Farbwelt
+    await p.click('#nav [data-tab=training]'); await wait(p, 1800);
+    assert(await frameOf(p, 'training/').evaluate(() => document.documentElement.classList.contains('m3') && /^Roboto/.test(getComputedStyle(document.body).fontFamily)), 'Training in Material You');
+    assert(await frameOf(p, 'training/').evaluate(() => { const r = document.querySelector('.hero .alt-row'); return r && getComputedStyle(r).display === 'flex'; }), 'Nebenaktionen nebeneinander');
+    // Blatt wegziehen
+    await p.click('#nav [data-tab=kalender]'); await wait(p, 500);
+    await p.click('[data-c=new]'); await wait(p, 400);
+    const pn = await p.locator('#sheet .pn').boundingBox();
+    const s = await p.context().newCDPSession(p), x = pn.x + pn.width / 2, y = pn.y + 14;
+    await s.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+    for (let i = 1; i <= 6; i++) await s.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + i * 25 }] });
+    await s.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await s.detach(); await wait(p, 500);
+    assert(!(await p.evaluate(() => document.getElementById('sheet').classList.contains('on'))), 'Blatt nach unten weggezogen');
+    // Mobility: Chips bleiben (Wunsch), in M3-Form
+    await p.click('#nav [data-tab=mobility]'); await wait(p, 1500);
+    assert(await p.evaluate(() => document.querySelectorAll('.chip').length >= 4 && getComputedStyle(document.querySelector('.chip')).borderRadius === '8px'), 'Mobility-Chips');
+    // anderes Design bleibt wählbar
+    await p.evaluate(() => SGTheme.set('notion')); await wait(p, 200);
+    assert(await p.evaluate(() => !document.documentElement.classList.contains('m3')), 'Notion wählbar');
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
   const ok = results.filter(r => r[0]).length;
   console.log(`\n${ok}/${results.length} Tests grün`); results.filter(r => !r[0]).forEach(r => console.log('FEHLER:', r[1], '–', r[2]));
   fs.writeFileSync(__dirname + '/suite-result.json', JSON.stringify(results, null, 1));

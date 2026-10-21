@@ -98,6 +98,11 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
         write: o => { const before = st.cal.length; st.cal = o.events.slice(); return Promise.resolve({ added: o.events.length, changed: 0, removed: 0, calendarId: o.calendarId }); },
         update: o => { st.updated.push(o); const e = st.phone.find(x => x.eventId === o.eventId); if (e && o.title) e.title = o.title; return Promise.resolve({ updated: 1 }); },
         remove: o => { st.removed.push(o.eventId); st.phone = st.phone.filter(x => x.eventId !== o.eventId); return Promise.resolve({ removed: 1 }); } },
+      PlanerSystem: {
+        colors: () => Promise.resolve({ dynamic: true, accent1: { 200: '#A8D5A2', 800: '#0B3A12' }, accent2: { 200: '#B9CCB4' }, accent3: { 200: '#A1CFD6' },
+          neutral1: { 100: '#E2E3DD', 800: '#2F312D', 900: '#1A1C19' }, neutral2: { 200: '#C3C8BE', 400: '#8D9289', 700: '#424940', 800: '#2C322B' } }),
+        bars: o => { st.bars = (st.bars || []).concat([o.bg]); return Promise.resolve(); },
+        haptic: o => { st.haptic = (st.haptic || []).concat([o.kind]); return Promise.resolve(); } },
       CapacitorHttp: { get: o => { st.http = (st.http || []).concat([o.url]); return Promise.resolve({ status: 200, data: 'BEGIN:VCALENDAR\r\nX-WR-CALNAME:Verein\r\nBEGIN:VEVENT\r\nUID:a@b\r\nDTSTART;VALUE=DATE:20991231\r\nSUMMARY:Silvesterlauf\r\nEND:VEVENT\r\nEND:VCALENDAR' }); } },
       LocalNotifications: {
         requestPermissions: () => Promise.resolve({ display: 'granted' }), checkExactNotificationSetting: () => Promise.resolve({ exact_alarm: 'granted' }),
@@ -128,6 +133,13 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
   const arzt = await q.evaluate(() => SharedCalendar.allItems(new Date().toISOString().slice(0, 10), '2099-01-01').find(e => e.title === 'Arzttermin'));
   ok(arzt && arzt.app === 'Handy' && arzt.phone && arzt.phone.eventId === 501, 'Aus dem Handy: Termin erscheint in der App');
   ok(sim.notes.some(n => /Krafttraining – jetzt starten/.test(n.title) && n.extra.go === 'training/heute') && sim.notes.some(n => n.title === 'Krafttraining' && /In 15 Min/.test(n.body)), 'Erinnerungen geplant: 15 Min. vorher und „jetzt starten“ (' + sim.notes.length + ')');
+  // Material You: Farben aus dem Hintergrundbild, Leistenfarbe, Vibration beim Abhaken
+  await q.waitForTimeout(800);
+  const m3 = await q.evaluate(() => ({ acc: getComputedStyle(document.documentElement).getPropertyValue('--acc').trim(), monet: !!localStorage.getItem('sg-monet-v1'), bars: window.__sim.bars || [] }));
+  ok(m3.monet && m3.acc.toLowerCase() === '#a8d5a2' && m3.bars.length > 0, 'Material You: Farben aus dem Hintergrundbild und Leistenfarbe ' + JSON.stringify(m3));
+  await q.evaluate(() => { location.hash = 'kalender'; }); await q.waitForTimeout(600);
+  const ckb = await q.$('#dayplan [data-ck]'); if (ckb) { await ckb.click(); await q.waitForTimeout(300); }
+  ok((await q.evaluate(() => window.__sim.haptic || [])).includes('done'), 'Vibration beim Abhaken');
   // Handytermin in der App ändern und löschen
   const ok2 = await q.evaluate(async () => { await SharedCalendar.handy.update(501, { title: 'Arzttermin Dr. Weber' }); const a = SharedCalendar.allItems('2000-01-01', '2099-01-01').some(e => e.title === 'Arzttermin Dr. Weber');
     await SharedCalendar.handy.remove(501); const b = !SharedCalendar.allItems('2000-01-01', '2099-01-01').some(e => /Arzttermin/.test(e.title)); return [a, b, window.__sim.removed]; });

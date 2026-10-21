@@ -439,6 +439,12 @@
     .ov-ring{ width:min(42vw,160px); height:min(42vw,160px); }
     .ov-name{ font-size:20px; } .ov-time{ font-size:34px; }
   }
+.hero .alt-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.hero .alt-row .btn { flex: 1 1 140px; min-height: 40px; background: none; border: 0; color: var(--text-dim); font-weight: 600; }
+html.m3 .hero { border: 0; border-radius: 24px; background: color-mix(in srgb, var(--sg-acc) 10%, var(--panel)); }
+html.m3 .card { border: 0; border-radius: 16px; background: color-mix(in srgb, var(--sg-acc) 6%, var(--panel)); }
+html.m3 .btn.accent { border-radius: 20px; }
+html.m3 .streak-chip { border-radius: 8px; }
 </style>
 <style>
   /* ============ OS V2 · Strict Neutral Dark ============ */
@@ -1259,8 +1265,8 @@
       <button class="btn accent" id="btnStartToday">Training starten</button>
       <button class="btn secondary" style="flex:0 0 52px" id="btnToggleDone" title="Als erledigt markieren">✓</button>
     </div>
-    <button class="btn ghost block sm rest-toggle" id="btnRest">Heute als Ruhetag</button>
-    <button class="btn ghost block sm" id="btnTrainedElsewhere" style="margin-top:8px">Heute schon trainiert</button>
+    <!-- schlanker: Nebenaktionen nebeneinander als Textknöpfe, die Hauptaktion bleibt allein groß -->
+    <div class="alt-row"><button class="btn ghost sm rest-toggle" id="btnRest">Heute als Ruhetag</button><button class="btn ghost sm" id="btnTrainedElsewhere">Heute schon trainiert</button></div>
   </div>
 
   <div class="kpi-row" data-sec="kpis">

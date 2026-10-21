@@ -746,7 +746,7 @@
     // während des weichen Hochscrollens (etwa 300 ms) zählt kein Tipp – sonst trifft ein Doppeltipp, was gerade darunter gleitet
     if (Date.now() < scrollBusy) { e.preventDefault(); return; }
     var ck = e.target.closest("[data-ck]");
-    if (ck) { var c = C(), q = c.tasks.list().find(function (x) { return x.id === ck.dataset.ck; }); if (q) { c.tasks.update(q.id, { done: !q.done }); snack(q.done ? "Wieder offen" : "Erledigt", function () { c.tasks.update(q.id, { done: q.done }); renderCal(); }); renderCal(); } return; }
+    if (ck) { var c = C(), q = c.tasks.list().find(function (x) { return x.id === ck.dataset.ck; }); if (q) { if (!q.done && window.SGHaptic) SGHaptic("done"); c.tasks.update(q.id, { done: !q.done }); snack(q.done ? "Wieder offen" : "Erledigt", function () { c.tasks.update(q.id, { done: q.done }); renderCal(); }); renderCal(); } return; }
     var st = e.target.closest("[data-start]"); if (st) { var it = ITEMS[st.dataset.start]; AREA[area(it)].to(it); return; }
     var ev = e.target.closest("[data-ev]"); if (ev) return evSheet(ITEMS[ev.dataset.ev]);
     var tk = e.target.closest("[data-task]"); if (tk) return go("aufgaben", null, null, { push: true });
@@ -805,6 +805,7 @@
   }
   // Verschieben, Auslassen, Abhaken: ändert nur diesen Eintrag, Rückgängig im Hinweis
   function planDo(e, patch, msg) {
+    if (patch.status === "done" && window.SGHaptic) SGHaptic("done");
     var u = C().planSet(e, patch); refresh();
     if (u) snack(msg, function () { u(); refresh(); }); else snack("Eintrag nicht gefunden");
   }
@@ -1414,6 +1415,22 @@
     if (!fromPop && history.state && history.state.sheet) { if (after) shAfter = after; history.back(); }
     else if (after) after();
   }
+  // Android-Gewohnheit: Blatt am Griff (oder ganz oben) nach unten wegziehen
+  (function () {
+    var pn = sheetEl.querySelector(".pn"), y0 = 0, dy = 0, on = false;
+    pn.addEventListener("touchstart", function (e) {
+      var t = e.touches[0], top = pn.getBoundingClientRect().top;
+      on = pn.scrollTop <= 0 && t.clientY - top < 56; y0 = t.clientY; dy = 0;
+    }, { passive: true });
+    pn.addEventListener("touchmove", function (e) {
+      if (!on) return; dy = Math.max(0, e.touches[0].clientY - y0);
+      pn.style.transition = "none"; pn.style.transform = dy ? "translateY(" + dy + "px)" : "";
+    }, { passive: true });
+    pn.addEventListener("touchend", function () {
+      if (!on) return; on = false; pn.style.transition = "transform .18s"; pn.style.transform = "";
+      if (dy > 90) closeSheet();
+    }, { passive: true });
+  })();
   sheetEl.addEventListener("click", function (e) {
     // ein Tipp, der noch vom Öffnen stammt (Doppeltipp, Loslassen nach langem Druck), schließt nicht gleich wieder
     if (e.target === sheetEl) { if (Date.now() - sheetAt < 450) return; return closeSheet(); }

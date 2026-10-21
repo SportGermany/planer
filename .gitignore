@@ -1,1 +1,6 @@
 werkzeuge/tests/suite-result.json
+# Testbilder nie im Hauptordner (sie landeten sonst in der APK)
+/s-*.png
+/w-*.png
+/bahnplan-druck*.pdf
+/fakemap.png

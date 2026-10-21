@@ -1,4 +1,5 @@
 const { chromium } = require('playwright');
+process.chdir(__dirname);   // Bilder und PDFs immer im Testordner, nie im Hauptordner (gingen sonst in die APK)
 const fs = require('fs');
 const U = 'http://localhost:8765';
 (async () => {

@@ -2,7 +2,7 @@
 // damit dieselben Dateien in Chrome und in der APK laufen. Start: www/index.html → /planer/app/
 const fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '../..'), OUT = path.join(__dirname, 'www'), APP = path.join(OUT, 'planer');
-const SKIP = new Set(['werkzeuge', '.git', '.github', 'node_modules', '.gitignore', '.nojekyll']); // sw.js bleibt drin (wird nicht registriert, manche Seiten fragen ihn ab)
+const SKIP = new Set(['werkzeuge', '.git', '.github', 'node_modules', '.gitignore', '.nojekyll', 'CLAUDE.md', 'README.md']); // sw.js bleibt drin (wird nicht registriert, manche Seiten fragen ihn ab)
 fs.rmSync(OUT, { recursive: true, force: true });
 let n = 0, bytes = 0;
 (function copy(src, dst) {
