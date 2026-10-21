@@ -713,7 +713,7 @@
     out.push(["bibel", "book", read ? "Gelesen ✓" : "Bibel", (b && b.streak ? "Serie " + b.streak : "heute lesen") + (b && b.plan === "hl" ? " · Bekannte Kapitel" : b && b.plan ? " · Ganze Bibel" : ""), "bibel"]);
     var w = null; try { w = JSON.parse(localStorage.getItem("sg-wissen-v1") || "null"); } catch (e) {}
     if (w && w.sum && w.sum.due) out.push(["training", "book", w.sum.due + " Karten", "Sportwissenschaft", "karten"]);
-    return '<div class="glance">' + out.slice(0, 4).map(function (x) {
+    return '<div class="glance">' + out.slice(0, out.length > 4 ? 6 : 4).map(function (x) {   // mit „wichtig“ bis zu sechs Kacheln, damit die Bibel nicht herausfällt
       return '<button class="gl" data-gl="' + x[4] + '" style="--c:var(--c-' + x[0] + ')"><i>' + ico(x[1]) + "</i><b>" + esc(x[2]) + "</b><small>" + esc(x[3]) + "</small></button>";
     }).join("") + "</div>";
   }

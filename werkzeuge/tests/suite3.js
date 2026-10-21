@@ -859,6 +859,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(f1[0] > 27 && f1[0] === f1[1], 'Serie in ' + f1[2] + ': ' + f1[1] + '/' + f1[0]);
     await p.click('[data-c=mtoday]'); await wait(p, 200);
     // F2: langer Druck mit echtem Finger: Blatt bleibt nach dem Loslassen offen
+    await p.evaluate(() => { const el = document.getElementById('n-kalender'); el.scrollTop += document.getElementById('mgrid').getBoundingClientRect().top - 140; }); await wait(p, 200);
     const box = await p.locator('#mgrid [data-mday]').nth(17).boundingBox();
     await cdpTouch(p, box.x + box.width / 2, box.y + 20, 700); await wait(p, 500);
     assert(await p.evaluate(() => document.getElementById('sheet').classList.contains('on')) && /Neu/.test(await p.textContent('#sheet')), 'Blatt bleibt offen');
@@ -1166,7 +1167,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(g.title === 'Geburtstag Müller' && g.date === '2026-10-20' && g.time === '18:00' && g.end === '19:00' && /Kuchen mitbringen und Geschenk/.test(g.note), 'Samsung ' + JSON.stringify(g));
     const l = r.b[0], f = r.b[1];
     assert(l.title === 'Lauftreff, Stadtpark' && l.time === '07:30' && l.end === '08:00' && l.rep && l.rep.f === 'w' && l.rep.until === '2026-12-31' && l.remind === 30 && /Ort: Stadtpark/.test(l.note), 'iCal ' + JSON.stringify(l));
-    assert(f.time === '' && f.date === '2026-11-02' && /bis 6\.11\.2026/.test(f.note) && /gefaltet werden muss/.test(f.title), 'ganztägig ' + JSON.stringify(f));
+    assert(f.time === '' && f.date === '2026-11-02' && f.endDate === '2026-11-06' && /gefaltet werden muss/.test(f.title), 'ganztägig ' + JSON.stringify(f));
     assert(r.r1.added === 3 && r.r2.added === 0 && r.r2.same === 3 && r.r3.added === 0, 'Doppelte ' + JSON.stringify([r.r1, r.r2, r.r3]));
     assert(r.n === 3, 'Handy-Termine ' + r.n);
     assert(!e.length, e.join(' | ')); await c.close();
