@@ -88,7 +88,7 @@ main{max-width:760px;margin:0 auto;padding:2px 16px calc(124px + env(safe-area-i
 .tab{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:650;color:var(--muted);padding:4px 0;text-align:center}
 .tab svg{width:23px;height:23px}
 .tab.on{color:var(--accent)}
-.fab{position:fixed;right:18px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:31;width:58px;height:58px;border-radius:18px;background:var(--accent);color:#fff;display:grid;place-items:center;box-shadow:0 8px 22px color-mix(in srgb,var(--accent) 40%,transparent)}
+.fab{position:fixed;right:18px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:31;width:58px;height:58px;border-radius:18px;background:var(--accent);color:var(--accent-ink,#fff);display:grid;place-items:center;box-shadow:0 8px 22px color-mix(in srgb,var(--accent) 40%,transparent)}
 .fab svg{width:27px;height:27px}
 .fab:active{transform:scale(.95)}
 
@@ -150,7 +150,7 @@ main{max-width:760px;margin:0 auto;padding:2px 16px calc(124px + env(safe-area-i
 .ag-date{width:44px;flex:none;display:flex;flex-direction:column;align-items:center;padding-top:2px;text-align:center}
 .ag-date span{font-size:12px;color:var(--muted);font-weight:650}
 .ag-date b{font-size:19px;width:36px;height:36px;display:grid;place-items:center;border-radius:50%;font-weight:700}
-.is-today .ag-date b{background:var(--accent);color:#fff}
+.is-today .ag-date b{background:var(--accent);color:var(--accent-ink,#fff)}
 .ag-items{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
 .ag-rel{font-size:12.5px;color:var(--muted);font-weight:650;margin-top:3px}
 
@@ -204,7 +204,7 @@ main{max-width:760px;margin:0 auto;padding:2px 16px calc(124px + env(safe-area-i
 .cell.out{opacity:.38}
 .num{font-size:12.5px;font-weight:650;width:23px;height:23px;display:grid;place-items:center;border-radius:50%;flex:none}
 .cell.ft .num{color:var(--feiertag)}
-.cell.today .num{background:var(--accent);color:#fff}
+.cell.today .num{background:var(--accent);color:var(--accent-ink,#fff)}
 .cell.sel{box-shadow:inset 0 0 0 2px var(--accent);border-radius:3px}
 .hn{font-size:8.5px;font-weight:700;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ferien-text);margin:1px 0 1px 1px}
 .hn.r{color:var(--feiertag)}
@@ -295,7 +295,7 @@ main{max-width:760px;margin:0 auto;padding:2px 16px calc(124px + env(safe-area-i
 .sheet-h{position:sticky;top:0;background:var(--surface);display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 0 10px;z-index:2;border-bottom:1px solid var(--line);margin-bottom:12px}
 .sheet-h b{font-size:16px;text-align:center;flex:1}
 .link{color:var(--accent);font-weight:650;padding:6px 2px;min-width:70px}
-.btn{background:var(--accent);color:#fff;font-weight:700;border-radius:11px;padding:9px 15px;font-size:14.5px;text-align:center}
+.btn{background:var(--accent);color:var(--accent-ink,#fff);font-weight:700;border-radius:11px;padding:9px 15px;font-size:14.5px;text-align:center}
 .btn.ghost{background:var(--surface2);color:var(--text)}
 .btn.danger{background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger)}
 .btn.good{background:var(--good)}

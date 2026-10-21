@@ -44,6 +44,14 @@ public class PlanerKalenderPlugin extends Plugin {
 
     static final String ACCOUNT = "Planer";
 
+    /**
+     * Zahl aus dem Aufruf: call.getLong liefert nur bei intern als Long gespeicherten Werten etwas – kleine Zahlen (Kalender-/Termin-IDs)
+     * kommen aber als Integer an und ergäben den Standardwert. optLong wandelt jede Zahl um.
+     */
+    static long num(PluginCall call, String key, long def) {
+        return call.getData().optLong(key, def);
+    }
+
     private ContentResolver cr() {
         return getContext().getContentResolver();
     }
@@ -180,7 +188,7 @@ public class PlanerKalenderPlugin extends Plugin {
     @PluginMethod
     public void enableSync(PluginCall call) {
         if (!granted(call)) return;
-        long id = call.getLong("id", -1L);
+        long id = num(call, "id", -1L);
         if (id < 0) {
             call.reject("id fehlt", "NO_ID");
             return;
@@ -222,8 +230,8 @@ public class PlanerKalenderPlugin extends Plugin {
     @PluginMethod
     public void instances(PluginCall call) {
         if (!granted(call)) return;
-        long from = call.getLong("from", System.currentTimeMillis());
-        long to = call.getLong("to", from + 90L * 86400000L);
+        long from = num(call, "from", System.currentTimeMillis());
+        long to = num(call, "to", from + 90L * 86400000L);
         long own = ownId();
         Uri.Builder b = Instances.CONTENT_URI.buildUpon();
         ContentUris.appendId(b, from);
@@ -282,7 +290,7 @@ public class PlanerKalenderPlugin extends Plugin {
     @PluginMethod
     public void write(PluginCall call) {
         if (!granted(call)) return;
-        long cal = call.getLong("calendarId", ownId());
+        long cal = num(call, "calendarId", ownId());
         if (cal < 0) {
             call.reject("Kalender „Planer“ fehlt", "NO_CALENDAR");
             return;
@@ -393,14 +401,14 @@ public class PlanerKalenderPlugin extends Plugin {
     @PluginMethod
     public void update(PluginCall call) {
         if (!granted(call)) return;
-        long id = call.getLong("eventId", -1L);
+        long id = num(call, "eventId", -1L);
         ContentValues v = new ContentValues();
         if (call.hasOption("title")) v.put(Events.TITLE, call.getString("title"));
         if (call.hasOption("description")) v.put(Events.DESCRIPTION, call.getString("description"));
         if (call.hasOption("start")) {
             boolean allDay = call.getBoolean("allDay", false);
-            v.put(Events.DTSTART, call.getLong("start"));
-            v.put(Events.DTEND, call.getLong("end"));
+            v.put(Events.DTSTART, num(call, "start", 0L));
+            v.put(Events.DTEND, num(call, "end", 0L));
             v.put(Events.ALL_DAY, allDay ? 1 : 0);
             v.put(Events.EVENT_TIMEZONE, allDay ? "UTC" : TimeZone.getDefault().getID());
         }
@@ -414,7 +422,7 @@ public class PlanerKalenderPlugin extends Plugin {
     @PluginMethod
     public void remove(PluginCall call) {
         if (!granted(call)) return;
-        long id = call.getLong("eventId", -1L);
+        long id = num(call, "eventId", -1L);
         int n = cr().delete(ContentUris.withAppendedId(Events.CONTENT_URI, id), null, null);
         JSObject r = new JSObject();
         r.put("removed", n);

@@ -50,16 +50,19 @@ public class PlanerSystemPlugin extends Plugin {
     @PluginMethod
     public void bars(PluginCall call) {
         String bg = call.getString("bg", "#141218");
+        String nav = call.getString("nav", bg);
         boolean light = call.getBoolean("light", false);
         Activity a = getActivity();
         a.runOnUiThread(() -> {
             try {
                 Window w = a.getWindow();
-                int c = Color.parseColor(bg);
+                int c = Color.parseColor(bg), n = Color.parseColor(nav);
                 if (Build.VERSION.SDK_INT < 35) {
                     w.setStatusBarColor(c);
-                    w.setNavigationBarColor(c);
+                    w.setNavigationBarColor(n);
                 }
+                // Android 10+: kein grauer Schleier über der 3-Tasten-Leiste
+                if (Build.VERSION.SDK_INT >= 29) w.setNavigationBarContrastEnforced(false);
                 w.getDecorView().setBackgroundColor(c);
                 WindowInsetsControllerCompat ic = WindowCompat.getInsetsController(w, w.getDecorView());
                 ic.setAppearanceLightStatusBars(light);

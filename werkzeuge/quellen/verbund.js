@@ -800,17 +800,17 @@
     "textarea{min-height:70px;resize:vertical}",
     ".row{display:flex;gap:8px}.row>*{flex:1}",
     ".wds{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.wds button{flex:1;min-width:38px;min-height:44px;border-radius:9px;border:1px solid var(--line);background:var(--s1);color:var(--fg);font-size:14px;cursor:pointer}",
-    ".wds button.on{background:var(--acc);border-color:var(--acc);color:#fff}.ivr{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:8px}.ivr input{width:76px}",
+    ".wds button.on{background:var(--acc);border-color:var(--acc);color:var(--accfg)}.ivr{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:8px}.ivr input{width:76px}",
     // Material You (Design „material“): Tonfläche statt Glas, Schalter statt Kästchen, M3-Felder und -Knöpfe
-    ".v.m3 .panel{background:color-mix(in srgb,var(--acc) 8%,var(--s1));-webkit-backdrop-filter:none;backdrop-filter:none;border:0;border-radius:28px 28px 0 0}",
-    ".v.m3 input,.v.m3 textarea,.v.m3 select{border-radius:12px;background:color-mix(in srgb,var(--acc) 6%,var(--bg));border-color:color-mix(in srgb,var(--mut) 45%,transparent);min-height:52px;font-family:inherit}",
+    ".v.m3 .panel{background:color-mix(in srgb,var(--acc) 8%,var(--s1));-webkit-backdrop-filter:none;backdrop-filter:none;border:0;border-radius:28px 28px 0 0}@media(min-width:700px){.v.m3 .panel{border-radius:28px}}",
+    ".v.m3 input:not([type=checkbox]):not([type=radio]),.v.m3 textarea,.v.m3 select{border-radius:12px;background:color-mix(in srgb,var(--acc) 6%,var(--bg));border-color:color-mix(in srgb,var(--mut) 45%,transparent);min-height:52px;font-family:inherit}",
     ".v.m3 input:focus,.v.m3 textarea:focus,.v.m3 select:focus{outline:2px solid var(--acc);outline-offset:-1px;border-color:transparent}",
-    ".v.m3 label{color:var(--mut);font-size:12.5px;letter-spacing:.3px}.v.m3 .hd h2{font-weight:500;font-size:22px}",
+    ".v.m3 label:not(.task):not(.chk){color:var(--mut);font-size:12.5px;letter-spacing:.3px}.v.m3 .task{min-height:48px}.v.m3 .task input{width:22px;height:22px;accent-color:var(--acc)}.v.m3 .hd h2{font-weight:500;font-size:22px}",
     ".v.m3 .chk{display:flex;flex-direction:row-reverse;justify-content:space-between;align-items:center;gap:12px;min-height:48px;font-size:15px;color:var(--fg);margin-top:10px}",
     ".v.m3 .chk input{appearance:none;-webkit-appearance:none;width:52px;height:32px;min-height:0;border-radius:16px;background:var(--s2);box-shadow:inset 0 0 0 2px var(--mut);position:relative;flex:none;cursor:pointer;margin:0;padding:0;border:0}",
     ".v.m3 .chk input::after{content:'';position:absolute;top:8px;left:8px;width:16px;height:16px;border-radius:50%;background:var(--mut);transition:transform .15s,width .15s,height .15s}",
-    ".v.m3 .chk input:checked{background:var(--acc);box-shadow:none}.v.m3 .chk input:checked::after{top:4px;left:4px;width:24px;height:24px;transform:translateX(20px);background:var(--accfg)}",
-    ".v.m3 button.b{border-radius:20px;min-height:40px;font-weight:500}.v.m3 button.b.p{background:var(--acc);color:var(--accfg);border-color:transparent}",
+    ".v.m3 .chk input:disabled{opacity:.38;cursor:default}.v.m3 .chk input:checked{background:var(--acc);box-shadow:none}.v.m3 .chk input:checked::after{top:4px;left:4px;width:24px;height:24px;transform:translateX(20px);background:var(--accfg)}",
+    ".v.m3 button.b{border-radius:20px;min-height:44px;font-weight:500}.v.m3 button.b.p{background:var(--acc);color:var(--accfg);border-color:transparent}",
     ".v.m3 .wds button{border-radius:22px}.v.m3 .ev{border:0;border-radius:16px;background:color-mix(in srgb,var(--acc) 6%,var(--s2))}",
     ".ovl{font-size:13px;color:#b4532a;margin:8px 0 0}.v.dark .ovl{color:#f0a36c}.ask .b{display:block;width:100%;text-align:left;margin-top:8px;min-height:48px}.ask .b small{display:block;font-weight:400;color:var(--mut)}",
     ".act{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.act .sp{flex:1}",
@@ -1117,6 +1117,7 @@
     return "<p class='txt m'>Gilt sofort für alle Apps auf diesem Gerät – und mit Sync auch auf deinen anderen Geräten.</p>" +
       "<label class='chk' style='margin:0 0 12px'><input type='checkbox' data-a='glass'" + (window.SGTheme.glass && window.SGTheme.glass() ? " checked" : "") + "> Glaseffekt (durchscheinende Flächen, schwebende Leiste)</label><div class='themes'>" +
       window.SGTheme.list.map(function (t) {
+        if (t.id === cur) t = window.SGTheme.current();   // gewähltes Design mit den echten Farben (Material You: aus dem Hintergrundbild)
         return "<button class='th" + (t.id === cur ? " on" : "") + "' data-theme='" + t.id + "' style='background:" + t.bg + ";color:" + t.ink + ";border-color:" + (t.id === cur ? t.acc : t.line) + "'>" +
           "<span class='pv'><i style='background:" + t.s1 + "'></i><i style='background:" + t.s2 + "'></i><i style='background:" + t.s3 + "'></i><i style='background:" + t.acc + "'></i></span>" +
           "<b>" + esc(t.name) + "</b><small style='color:" + t.muted + "'>" + esc(t.info) + "</small></button>";
@@ -1436,7 +1437,7 @@
       upd();
     }
     box.querySelectorAll("[data-task]").forEach(function (cb) {
-      cb.addEventListener("change", function () { api.tasks.update(cb.dataset.task, { done: cb.checked }); });
+      cb.addEventListener("change", function () { if (cb.checked && window.SGHaptic) window.SGHaptic("done"); api.tasks.update(cb.dataset.task, { done: cb.checked }); });
     });
     var qt = box.querySelector("[name=quicktask]");
     if (qt) qt.addEventListener("keydown", function (ev) {

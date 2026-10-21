@@ -1426,10 +1426,9 @@
       if (!on) return; dy = Math.max(0, e.touches[0].clientY - y0);
       pn.style.transition = "none"; pn.style.transform = dy ? "translateY(" + dy + "px)" : "";
     }, { passive: true });
-    pn.addEventListener("touchend", function () {
-      if (!on) return; on = false; pn.style.transition = "transform .18s"; pn.style.transform = "";
-      if (dy > 90) closeSheet();
-    }, { passive: true });
+    function end(close) { if (!on) return; on = false; pn.style.transition = "transform .18s"; pn.style.transform = ""; setTimeout(function () { pn.style.transition = ""; }, 200); if (close && dy > 90) closeSheet(); }
+    pn.addEventListener("touchend", function () { end(true); }, { passive: true });
+    pn.addEventListener("touchcancel", function () { end(false); }, { passive: true });   // Systemgeste/Benachrichtigung: nur zurücksetzen
   })();
   sheetEl.addEventListener("click", function (e) {
     // ein Tipp, der noch vom Öffnen stammt (Doppeltipp, Loslassen nach langem Druck), schließt nicht gleich wieder
@@ -1820,7 +1819,7 @@
         if (t.dataset.cmd) { var cm = sxCmds().find(function (x) { return x.key === t.dataset.cmd; }); return sxRun(cm, ""); }
         if (t.dataset.new != null) { var nq = t.dataset.new; return closeSearch(false, function () { go("kalender"); taskSheet({ title: nq.charAt(0).toUpperCase() + nq.slice(1), due: "" }); }); }
         if (t.dataset.qa) { var how = t.dataset.qa.replace(/^as-/, ""); if (t.dataset.qa === "save") return sxSaveQuick(sx.quick); if (t.dataset.qa === "edit") return sxEditQuick(sx.quick); return sxEditQuick(Object.assign({}, sx.quick, { kind: how }), how); }
-        if (t.dataset.tk != null) { var it = sx.items[+t.dataset.tk]; C().tasks.update(it.task.id, { done: !it.task.done }); it.task.done = !it.task.done; it.done = it.task.done; sx.content = null; snack(it.done ? "Erledigt" : "Wieder offen"); return sxSearch(); }
+        if (t.dataset.tk != null) { var it = sx.items[+t.dataset.tk]; if (!it.task.done && window.SGHaptic) SGHaptic("done"); C().tasks.update(it.task.id, { done: !it.task.done }); it.task.done = !it.task.done; it.done = it.task.done; sx.content = null; snack(it.done ? "Erledigt" : "Wieder offen"); return sxSearch(); }
         if (t.dataset.cal != null) { var ev = sx.items[+t.dataset.cal]; sxRemember({ l: ev.t, q: sx.q }, ev.key); return closeSearch(false, function () { toDay(ev.date); }); }
         if (t.dataset.i != null) return sxRun(sx.items[+t.dataset.i], sx.q);
       });

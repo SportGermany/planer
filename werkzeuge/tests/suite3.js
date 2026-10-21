@@ -1607,6 +1607,13 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     // Mobility: Chips bleiben (Wunsch), in M3-Form
     await p.click('#nav [data-tab=mobility]'); await wait(p, 1500);
     assert(await p.evaluate(() => document.querySelectorAll('.chip').length >= 4 && getComputedStyle(document.querySelector('.chip')).borderRadius === '8px'), 'Mobility-Chips');
+    // Schule: Schrift auf dem hellen Akzent nicht weiß (Kontrast)
+    await p.click('#nav [data-tab=schule]'); await wait(p, 1800);
+    assert(await frameOf(p, 'schule/').evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent-ink').trim() === '#381e72'), 'Schule: Schrift auf Akzent');
+    // Tablet quer: Leiste links über die ganze Höhe
+    await p.setViewportSize({ width: 1280, height: 800 }); await wait(p, 400);
+    assert(await p.evaluate(() => document.querySelector('.nav').getBoundingClientRect().height > 600), 'Leiste links bei 1280×800');
+    await p.setViewportSize({ width: 412, height: 915 }); await wait(p, 300);
     // anderes Design bleibt wählbar
     await p.evaluate(() => SGTheme.set('notion')); await wait(p, 200);
     assert(await p.evaluate(() => !document.documentElement.classList.contains('m3')), 'Notion wählbar');

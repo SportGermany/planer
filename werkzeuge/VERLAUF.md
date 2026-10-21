@@ -349,6 +349,30 @@ Wahl der Nutzerin: Vorschlag 1 „Material You“ (Designvorschläge mit je zwei
 - Hülle: Tonflächen statt Linien, M3-Leiste (80 dp, Pille), Schalter, Chips, FAB, Blätter; danach Seite für Seite schlanker
   (Terminblatt, Training, Mobility mit höchstens zwei Ebenen, Schule ohne Einrichtungsblock auf der Startseite).
 
+Weitere Umsetzung: Training schlanker (Nebenaktionen als Textknöpfe nebeneinander), Blätter nach unten wegziehen, Vibration beim Abhaken,
+Mobility behält seine Chips (früherer ausdrücklicher Wunsch) in M3-Form. Aufräumen: 3,6 MB Testbilder lagen im Hauptordner und gingen in die APK –
+entfernt, `.gitignore`, Bahnplan-Tests schreiben nur noch in ihren Ordner. `CLAUDE.md` als Kurzanleitung für KI-Sitzungen (weniger Suchen = weniger Tokens).
+
+Prüfung Phase 8 (Prüf-Agent, 16 Befunde):
+| # | Befund | Lösung |
+|---|---|---|
+| F1 | Leiste links (Tablet, Handy quer) nur 80 px hoch | Höhe nur unter 900 px; ab 900 px `height:auto` |
+| F2 | Plugin las kleine Zahlen (Kalender-/Termin-IDs) als -1: Handytermin ändern/löschen wirkte nicht, „Synchronisieren einschalten“ nie – betrifft auch 3.8.0 | `call.getData().optLong` statt `call.getLong` |
+| F3 | Schule: weiße Schrift auf hellem M3-Akzent (1,7:1) | Variable `--accent-ink` = Schriftfarbe auf Akzent |
+| F4 | Wochentag-Knopf im Terminblatt weiß auf hell | `--accfg` |
+| F5 | M3-Feldregeln trafen die Aufgaben-Kästchen | Kästchen ausgenommen, Zeilen 48 px |
+| S6 | M3-Karten im Training von design.js überstimmt | Tonfläche und Rundung zentral in design.js |
+| S7 | Knöpfe/Chips 40/32 px | 44/36 px |
+| S8 | Hervorhebung „Heute schon trainiert“ (externer Tag) ging verloren | Regel nur ohne `.accent` |
+| H9 | Terminblatt auf dem Tablet unten eckig | ab 700 px rundum 28 px |
+| H10 | Leistenfarbe nach Drehen zurückgesetzt, unten zweifarbig, Schleier über 3-Tasten-Leiste | eigene Farbe für unten, nach Drehen erneut, `setNavigationBarContrastEnforced(false)` |
+| H11 | Wegziehen: Abbruch durch Systemgeste ließ Blatt verschoben | `touchcancel` setzt zurück |
+| H12 | Erster Start: Violett, dann Umfärben | Hintergrundbild-Farben sofort holen, wenn noch keine gespeichert |
+| H13 | Vorschau im Bereich Design zeigte Standard-Violett | gewähltes Design mit echten Farben |
+| H14 | gesperrter Schalter sah aktiv aus | `:disabled` gedämpft |
+| H15 | Vibration nur an zwei Stellen | auch Suche und Aufgaben im Kalenderblatt |
+| H16 | Bereichsfarbe bei „Starten“ und Chips verloren | Bereichsfarbe bleibt |
+
 ## 3.5.0 – erste veröffentlichte Android-App
 
 Secret `APK_PASSWORT` vom Nutzer eingetragen (Passwort bekam er als PDF, weil er die .txt nicht öffnen konnte).
