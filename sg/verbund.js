@@ -753,7 +753,7 @@
   function isDark() { return true; } // alle Apps laufen im Dunkelmodus
   function themeVars() {
     var t = window.SGTheme ? window.SGTheme.current() : { s1: "#151b23", s2: "#1c2430", s3: "#243040", line: "#2a3646", ink: "#e6edf3", muted: "#9aa7b4", acc: "#6ea8fe" };
-    return "--bg:" + t.s1 + ";--s1:" + t.s2 + ";--s2:" + t.s3 + ";--line:" + t.line + ";--fg:" + t.ink + ";--mut:" + t.muted + ";--acc:" + t.acc + ";--accfg:#14120f";
+    return "--bg:" + t.s1 + ";--s1:" + t.s2 + ";--s2:" + t.s3 + ";--line:" + t.line + ";--fg:" + t.ink + ";--mut:" + t.muted + ";--acc:" + t.acc + ";--accfg:" + (t.accfg || "#14120f");
   }
   var ICON = "<svg viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round'><rect x='3.5' y='5' width='17' height='15.5' rx='2.5'/><path d='M3.5 9.5h17M8 3v4M16 3v4'/><path d='M7.5 13.5h2M11 13.5h2M14.5 13.5h2M7.5 17h2M11 17h2'/></svg>";
 
@@ -801,6 +801,17 @@
     ".row{display:flex;gap:8px}.row>*{flex:1}",
     ".wds{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.wds button{flex:1;min-width:38px;min-height:44px;border-radius:9px;border:1px solid var(--line);background:var(--s1);color:var(--fg);font-size:14px;cursor:pointer}",
     ".wds button.on{background:var(--acc);border-color:var(--acc);color:#fff}.ivr{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:8px}.ivr input{width:76px}",
+    // Material You (Design „material“): Tonfläche statt Glas, Schalter statt Kästchen, M3-Felder und -Knöpfe
+    ".v.m3 .panel{background:color-mix(in srgb,var(--acc) 8%,var(--s1));-webkit-backdrop-filter:none;backdrop-filter:none;border:0;border-radius:28px 28px 0 0}",
+    ".v.m3 input,.v.m3 textarea,.v.m3 select{border-radius:12px;background:color-mix(in srgb,var(--acc) 6%,var(--bg));border-color:color-mix(in srgb,var(--mut) 45%,transparent);min-height:52px;font-family:inherit}",
+    ".v.m3 input:focus,.v.m3 textarea:focus,.v.m3 select:focus{outline:2px solid var(--acc);outline-offset:-1px;border-color:transparent}",
+    ".v.m3 label{color:var(--mut);font-size:12.5px;letter-spacing:.3px}.v.m3 .hd h2{font-weight:500;font-size:22px}",
+    ".v.m3 .chk{display:flex;flex-direction:row-reverse;justify-content:space-between;align-items:center;gap:12px;min-height:48px;font-size:15px;color:var(--fg);margin-top:10px}",
+    ".v.m3 .chk input{appearance:none;-webkit-appearance:none;width:52px;height:32px;min-height:0;border-radius:16px;background:var(--s2);box-shadow:inset 0 0 0 2px var(--mut);position:relative;flex:none;cursor:pointer;margin:0;padding:0;border:0}",
+    ".v.m3 .chk input::after{content:'';position:absolute;top:8px;left:8px;width:16px;height:16px;border-radius:50%;background:var(--mut);transition:transform .15s,width .15s,height .15s}",
+    ".v.m3 .chk input:checked{background:var(--acc);box-shadow:none}.v.m3 .chk input:checked::after{top:4px;left:4px;width:24px;height:24px;transform:translateX(20px);background:var(--accfg)}",
+    ".v.m3 button.b{border-radius:20px;min-height:40px;font-weight:500}.v.m3 button.b.p{background:var(--acc);color:var(--accfg);border-color:transparent}",
+    ".v.m3 .wds button{border-radius:22px}.v.m3 .ev{border:0;border-radius:16px;background:color-mix(in srgb,var(--acc) 6%,var(--s2))}",
     ".ovl{font-size:13px;color:#b4532a;margin:8px 0 0}.v.dark .ovl{color:#f0a36c}.ask .b{display:block;width:100%;text-align:left;margin-top:8px;min-height:48px}.ask .b small{display:block;font-weight:400;color:var(--mut)}",
     ".act{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.act .sp{flex:1}",
     ".tools{display:flex;gap:6px;flex-wrap:wrap;margin-top:18px;padding-top:12px;border-top:1px solid var(--line)}",
@@ -958,7 +969,7 @@
 
   function render(bg) {
     if (!root) return;
-    var vv = root.querySelector(".v"); vv.classList.add("dark"); vv.setAttribute("style", themeVars());
+    var vv = root.querySelector(".v"); vv.classList.add("dark"); vv.classList.toggle("m3", document.documentElement.classList.contains("m3")); vv.setAttribute("style", themeVars());
     var today = iso(new Date());
     renderToast();
     renderInstall();
@@ -1780,7 +1791,7 @@
     if (!root) return;
     var box = root.querySelector(".wpbox");
     if (!wp) { box.innerHTML = ""; return; }
-    var vv = root.querySelector(".v"); vv.setAttribute("style", themeVars()); vv.classList.add("dark");
+    var vv = root.querySelector(".v"); vv.setAttribute("style", themeVars()); vv.classList.add("dark"); vv.classList.toggle("m3", document.documentElement.classList.contains("m3"));
     box.innerHTML = wpView();
     var w = box.querySelector(".wrap");
     w.addEventListener("click", function (ev) {
