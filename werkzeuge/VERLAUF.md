@@ -376,6 +376,7 @@ Veröffentlichung 3.9.0: APK baute (neuer Android-Code kompiliert), der Emulator
 Im Emulator starten die Play-Dienste einige Minuten nach dem Start neu (Gerätekonfiguration, `lmkd --reinit`), Android beendet die App mit, weil die
 WebView deren Schrift-Dienst nutzt. Lösung im Test: nur bei genau diesem Logcat-Muster App neu öffnen und den Schritt einmal wiederholen (höchstens zweimal);
 jeder andere Abbruch bleibt ein Fehler. Auf echten Handys kommt das selten vor (Play-Update) – die App startet dann einfach neu, Daten bleiben.
+Ergebnis: Im nächsten Lauf trat der Neustart wieder auf (bei training/heute), wurde abgefangen, alle übrigen Prüfungen grün – Release v3.9.0 mit planer-3.9.0.apk.
 
 ## 3.5.0 – erste veröffentlichte Android-App
 
