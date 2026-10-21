@@ -1259,6 +1259,9 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["3.9.0", ["Neues Design „Material You“: auf Android 12+ in den Farben deines Hintergrundbilds, Leisten in passender Farbe, Systemschrift Roboto",
+      "Blätter lassen sich nach unten wegziehen, kurze Vibration beim Abhaken, „Starten“ als runder Knopf",
+      "Training schlanker; Handykalender: Ändern und Löschen von Handyterminen aus der App funktioniert wieder, kleinere App (3,6 MB weniger)"]],
     ["3.8.0", ["Webkalender: per Link eingebundene Google-Kalender holt die App selbst (Mehr › Webkalender); nicht synchronisierte Handykalender lassen sich einschalten",
       "Mobility und Atemübungen stehen nicht mehr jeden Tag im Kalender (einschaltbar im Webkalender-Blatt › Im Kalender zeigen)",
       "Termine über mehrere Tage, Serien an bestimmten Wochentagen, „Nur dieser / folgende / alle“", "Einheiten verschieben, auslassen, abhaken – mit Rückgängig; Wochenbilanz, freie Zeiten, Zeitraster, wichtige Termine"]],
