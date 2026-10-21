@@ -283,7 +283,7 @@ Nachtest nach den Befunden:
 | Test „Maskierung“ rot nach Mitternacht | Test rechnete „heute“ in UTC (`toISOString`), die App in Ortszeit – zwischen 0 und 2 Uhr verschiedene Tage | Test nimmt das Ortsdatum |
 | Bahnplan-Test: Ladefehler in der Konsole beim Schritt „ohne Netz“ | Test brach nur die Anfragen ab, der Browser war „online“ – die App fragte und der Browser meldete die Fehler | App fragt Wikipedia ohne Netz gar nicht erst; Test schaltet wirklich offline |
 
-### Phase 7 – Kalender-Verbesserungen (in Arbeit, Version 3.8.0)
+### Phase 7 – Kalender-Verbesserungen (erledigt, Version 3.8.0)
 Plan (Abschnitt 10 der Anleitung). Datenmodell bleibt abwärtskompatibel: nur neue, optionale Felder; ältere Geräte reichen sie beim Abgleich durch
 (Zusammenführen ersetzt ganze Einträge, `update` ändert nur die genannten Felder).
 - Neue Felder am Termin: `endDate` (mehrtägig), `star` (wichtig), `area` (Bereich), `status` (`done`/`skip`) mit `why`;
@@ -302,6 +302,41 @@ Plan (Abschnitt 10 der Anleitung). Datenmodell bleibt abwärtskompatibel: nur ne
 - Tagesplan: „Frei 14:00 bis 16:30“ ab 45 Minuten, Jetzt-Linie heute, Umschalter Liste | Zeitraster (06–22 Uhr, Überschneidungen nebeneinander).
 - „Auf einen Blick“: Nächster wichtiger Termin (Stern oder Prüfung) mit „in 12 Tagen“.
 - Tests: alte Daten (seed + Stand 3.5.0), Cloud mit/ohne neue Felder, .ics-Rundreise, Handykalender-Mock, Verschieben/Auslassen/Erledigt mit Rückgängig.
+
+Wünsche während Phase 7 (Nutzerin):
+- **Webkalender aus Google fehlten.** Ursache: Per Internetadresse eingebundene Google-Kalender werden von Google standardmäßig nicht aufs Handy synchronisiert;
+  das Plugin las nur sichtbare, synchronisierte Kalender. Lösung in zwei Wegen: (1) Mehr › Handykalender zeigt solche Kalender als „nicht synchronisiert“
+  mit Knopf zum Einschalten (Plugin `enableSync`: SYNC_EVENTS/VISIBLE + Abgleich anstoßen); (2) Mehr › Webkalender: Adresse (.ics/webcal) einfügen,
+  die App holt den Kalender selbst über CapacitorHttp (ohne CORS), speichert ihn für offline und frischt alle 3 Stunden auf (`sg-abos-v1`, in der Cloud-Sicherung).
+  Import versteht dabei geänderte Einzeltermine (RECURRENCE-ID) und COUNT.
+- **Mobility und Atemübungen raus aus dem Kalender** (jeden Tag mehrere Einträge waren zu viel). Sie bleiben in ihren Bereichen; einschaltbar unter
+  Mehr › Darstellung. Die Standardwoche wird nicht mehr automatisch jede Woche eingetragen (einmalig ausgeschaltet; von Hand weiter möglich).
+- Designvorschläge: 12 Richtungen mit je zwei Bildern (Startseite, Training) – Auswahl steht aus.
+
+Prüfung Phase 7 (Prüf-Agent, 21 Befunde):
+| # | Befund | Lösung |
+|---|---|---|
+| 1 | „n-ter Wochentag im Monat“ endete nach Dezember | Monat in `nthDay` normalisiert |
+| 2 | „Dieser und folgende“ ließ frühere Ausnahmen wieder auftauchen; „Alle“ verschob Ausnahmen nicht | Ausnahmen werden aufgeteilt bzw. mitverschoben |
+| 3 | „Wieder offen“ schob den Auto-Haken auf die nächste Einheit | „offen“ verbraucht den Tagebuch-Eintrag |
+| 4 | Neu planen löschte erledigte/ausgelassene/verschobene Einheiten | Vergangenes und Einträge mit Status oder Verschiebung (`from`) bleiben; `wp` folgt der neuen Woche |
+| 5 | .ics erfand ein Ende (+60 min) | ohne Ende kein DTEND; mehrtägig ohne Ende 23:59 (wird beim Einlesen wieder leer) |
+| 6 | `area` nachgespeichert ohne Änderungszeit → alte und neue Geräte laden endlos hoch | `area` wird nur abgeleitet, nicht gespeichert |
+| 7 | Tagesplan jede Minute neu gezeichnet (Fokus weg, Tipp ins Leere) | nur Uhrzeit der Jetzt-Linie; neu zeichnen nur bei neuem Platz und ohne Fokus darin |
+| 8 | Zeitraster: kurze Blöcke ohne Titel | innerer Block, Mindesthöhe 36 px, kurze einzeilig |
+| 9 | Uhrzeitfelder in „Heute später“/„Anderer Tag“ ungestylt | `input[type=time]` wie die anderen Felder (50 px) |
+| 10 | Kopf des Tagesplans bei 130 % abgeschnitten, Umschalter 32 px | Umschalter in eigener Zeile, 44 px, nur bei mehr als einem Termin mit Uhrzeit |
+| 11 | Serientermine nie abhakbar/verschiebbar | Status je Tag (`stx`); Verschieben = dieser Tag fällt aus + Einzeltermin |
+| 12 | Ungültiges „Bis“-Datum blockierte still | `min` am Feld, Hinweis im Blatt; auch Mehrtägig + zu häufige Wiederholung |
+| 13 | Erledigt/ausgelassen bekam trotzdem Erinnerung bzw. ging ins Handy | Erinnerungen und Handyexport beachten den Status |
+| 14 | „Danach“ zeigte laufenden mehrtägigen Termin erneut | Folgetage nie in „Danach“ |
+| 15 | Dritter Zeitraum nie als Balken; Schulzeiträume ohne Balken | Bahnen je Wochenzeile; Schul- und Lehrgangszeiträume mit Tag x von y |
+| 16 | „+N“ über der Tageszahl | „+N“ unter den Markierungen |
+| 17 | Kachel ohne „Nächster wichtiger Termin“; 365 Tage bei jedem Zeichnen ausgerollt | Beschriftung + Vorlesetext; nur Stern-Termine und Prüfungen, zwischengespeichert |
+| 18 | Schrift < 12 px, Ausgelassen per Deckkraft zu kontrastarm, feste Rotfarbe | 12 px, Farbe statt Deckkraft, Farbvariable `--now` |
+| 19 | COUNT ignoriert; UNTIL bei Uhrzeit nur Datum | COUNT → Enddatum; UNTIL mit Uhrzeit als Datum-Zeit. Offen: DTSTART außerhalb von BYDAY zählt nicht mit |
+| 20 | Wochentag folgte Datum nicht; Knöpfe 40 px | folgt bei einem gewählten Tag; 44 px |
+| 21 | Rückgängig hinterließ `null`-Felder | stellt den alten Eintrag genau wieder her |
 
 ## 3.5.0 – erste veröffentlichte Android-App
 

@@ -92,11 +92,13 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
         request: () => { st.perm = 'granted'; return Promise.resolve({ permission: 'granted', calendarId: st.own }); },
         status: () => Promise.resolve({ permission: st.perm, calendarId: st.own }),
         ensure: () => { if (st.own < 0) st.own = 77; return Promise.resolve({ calendarId: st.own }); },
-        calendars: () => Promise.resolve({ calendars: [{ id: 1, name: 'Mein Kalender', account: 'My calendar', color: '#33AA55', visible: true, own: false }, { id: 77, name: 'Planer', own: true }] }),
+        calendars: () => Promise.resolve({ calendars: [{ id: 1, name: 'Mein Kalender', account: 'My calendar', color: '#33AA55', visible: true, own: false, sync: true }, { id: 3, name: 'Feiertage per Link', account: 'x@gmail.com', color: '#AA3355', visible: true, own: false, sync: !!st.sync3 }, { id: 77, name: 'Planer', own: true }] }),
+        enableSync: o => { st.sync3 = o.id === 3; st.enabled = (st.enabled || []).concat([o.id]); return Promise.resolve({ updated: 1, syncRequested: true }); },
         instances: () => Promise.resolve({ events: st.phone.slice() }),
         write: o => { const before = st.cal.length; st.cal = o.events.slice(); return Promise.resolve({ added: o.events.length, changed: 0, removed: 0, calendarId: o.calendarId }); },
         update: o => { st.updated.push(o); const e = st.phone.find(x => x.eventId === o.eventId); if (e && o.title) e.title = o.title; return Promise.resolve({ updated: 1 }); },
         remove: o => { st.removed.push(o.eventId); st.phone = st.phone.filter(x => x.eventId !== o.eventId); return Promise.resolve({ removed: 1 }); } },
+      CapacitorHttp: { get: o => { st.http = (st.http || []).concat([o.url]); return Promise.resolve({ status: 200, data: 'BEGIN:VCALENDAR\r\nX-WR-CALNAME:Verein\r\nBEGIN:VEVENT\r\nUID:a@b\r\nDTSTART;VALUE=DATE:20991231\r\nSUMMARY:Silvesterlauf\r\nEND:VEVENT\r\nEND:VCALENDAR' }); } },
       LocalNotifications: {
         requestPermissions: () => Promise.resolve({ display: 'granted' }), checkExactNotificationSetting: () => Promise.resolve({ exact_alarm: 'granted' }),
         getPending: () => Promise.resolve({ notifications: st.notes.map(n => ({ id: n.id })) }),
@@ -153,6 +155,13 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
   await q.evaluate(() => { location.hash = 'mehr'; }); await q.waitForTimeout(600);
   await q.click('#n-mehr [data-m=handy]'); await q.waitForTimeout(300);
   ok(/Mein Kalender/.test(await q.textContent('#sheet')) && await q.isVisible('#sheet [data-h=stunden]'), 'Mehr › Handykalender: Auswahl und Kalenderliste');
+  // per Link eingebundener Google-Kalender, auf dem Handy nicht synchronisiert: Hinweis und Einschalten
+  ok(/nicht synchronisiert/.test(await q.textContent('#sheet')), 'Nicht synchronisierter Kalender wird angezeigt');
+  await q.click('#sheet [data-s="sy:3"]'); await q.waitForTimeout(600);
+  ok((await q.evaluate(() => window.__sim.enabled || [])).includes(3), 'Synchronisieren einschalten ruft das Handy auf');
+  // Webkalender über die native HTTP-Schnittstelle (ohne CORS)
+  const ab = await q.evaluate(async () => { const r = await SharedCalendar.abo.add('webcal://kalender.example.org/v.ics'); return [r, window.__sim.http, SharedCalendar.allItems('2099-12-31', '2099-12-31').map(x => x.title)]; });
+  ok(ab[0].n === 1 && ab[1][0] === 'https://kalender.example.org/v.ics' && ab[2].includes('Silvesterlauf'), 'Webkalender in der APK über CapacitorHttp ' + JSON.stringify(ab));
   await q.click('#sheet [data-s=now]').catch(() => {}); await q.waitForTimeout(300);
   ok(!e2.length, 'Keine Fehler ' + e2.join(' | '));
   await b.close();

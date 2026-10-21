@@ -134,6 +134,7 @@
   function spanOf(e) { return e.endDate && e.endDate > e.date ? Math.round((parse(e.endDate) - parse(e.date)) / 864e5) : 0; }
   // n-ter Wochentag (wd, Mo = 0) im Monat von d; n = -1: der letzte
   function nthDay(y, m, wd, n) {
+    var nm = new Date(y, m, 1); y = nm.getFullYear(); m = nm.getMonth();   // Monate über 11 kommen aus repStarts (mo + j)
     if (n > 0) { var f = new Date(y, m, 1), off = (wd - (f.getDay() + 6) % 7 + 7) % 7; var d = new Date(y, m, 1 + off + (n - 1) * 7); return d.getMonth() === m ? d : null; }
     var l = new Date(y, m + 1, 0); return new Date(y, m, l.getDate() - ((l.getDay() + 6) % 7 - wd + 7) % 7);
   }
@@ -193,12 +194,13 @@
   function plusDays(k, n) { var d = parse(k); d.setDate(d.getDate() + n); return iso(d); }
   function eachDay(start, end, from, to, fn) {
     var a = start > from ? start : from, b = (end || start) < to ? (end || start) : to;
-    for (var k = a; k <= b; k = plusDays(k, 1)) fn(k);
+    var of = end && end > start ? Math.round((parse(end) - parse(start)) / 864e5) + 1 : 0;
+    for (var k = a; k <= b; k = plusDays(k, 1)) fn(k, of ? { occ: start, lastDay: end, of: of, day: Math.round((parse(k) - parse(start)) / 864e5) + 1 } : null);
   }
   function addMin(t, m) { var p = t.split(":"), x = Math.min(1439, +p[0] * 60 + +p[1] + m); return pad(Math.floor(x / 60)) + ":" + pad(x % 60); }
   function where(appId, hash) { var a = APPS.find(function (x) { return x.id === appId; }); return { link: appUrl(a) + hash, linkApp: appId, linkHash: hash }; }
   function externalItems(from, to, noPhone) {
-    var out = noPhone ? [] : phoneItems(from, to);
+    var out = (noPhone ? [] : phoneItems(from, to)).concat(aboItems(from, to));
     var db = jkey("schulkalender-bayern-v1");
     if (db) {
       var subj = function (id) { return (db.subjects || []).find(function (x) { return x.id === id; }) || {}; };
@@ -206,8 +208,8 @@
         if (!e.date) return;
         var t = LP_TYPES[e.type] || LP_TYPES.sonst, sn = subj(e.subject).name || "";
         var title = [t[0], sn].filter(Boolean).join(" ") + (e.title ? (t[0] || sn ? ": " : "") + e.title : "");
-        eachDay(e.date, e.end, from, to, function (k) {
-          out.push(Object.assign({ id: "lp-" + e.id, title: title || "Schultermin", date: k, time: k === e.date ? e.time || "" : "", end: "", app: "Lernplan", color: t[1], note: e.notes || "", ro: "Lernplan", exam: ["sa", "ka", "ex", "test", "ap"].indexOf(e.type) > -1, subject: sn }, where("planer", "#schule")));
+        eachDay(e.date, e.end, from, to, function (k, sp) {
+          out.push(Object.assign({}, sp, { id: "lp-" + e.id, title: title || "Schultermin", date: k, time: k === e.date ? e.time || "" : "", end: "", app: "Lernplan", color: t[1], note: e.notes || "", ro: "Lernplan", exam: ["sa", "ka", "ex", "test", "ap"].indexOf(e.type) > -1, subject: sn }, where("planer", "#schule")));
         });
       });
       // Lernblöcke, die der Lernplan zu einer Prüfung automatisch einträgt (Aufgaben mit planFor)
@@ -217,8 +219,8 @@
       });
       (db.camps || []).forEach(function (c) {
         if (!c.start) return;
-        eachDay(c.start, c.end, from, to, function (k) {
-          out.push(Object.assign({ id: "lc-" + c.id, title: "Lehrgang" + (c.title ? ": " + c.title : "") + (c.place ? " (" + c.place + ")" : ""), date: k, time: "", app: "Lernplan", color: "#0891b2", ro: "Lernplan" }, where("planer", "#schule")));
+        eachDay(c.start, c.end, from, to, function (k, sp) {
+          out.push(Object.assign({}, sp, { id: "lc-" + c.id, title: "Lehrgang" + (c.title ? ": " + c.title : "") + (c.place ? " (" + c.place + ")" : ""), date: k, time: "", app: "Lernplan", color: "#0891b2", ro: "Lernplan" }, where("planer", "#schule")));
         });
       });
     }
@@ -249,8 +251,16 @@
       return Object.assign({ id: "nt-" + n.id, title: n.text.split("\n")[0].slice(0, 80) || "Notiz", date: n.at.slice(0, 10), time: t, end: "", app: "Notiz", color: "#e0b34e", note: n.text, ro: "Notizen", noteId: n.id }, where("planer", "#sg=x_notiz"));
     });
   }
+  /* Was der Kalender zeigt: Mobility und Atmung stehen standardmäßig nicht drin (jeden Tag mehrere Einträge waren zu viel).
+   * Die Übungen bleiben in ihren Bereichen; einschalten unter Mehr › Darstellung. */
+  var SHOW_KEY = "sg-kalender-zeigen-v1";
+  function calShow() { var o = jkey(SHOW_KEY) || {}; return { atmung: !!o.atmung, mobility: !!o.mobility }; }
+  function shown(list) {
+    var sh = calShow(); if (sh.atmung && sh.mobility) return list;
+    return list.filter(function (x) { var a = areaOf(x); return !(a === "atmung" && !sh.atmung) && !(a === "mobility" && !sh.mobility); });
+  }
   function allItems(from, to) {
-    return withStatus(occurrences(from, to).concat(externalItems(from, to), noteItems(from, to))).sort(function (a, b) {
+    return withStatus(shown(occurrences(from, to).concat(externalItems(from, to), noteItems(from, to)))).sort(function (a, b) {
       return (a.date + (a.time || "~")).localeCompare(b.date + (b.time || "~"));
     });
   }
@@ -280,7 +290,8 @@
     var log = jkey("wk_log") || {}, pp = jkey("pulsplan.v1") || {}, have = {}, slots = {}, drop = {};
     list.forEach(function (x) {
       if (/^ta-/.test(x.id)) { var a = x.app === "Mobility" ? "mobility" : "training"; have[a + "@" + x.date] = (have[a + "@" + x.date] || 0) + 1; }
-      x.plan = !x.ro || /^pp-/.test(x.id) ? PLAN_AREAS[areaOf(x)] === 1 && !x.phone && !(x.of > 1) && !(x.rep && x.rep.f) : false;   // Serien und mehrtägige: über „Bearbeiten“
+      x.plan = !x.ro || /^pp-/.test(x.id) ? PLAN_AREAS[areaOf(x)] === 1 && !x.phone && !(x.of > 1) : false;   // mehrtägige: über „Bearbeiten“
+      if (x.plan && x.sid) { var so = (x.stx || {})[x.date]; x.status = so ? so.s : ""; x.why = so && so.w || ""; }   // Serie: Status je Tag
       if (!x.plan) return;
       x.st = x.status === "done" || x.status === "skip" ? x.status : "";
       var k = areaOf(x) + "@" + x.date; (slots[k] = slots[k] || []).push(x);
@@ -289,10 +300,28 @@
     (pp.sessions || []).forEach(function (s) { if (s && s.date) have["atmung@" + s.date] = (have["atmung@" + s.date] || 0) + 1; });
     Object.keys(slots).forEach(function (k) {
       var n = have[k] || 0, xs = slots[k].sort(function (a, b) { return (a.time || "").localeCompare(b.time || ""); });
-      xs.forEach(function (x) { if (x.st === "done") n--; });
+      xs.forEach(function (x) { if (x.st === "done" || x.status === "open") n--; });   // „Wieder offen“ verbraucht den Eintrag aus dem Tagebuch, der Haken wandert nicht weiter
       xs.forEach(function (x) { if (!x.st && x.status !== "open" && n > 0) { x.st = "done"; x.auto = true; n--; if (k.indexOf("training@") === 0) drop["tb-" + x.date] = 1; } });
     });
     return list.filter(function (x) { return !drop[x.id]; });
+  }
+  // Nächster wichtiger Termin: eigene mit Stern (nur diese ausrollen) und Prüfungen aus der Schule; zwischengespeichert bis zur nächsten Änderung
+  var NI = { k: "", v: null };
+  function nextImportant(t, now) {
+    var raw = ""; try { raw = (localStorage.getItem(KEY) || "").length + "|" + (localStorage.getItem("schulkalender-bayern-v1") || "").length; } catch (e) {}
+    var key = t + "|" + now + "|" + raw;
+    if (NI.k === key) return NI.v;
+    var to = plusDays(t, 365), list = occurrences(t, to, live().filter(function (e) { return e.star; }));
+    var db = jkey("schulkalender-bayern-v1");
+    if (db) (db.events || []).forEach(function (e) {
+      if (e.date && e.date >= t && e.date <= to && ["sa", "ka", "ex", "test", "ap"].indexOf(e.type) > -1) {
+        var sn = ((db.subjects || []).find(function (x) { return x.id === e.subject; }) || {}).name || "", ty = (LP_TYPES[e.type] || LP_TYPES.sonst)[0];
+        list.push({ title: [ty, sn].filter(Boolean).join(" ") + (e.title ? ": " + e.title : ""), date: e.date, time: e.time || "", exam: true });
+      }
+    });
+    var hit = list.filter(function (e) { return !(e.of > 1 && e.day > 1) && e.status !== "skip" && (e.date > t || !e.time || e.time >= now); })
+      .sort(function (a, b) { return (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")); })[0] || null;
+    NI = { k: key, v: hit }; return hit;
   }
   // Wochenbilanz (Training und Mobility): geplant, erledigt, ausgelassen
   function weekBalance(mon) {
@@ -325,11 +354,33 @@
       put(p);
       return function () { put(prev); };
     }
-    var cur = load().events.find(function (y) { return y.id === x.id && !y.deleted; });
+    var bid = x.sid || x.id, cur = load().events.find(function (y) { return y.id === bid && !y.deleted; });
     if (!cur) return null;
-    var old = {}; keys.forEach(function (k) { old[k] = cur[k] === undefined ? null : cur[k]; });
-    api.update(x.id, p);
-    return function () { api.update(x.id, old); };
+    var keep = JSON.parse(JSON.stringify(cur)), made = null;
+    if (x.sid) {
+      // Serientermin: Status je Tag (stx); Verschieben = dieser Tag fällt aus, ein einzelner Termin entsteht
+      if (p.date || p.time) {
+        api.skip(bid, x.date);
+        var one = Object.assign({}, cur, { date: p.date || x.date, time: p.time || cur.time || "", end: p.end || cur.end || "", rep: null, endDate: "" });
+        delete one.id; delete one.ex; delete one.stx; made = api.add(one);
+      } else {
+        var stx = Object.assign({}, cur.stx || {});
+        if (p.status) stx[x.date] = p.why ? { s: p.status, w: p.why } : { s: p.status }; else delete stx[x.date];
+        api.update(bid, { stx: stx });
+      }
+    } else {
+      if (p.date && p.date !== cur.date) { p.from = cur.from || cur.date; if (cur.wp) p.wp = mondayOf(p.date); }   // from: ursprünglicher Tag (für neu Planen)
+      mutate(function (d) {
+        var e = d.events.find(function (y) { return y.id === bid; }); if (!e) return;
+        Object.keys(p).forEach(function (k) { if (p[k] == null || p[k] === "") delete e[k]; else e[k] = p[k]; });
+        e.changed = Date.now();
+      });
+    }
+    // Rückgängig: genau den alten Stand zurück (fehlende Felder bleiben fehlend)
+    return function () {
+      mutate(function (d) { var i = d.events.findIndex(function (y) { return y.id === bid; }); if (i > -1) { keep.changed = Date.now(); d.events[i] = keep; } });
+      if (made) api.remove(made.id);
+    };
   }
   function emit() {
     var ev = live();
@@ -387,7 +438,10 @@
     externalItems: externalItems,
     allItems: allItems,
     areaOf: areaOf,
+    calShow: calShow,
+    setCalShow: function (k, on) { var o = jkey(SHOW_KEY) || {}; o[k] = !!on; try { localStorage.setItem(SHOW_KEY, JSON.stringify(o)); } catch (e) {} emit(); },
     weekBalance: weekBalance,
+    nextImportant: nextImportant,
     planSet: planSet,
     repStarts: repStarts,
     // Einen einzelnen Termin einer Serie auslassen
@@ -529,7 +583,7 @@
 
   // Gleicht die Daten aller Verbund-Apps ab, nicht nur der gerade offenen –
   // so landen auch Änderungen aus einer App, die lange nicht offen war, in der Cloud.
-  var EXTRA = [{ id: "einstellungen", name: "Einstellungen", keys: ["sg-design", "sg-glass", "sg-dir-v1"], lww: true }, { id: "wochenplan", name: "Wochenplanung", keys: ["sg-wochenplan-v1"], lww: true }, { id: "wissen", name: "Sportwissenschaft", keys: ["sg-wissen-v1"], lww: true }];
+  var EXTRA = [{ id: "einstellungen", name: "Einstellungen", keys: ["sg-design", "sg-glass", "sg-dir-v1", "sg-abos-v1"], lww: true }, { id: "wochenplan", name: "Wochenplanung", keys: ["sg-wochenplan-v1"], lww: true }, { id: "wissen", name: "Sportwissenschaft", keys: ["sg-wissen-v1"], lww: true }];
   function syncApps(g, files) {
     DATA.concat(EXTRA).forEach(function (app) {
       if (!app.keys.length || (app.own && app.own())) return;
@@ -643,9 +697,9 @@
     if (EMBED || !notifyOk()) return;
     var now = Date.now(), fired;
     try { fired = JSON.parse(localStorage.getItem(FIRED_KEY) || "{}"); } catch (e) { fired = {}; }
-    var t = iso(new Date()), list = occurrences(iso(new Date(now - 864e5)), iso(new Date(now + 2 * 864e5)));
+    var t = iso(new Date()), list = withStatus(occurrences(iso(new Date(now - 864e5)), iso(new Date(now + 2 * 864e5))));   // erledigt/ausgelassen: keine Erinnerung
     list.forEach(function (e) {
-      if (e.remind == null || e.remind === "" || (e.of > 1 && e.day > 1) || e.status === "skip" || e.status === "done") return;
+      if (e.remind == null || e.remind === "" || (e.of > 1 && e.day > 1) || e.st) return;
       var p = e.date.split("-"), hm = (e.time || "08:00").split(":");
       var start = new Date(+p[0], +p[1] - 1, +p[2], +hm[0], +hm[1]).getTime(), at = start - e.remind * 60000, key = e.id + "@" + e.date;
       // nur melden, wenn der Zeitpunkt erreicht ist, aber höchstens 2 Stunden zu spät
@@ -745,7 +799,7 @@
     "input,textarea,select{width:100%;padding:10px 11px;border-radius:9px;border:1px solid var(--line);background:var(--s1);color:var(--fg);font-size:16px}",
     "textarea{min-height:70px;resize:vertical}",
     ".row{display:flex;gap:8px}.row>*{flex:1}",
-    ".wds{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.wds button{flex:1;min-width:38px;min-height:40px;border-radius:9px;border:1px solid var(--line);background:var(--s1);color:var(--fg);font-size:14px;cursor:pointer}",
+    ".wds{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.wds button{flex:1;min-width:38px;min-height:44px;border-radius:9px;border:1px solid var(--line);background:var(--s1);color:var(--fg);font-size:14px;cursor:pointer}",
     ".wds button.on{background:var(--acc);border-color:var(--acc);color:#fff}.ivr{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:8px}.ivr input{width:76px}",
     ".ovl{font-size:13px;color:#b4532a;margin:8px 0 0}.v.dark .ovl{color:#f0a36c}.ask .b{display:block;width:100%;text-align:left;margin-top:8px;min-height:48px}.ask .b small{display:block;font-weight:400;color:var(--mut)}",
     ".act{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.act .sp{flex:1}",
@@ -1214,7 +1268,7 @@
     h += "<label>Titel</label><input name='title' maxlength='120' value='" + esc(e.title || "") + "' placeholder='z. B. Training, Klassenarbeit …'>";
     h += "<label>Datum</label><input type='date' name='date' value='" + esc(e.date) + "'>";
     h += "<label class='chk'><input type='checkbox' name='multi'" + (e.endDate ? " checked" : "") + "> Mehrtägig (Wettkampf, Trainingslager, Urlaub)</label>";
-    h += "<div class='mt'" + (e.endDate ? "" : " hidden") + "><label>Bis (letzter Tag)</label><input type='date' name='endDate' value='" + esc(e.endDate || "") + "'></div>";
+    h += "<div class='mt'" + (e.endDate ? "" : " hidden") + "><label>Bis (letzter Tag)</label><input type='date' name='endDate' min='" + esc(e.date ? plusDays(e.date, 1) : "") + "' value='" + esc(e.endDate || "") + "'></div>";
     h += "<div class='row'><div><label>Von (optional)</label><input type='time' name='time' value='" + esc(e.time || "") + "'></div>" +
       "<div><label>Bis (optional)</label><input type='time' name='end' value='" + esc(e.end || "") + "'></div></div>";
     h += "<p class='ovl' aria-live='polite'></p>";
@@ -1253,7 +1307,9 @@
     if (!v.title) { q("title").focus(); return null; }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(v.date)) { q("date").focus(); return null; }
     var ed = q("multi").checked ? q("endDate").value : "";
-    if (ed && ed <= v.date) { q("endDate").focus(); return null; }
+    var say = function (t, f) { var o = box.querySelector(".ovl"); if (o) o.textContent = t; q(f).focus(); return null; };
+    if (q("multi").checked && !ed) return say("Bitte den letzten Tag wählen.", "endDate");
+    if (ed && ed <= v.date) return say("Der letzte Tag muss nach dem ersten liegen.", "endDate");
     v.endDate = ed || "";
     v.star = q("star").checked;
     var rv = q("rep").value, old = state.edit.rep || null;
@@ -1263,6 +1319,9 @@
       if (rv === "wd") { base.days = [].map.call(box.querySelectorAll(".wds .on"), function (b) { return +b.dataset.wd; }); base.iv = +q("iv").value || 1; if (!base.days.length) base.days = [wdx(v.date)]; }
       if (rv === "mn") base.nth = nthOf(v.date);
       v.rep = repNorm(base, v.date);
+      // mehrtägig und Wiederholung dürfen sich nicht überlappen (z. B. 3 Tage lang, aber täglich)
+      var span = v.endDate ? Math.round((parse(v.endDate) - parse(v.date)) / 864e5) : 0, step = v.rep.f === "d" ? (v.rep.iv || 1) : v.rep.f === "w" ? (v.rep.days && v.rep.days.length > 1 ? 1 : 7 * (v.rep.iv || 1)) : v.rep.f === "2w" ? 14 : 28;
+      if (span && span >= step) return say("So lang und so oft überschneiden sich die Termine – Wiederholung oder letzten Tag anpassen.", "rep");
     }
     return v;
   }
@@ -1300,12 +1359,20 @@
     } else if (mode === "all") {
       var delta = Math.round((parse(v.date) - parse(occ)) / 864e5), v2 = Object.assign({}, v);
       v2.date = plusDays(base.date, delta);
+      if (delta && base.ex && base.ex.length) v2.ex = base.ex.map(function (k) { return plusDays(k, delta); });   // Ausnahmen wandern mit
       if (v.endDate) v2.endDate = plusDays(v2.date, Math.round((parse(v.endDate) - parse(v.date)) / 864e5));
       api.update(id, v2);
     } else {
+      var moved = null;
       if (mode === "one") { api.skip(id, occ); v = Object.assign({}, v, { rep: null }); }
-      else api.update(id, { rep: Object.assign({}, base.rep, { until: plusDays(occ, -1) }) });
+      else {
+        // Ausnahmen ab hier gehören zur neuen Serie (um den Versatz verschoben), die alte behält die früheren
+        var dl = Math.round((parse(v.date) - parse(occ)) / 864e5), exs = base.ex || [];
+        api.update(id, { rep: Object.assign({}, base.rep, { until: plusDays(occ, -1) }), ex: exs.filter(function (k) { return k < occ; }) });
+        moved = exs.filter(function (k) { return k >= occ; }).map(function (k) { return plusDays(k, dl); });
+      }
       made = api.add(Object.assign({}, v, { app: base.app, area: base.area }));
+      if (made && moved && moved.length) api.update(made.id, { ex: moved });
     }
     return function () {
       mutate(function (d) { var i = d.events.findIndex(function (x) { return x.id === id; }); if (i > -1) { keep.changed = Date.now(); d.events[i] = keep; } });
@@ -1344,6 +1411,12 @@
         var v = { date: q("date").value, time: q("time").value, end: q("end").value };
         box.querySelector(".ovl").textContent = overlapText(v, state.edit && state.edit.id);
         var mn = q("rep").querySelector("option[value=mn]"); if (mn && /^\d{4}-\d{2}-\d{2}$/.test(v.date)) mn.textContent = nthLabel(v.date);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(v.date)) {
+          q("endDate").min = plusDays(v.date, 1);
+          // nur ein Wochentag gewählt: er folgt dem Datum
+          var on = box.querySelectorAll(".wds .on"), w = wdx(v.date);
+          if (on.length === 1 && +on[0].dataset.wd !== w) { on[0].classList.remove("on"); on[0].setAttribute("aria-pressed", "false"); var nb = box.querySelector("[data-wd='" + w + "']"); nb.classList.add("on"); nb.setAttribute("aria-pressed", "true"); }
+        }
       };
       fm.addEventListener("change", function () { box.querySelector(".mt").hidden = !fm.checked; if (fm.checked && !q("endDate").value && q("date").value) q("endDate").value = plusDays(q("date").value, 1); });
       q("rep").addEventListener("change", function () { box.querySelector(".wdbox").hidden = q("rep").value !== "wd"; });
@@ -1445,7 +1518,9 @@
   function dtLines(e) {
     var last = e.endDate && e.endDate > e.date ? e.endDate : e.date;
     if (e.time) {
-      var en = last > e.date ? (e.end || e.time) : e.end && e.end > e.time ? e.end : addMin(e.time, 60);
+      // ohne Ende kein DTEND (RFC 5545: dann Dauer 0) – sonst käme beim Wiedereinlesen ein erfundenes Ende zurück
+      if (!e.end) return ["DTSTART:" + icsStamp(e.date, e.time)].concat(last > e.date ? ["DTEND:" + icsStamp(last, "23:59")] : []);
+      var en = last > e.date ? e.end : e.end > e.time ? e.end : addMin(e.time, 60);
       return ["DTSTART:" + icsStamp(e.date, e.time), "DTEND:" + icsStamp(last, en)];
     }
     return ["DTSTART;VALUE=DATE:" + e.date.replace(/-/g, ""), "DTEND;VALUE=DATE:" + plusDays(last, 1).replace(/-/g, "")];
@@ -1460,7 +1535,7 @@
     }
     else if (r.f === "m") p = "FREQ=MONTHLY" + (r.nth ? ";BYDAY=" + r.nth + BYD[wdx(e.date)] : "");
     else p = "FREQ=YEARLY";
-    return "RRULE:" + p + (r.until ? ";UNTIL=" + r.until.replace(/-/g, "") : "");
+    return "RRULE:" + p + (r.until ? ";UNTIL=" + r.until.replace(/-/g, "") + (e.time ? "T235959" : "") : "");
   }
   function exdate(e) { return e.time ? "EXDATE:" + e.ex.map(function (k) { return icsStamp(k, e.time); }).join(",") : "EXDATE;VALUE=DATE:" + e.ex.map(function (k) { return k.replace(/-/g, ""); }).join(","); }
   // Regel vereinfachen: was das alte Format kann, bleibt im alten Format (ältere Geräte verstehen es weiter)
@@ -1802,8 +1877,14 @@
     }
     // gemeinsamer Kalender: frühere Einträge dieser Wochenplanung ersetzen
     mutate(function (d) {
-      d.events.forEach(function (e) { if (e.wp === mon && !e.deleted) { e.deleted = true; e.changed = Date.now(); } });
-      list.forEach(function (n) { d.events.push(n); });
+      // Vergangenes und Einträge mit Status (erledigt, ausgelassen, verschoben) bleiben – sonst änderte sich die Wochenbilanz nachträglich
+      var kept = [];
+      d.events.forEach(function (e) {
+        if (e.wp !== mon || e.deleted) return;
+        if (e.date < t || e.status || e.from) { kept.push(e); return; }
+        e.deleted = true; e.changed = Date.now();
+      });
+      list.forEach(function (n) { if (!kept.some(function (k) { return k.title === n.title && (k.date === n.date || k.from === n.date); })) d.events.push(n); });
     });
     var out = list.slice();
     // Atmung & HRV: Einträge im Atemplan (erscheinen dort und in allen Kalendern)
@@ -2078,12 +2159,15 @@
   };
   // automatisch: diese Woche (falls noch nicht geplant) und ab Freitag auch die nächste
   function stdAuto() {
-    var c = wpCfg(); if (EMBED || !c.on || !c.stdAuto || !c.std) return;
+    var c = wpCfg();
+    // 3.8.0: das automatische Eintragen jede Woche einmalig ausschalten (zu viele Einträge); von Hand bleibt „Standardwoche übernehmen“
+    if (!EMBED && c.stdAuto && !c.auto38) { c.stdAuto = false; c.auto38 = 1; wpSave(c); return; }
+    if (EMBED || !c.on || !c.stdAuto || !c.std) return;
     var t = iso(new Date()), mons = [mondayOf(t)]; if ((new Date().getDay() + 6) % 7 >= 4) mons.push(plusDays(mondayOf(t), 7));
     mons.forEach(function (m) { if (!wpCfg().planned[m]) stdApply(m); });
   }
   setTimeout(stdAuto, 3000);
-  setTimeout(areaFill, 800);
+  // area wird nicht nachgespeichert (nur abgeleitet): sonst lüden sich ältere und neue Geräte beim Abgleich gegenseitig endlos hoch
   api.weekPlanSave = function (c) { wpSave(c); renderWpToast(); };
 
   /* ---------- Handykalender: Abgleich mit dem Kalender auf dem Handy über Kalenderdateien ----------
@@ -2168,20 +2252,27 @@
       else if (name === "DESCRIPTION") ev.note = (ev.note ? ev.note + "\n" : "") + txt;
       else if (name === "LOCATION" && txt) ev.note = (ev.note ? ev.note + "\n" : "") + "Ort: " + txt;
       else if (name === "UID") ev.uid = txt;
+      else if (name === "RECURRENCE-ID") { var ri = icsDate(val, params); if (ri) ev._rid = ri.date; }   // geändertes Einzelvorkommen einer Serie
       else if (name === "DTSTART") { var s = icsDate(val, params); if (s) { ev.date = s.date; ev.time = s.time; } }
       else if (name === "DTEND") { var e2 = icsDate(val, params); if (e2) ev._end = e2; }
       else if (name === "DURATION") { var du = /PT(?:(\d+)H)?(?:(\d+)M)?/.exec(val); if (du) ev._dur = (+(du[1] || 0)) * 60 + (+(du[2] || 0)); }
       else if (name === "RRULE") {
-        var fq = (/FREQ=(\w+)/.exec(val) || [])[1], iv = +((/INTERVAL=(\d+)/.exec(val) || [])[1] || 1), un = (/UNTIL=(\d{8})/.exec(val) || [])[1], by = (/BYDAY=([^;]+)/.exec(val) || [])[1];
+        var cnt = +((/COUNT=(\d+)/.exec(val) || [])[1] || 0), fq = (/FREQ=(\w+)/.exec(val) || [])[1], iv = +((/INTERVAL=(\d+)/.exec(val) || [])[1] || 1), un = (/UNTIL=(\d{8})/.exec(val) || [])[1], by = (/BYDAY=([^;]+)/.exec(val) || [])[1];
         var f = { DAILY: "d", WEEKLY: "w", MONTHLY: "m", YEARLY: "y" }[fq], rp = f ? { f: f } : null;
         if (rp && f === "w") { rp.iv = iv; if (by) rp.days = by.split(",").map(function (x) { return BYD.indexOf(x.trim().slice(-2).toUpperCase()); }).filter(function (d) { return d >= 0; }); }
         else if (rp && f === "d") rp.iv = iv;
         else if (rp && f === "m") { var nm = by && /^([+-]?\d)(\w\w)$/.exec(by.trim()); if (nm) rp.nth = +nm[1]; if (iv > 1 || (by && !nm)) rp = null; }
         else if (rp && iv > 1) rp = null;   // alle N Jahre: kann der Kalender nicht – dann als einzelner Termin
-        if (rp) { if (un) rp.until = un.slice(0, 4) + "-" + un.slice(4, 6) + "-" + un.slice(6, 8); ev._rep = rp; }
+        if (rp) { if (un) rp.until = un.slice(0, 4) + "-" + un.slice(4, 6) + "-" + un.slice(6, 8); ev._rep = rp; if (cnt) ev._count = cnt; }
       }
       else if (name === "EXDATE") val.split(",").forEach(function (x) { var d0 = /^(\d{4})(\d{2})(\d{2})/.exec(x.trim()); if (d0) (ev._ex = ev._ex || []).push(d0[1] + "-" + d0[2] + "-" + d0[3]); });
       else if (name === "STATUS" && /CANCELLED/i.test(val)) ev.cancelled = true;
+    });
+    // geänderte Einzelvorkommen (RECURRENCE-ID): in der Serie auslassen, sie stehen als eigener Termin da
+    out.forEach(function (e) {
+      if (!e._rid) return;
+      var m = out.find(function (x) { return x !== e && !x._rid && x.uid && x.uid === e.uid && x._rep; });
+      if (m) (m._ex = m._ex || []).push(e._rid);
     });
     return out.filter(function (e) { return !e.cancelled; }).map(function (e) {
       var r = { title: e.title || "Termin", date: e.date, time: e.time || "", end: "", note: e.note || "", uid: e.uid || "", rep: e._rep ? repNorm(e._rep, e.date) : null, remind: e.remind == null ? null : e.remind };
@@ -2189,11 +2280,14 @@
       else if (r.time && e._end && e._end.date > r.date) {
         // über Mitternacht bis 0:00 = bis zum Ende des Vortags
         if (e._end.time === "00:00") { var lt = plusDays(e._end.date, -1); if (lt > r.date) r.endDate = lt; else r.end = "23:59"; }
-        else { r.endDate = e._end.date; r.end = e._end.time; }
+        else { r.endDate = e._end.date; r.end = e._end.time === "23:59" ? "" : e._end.time; }
       }
       else if (r.time && e._dur) r.end = addMin(r.time, e._dur);
       if (!r.time && e._end && e._end.date) { var last = plusDays(e._end.date, -1); if (last > r.date) r.endDate = last; }
       if (r.rep && e._ex) r.ex = e._ex.filter(function (k, i, a) { return a.indexOf(k) === i; }).sort();
+      // COUNT=n: Serie endet nach n Terminen (in ein Enddatum umgerechnet)
+      if (r.rep && e._count && !r.rep.until) { var st = repStarts({ date: r.date, rep: r.rep }, r.date, plusDays(r.date, 366 * 30)); if (st.length >= e._count) r.rep.until = st[e._count - 1]; }
+      if (e.cancelled === undefined && e._rid) r.rid = e._rid;
       return r;
     });
   }
@@ -2290,8 +2384,8 @@
       ev.h = strHash([ev.title, ev.start, ev.end, ev.description, ev.reminder].join("|"));
       out.push(ev);
     }
-    if (opt.termine) occurrences(from, to).forEach(function (e) {
-      if (e.app === "Handy" || (e.of > 1 && e.day > 1 && e.date !== from)) return;   // mehrtägig: einmal (am ersten Tag oder am Anfang des Zeitraums)
+    if (opt.termine) withStatus(occurrences(from, to)).forEach(function (e) {
+      if (e.app === "Handy" || e.st === "skip" || (e.of > 1 && e.day > 1 && e.date !== from)) return;   // Ausgelassenes nicht ins Handy   // mehrtägig: einmal (am ersten Tag oder am Anfang des Zeitraums)
       add(e, (e.note ? e.note + "\n" : "") + "Planer · " + e.app);
     });
     var ext = []; try { ext = externalItems(from, to, true); } catch (x) {}
@@ -2308,6 +2402,80 @@
     }
     return out;
   }
+  /* ---------- Webkalender (Abo per Link) ----------
+   * Für Kalender, die Google nur per Internetadresse einbindet und die nicht aufs Handy synchronisiert werden:
+   * Die App holt die .ics-Datei selbst (in der APK über CapacitorHttp, ohne CORS-Grenzen), speichert sie für offline
+   * und frischt sie alle 3 Stunden auf, sobald Netz da ist. Einträge sind nur lesbar (ro), erscheinen überall im Kalender,
+   * gehen aber nicht zurück in den Handykalender. ABO_KEY wird mit der Cloud-Sicherung abgeglichen (Einstellungen). */
+  var ABO_KEY = "sg-abos-v1", ABO_EVERY = 3 * 3600e3;
+  function aboState() { var s = jkey(ABO_KEY) || {}; s.list = s.list || []; return s; }
+  function aboSave(s) { try { localStorage.setItem(ABO_KEY, JSON.stringify(s)); } catch (e) {} JC[ABO_KEY] = null; }
+  function aboUrl(u) { u = String(u || "").trim(); return u.replace(/^webcals?:\/\//i, "https://"); }
+  function httpText(url) {
+    var CH = null; try { var Cp = window.top.Capacitor; CH = Cp && Cp.isNativePlatform && Cp.isNativePlatform() && Cp.Plugins && Cp.Plugins.CapacitorHttp; } catch (e) {}
+    if (CH) return CH.get({ url: url, responseType: "text", headers: { Accept: "text/calendar, */*" } }).then(function (r) {
+      if (r.status >= 400) throw new Error("Fehler " + r.status);
+      return typeof r.data === "string" ? r.data : JSON.stringify(r.data || "");
+    });
+    return fetch(url, { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("Fehler " + r.status); return r.text(); });
+  }
+  // nur, was den Kalender betrifft: ab 60 Tagen zurück (Serien, solange sie laufen), höchstens 4000 Einträge
+  function aboTrim(list) {
+    var from = plusDays(iso(new Date()), -60);
+    return list.filter(function (e) { return e.date >= from || (e.endDate && e.endDate >= from) || (e.rep && (!e.rep.until || e.rep.until >= from)); }).slice(0, 4000)
+      .map(function (e) { var o = { t: e.title, d: e.date }; if (e.time) o.h = e.time; if (e.end) o.e = e.end; if (e.endDate) o.b = e.endDate; if (e.rep) o.r = e.rep; if (e.ex) o.x = e.ex; if (e.note) o.n = e.note.slice(0, 400); return o; });
+  }
+  function aboFetch(id) {
+    var s = aboState(), a = s.list.find(function (x) { return x.id === id; }); if (!a) return Promise.resolve(null);
+    return httpText(aboUrl(a.url)).then(function (txt) {
+      if (!/BEGIN:VCALENDAR/i.test(txt)) throw new Error("Unter dieser Adresse liegt keine Kalenderdatei (.ics).");
+      var list = parseIcs(txt), s2 = aboState(), a2 = s2.list.find(function (x) { return x.id === id; }); if (!a2) return null;
+      var nm = (/X-WR-CALNAME:([^\r\n]+)/i.exec(txt) || [])[1];
+      a2.ev = aboTrim(list); a2.at = Date.now(); a2.err = ""; if (!a2.name && nm) a2.name = nm.trim().slice(0, 60);
+      aboSave(s2); emit(); return { n: a2.ev.length };
+    }).catch(function (e) {
+      var s3 = aboState(), a3 = s3.list.find(function (x) { return x.id === id; });
+      if (a3) { a3.err = navigator.onLine === false ? "offline" : String(e && e.message || e).slice(0, 160); a3.tried = Date.now(); aboSave(s3); }
+      return { error: a3 && a3.err };
+    });
+  }
+  function aboRefresh(force) {
+    if (EMBED) return Promise.resolve([]);
+    var now = Date.now();
+    return Promise.all(aboState().list.filter(function (a) { return a.on !== false && (force || !a.at || now - a.at > ABO_EVERY) && (force || !a.tried || now - a.tried > 15 * 60e3); }).map(function (a) { return aboFetch(a.id); }));
+  }
+  function aboItems(from, to) {
+    var out = [];
+    aboState().list.forEach(function (a) {
+      if (a.on === false || !a.ev) return;
+      var base = a.ev.map(function (o, i) {
+        return { id: "ab-" + a.id + "-" + i, title: o.t || "(ohne Titel)", date: o.d, time: o.h || "", end: o.e || "", endDate: o.b || "", rep: o.r || null, ex: o.x || null, note: o.n || "",
+          app: "Webkalender", area: "termin", color: a.color || "", ro: a.name || "Webkalender", abo: a.id };
+      });
+      out = out.concat(occurrences(from, to, base));
+    });
+    return out;
+  }
+  if (!EMBED) {
+    setTimeout(function () { aboRefresh(false); }, 4000);
+    setInterval(function () { if (!document.hidden) aboRefresh(false); }, 20 * 60e3);
+    window.addEventListener("online", function () { aboRefresh(false); });
+  }
+  api.abo = {
+    list: function () { return aboState().list.map(function (a) { return { id: a.id, name: a.name || "Webkalender", url: a.url, on: a.on !== false, color: a.color || "", at: a.at || 0, err: a.err || "", n: (a.ev || []).length }; }); },
+    // Adresse hinzufügen und gleich laden; Ergebnis { id, n } oder { error }
+    add: function (url, name, color) {
+      url = aboUrl(url);
+      if (!/^https?:\/\/\S+$/i.test(url)) return Promise.resolve({ error: "Bitte die Internetadresse des Kalenders einfügen (beginnt mit https:// oder webcal://)." });
+      var s = aboState();
+      if (s.list.some(function (a) { return aboUrl(a.url) === url; })) return Promise.resolve({ error: "Diesen Kalender gibt es schon." });
+      var id = uid(); s.list.push({ id: id, url: url, name: (name || "").trim().slice(0, 60), color: color || COLORS[s.list.length % COLORS.length], on: true }); aboSave(s);
+      return aboFetch(id).then(function (r) { r = r || {}; r.id = id; return r; });
+    },
+    remove: function (id) { var s = aboState(); s.list = s.list.filter(function (a) { return a.id !== id; }); aboSave(s); emit(); },
+    set: function (id, patch) { var s = aboState(), a = s.list.find(function (x) { return x.id === id; }); if (!a) return; ["name", "on", "color"].forEach(function (k) { if (k in patch) a[k] = patch[k]; }); aboSave(s); emit(); },
+    refresh: function (id) { return id ? aboFetch(id) : aboRefresh(true); }
+  };
   function phoneItems(from, to) {
     var s = jkey(HKEY);
     if (!s || !s.on || !s.cache || !HP()) return [];
@@ -2344,7 +2512,7 @@
           note: [e.location ? "Ort: " + e.location : "", e.description || ""].filter(Boolean).join("\n"), ro: "Handykalender", phone: { eventId: e.eventId, recurring: !!e.recurring, begin: e.begin, end: e.end, allDay: !!e.allDay } };
       });
       res.read = list.length;
-      var cals = (x[1].calendars || []).filter(function (c) { return !c.own; }).map(function (c) { return { id: String(c.id), name: c.name, account: c.account, color: c.color, visible: c.visible }; });
+      var cals = (x[1].calendars || []).filter(function (c) { return !c.own; }).map(function (c) { return { id: String(c.id), name: c.name, account: c.account, color: c.color, visible: c.visible, sync: c.sync !== false }; });
       var before = JSON.stringify(s.cache.events || []);
       s.cache = { at: Date.now(), events: list }; s.cals = cals; s.last = Date.now(); s.err = ""; s.lastRes = res;
       hSave(s);
@@ -2371,6 +2539,15 @@
     },
     disable: function () { var s = hState(); s.on = false; s.err = ""; hSave(s); emit(); },
     setOpt: function (k, v) { var s = hState(); s.opt[k] = !!v; hSave(s); return hSync(true); },
+    // per Link eingebundener Google-Kalender, der auf dem Handy nicht synchronisiert wird: Synchronisieren einschalten, dann neu lesen
+    enableSync: function (id) {
+      var P = HP(); if (!P || !P.enableSync) return Promise.resolve({ error: "nur in der Android-App" });
+      return P.enableSync({ id: +id }).then(function (r) {
+        var s = hState(); delete s.off[String(id)]; hSave(s);
+        setTimeout(function () { hSync(true); }, 8000); setTimeout(function () { hSync(true); }, 40000);   // Google braucht einen Moment
+        return hSync(true).then(function () { return r; });
+      }).catch(function (e) { return { error: String(e && (e.message || e.code) || e) }; });
+    },
     setCal: function (id, on) { var s = hState(); if (on) delete s.off[id]; else s.off[id] = 1; hSave(s); emit(); },
     sync: hSync,
     out: function () { return hOut(hState().opt); },
@@ -2397,8 +2574,8 @@
   function rPlan(opt) {
     var now = Date.now(), from = iso(new Date()), to = iso(new Date(now + 14 * 864e5)), out = [];
     function at(k, t) { var d = parse(k); var p = t.split(":"); d.setHours(+p[0], +p[1], 0, 0); return d.getTime(); }
-    occurrences(from, to).forEach(function (e) {
-      if (!e.time || e.app === "Handy" || e.status === "skip" || e.status === "done") return;   // mehrtägig: Uhrzeit steht nur am ersten Tag
+    withStatus(occurrences(from, to)).forEach(function (e) {
+      if (!e.time || e.app === "Handy" || e.st) return;   // mehrtägig: Uhrzeit steht nur am ersten Tag
       var start = at(e.date, e.time), tr = /^(Training|Mobility|Rodeln)/.test(e.app || "");
       if (opt.termine && e.remind != null && e.remind !== "") out.push({ key: "r-" + e.id + "@" + e.date, at: start - (+e.remind) * 60000, title: e.title, body: (+e.remind ? "In " + (+e.remind >= 60 ? (+e.remind / 60) + " Std." : (+e.remind) + " Min.") : "Jetzt") + " · " + e.time + " Uhr", go: tr ? (e.app === "Mobility" ? "mobility/mobility/heute" : "training/heute") : "kalender" });
       if (opt.training && tr) out.push({ key: "t-" + e.id + "@" + e.date, at: start, title: e.title + " – jetzt starten", body: "Antippen, dann geht es los", go: e.app === "Mobility" ? "mobility/mobility/heute" : "training/heute" });

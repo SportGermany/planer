@@ -145,7 +145,8 @@ public class PlanerKalenderPlugin extends Plugin {
                         Calendars.ACCOUNT_TYPE,
                         Calendars.CALENDAR_COLOR,
                         Calendars.VISIBLE,
-                        Calendars.CALENDAR_ACCESS_LEVEL
+                        Calendars.CALENDAR_ACCESS_LEVEL,
+                        Calendars.SYNC_EVENTS
                     },
                     null,
                     null,
@@ -162,11 +163,58 @@ public class PlanerKalenderPlugin extends Plugin {
                 o.put("visible", c.getInt(5) == 1);
                 o.put("writable", c.getInt(6) >= Calendars.CAL_ACCESS_CONTRIBUTOR);
                 o.put("own", c.getLong(0) == own);
+                // Google-Kalender, die nur per Internetadresse eingebunden sind, stehen oft mit „nicht synchronisieren“ im Handy
+                o.put("sync", c.isNull(7) || c.getInt(7) == 1);
                 list.put(o);
             }
         }
         JSObject r = new JSObject();
         r.put("calendars", list);
+        call.resolve(r);
+    }
+
+    /**
+     * Kalender auf dem Handy synchronisieren lassen (z. B. per Link eingebundene Google-Kalender):
+     * SYNC_EVENTS und VISIBLE dürfen auch Apps setzen; danach Abgleich des Kontos anstoßen.
+     */
+    @PluginMethod
+    public void enableSync(PluginCall call) {
+        if (!granted(call)) return;
+        long id = call.getLong("id", -1L);
+        if (id < 0) {
+            call.reject("id fehlt", "NO_ID");
+            return;
+        }
+        String accName = null, accType = null;
+        try (Cursor c = cr().query(ContentUris.withAppendedId(Calendars.CONTENT_URI, id), new String[] { Calendars.ACCOUNT_NAME, Calendars.ACCOUNT_TYPE }, null, null, null)) {
+            if (c != null && c.moveToFirst()) {
+                accName = c.getString(0);
+                accType = c.getString(1);
+            }
+        }
+        ContentValues v = new ContentValues();
+        v.put(Calendars.SYNC_EVENTS, 1);
+        v.put(Calendars.VISIBLE, 1);
+        int n = 0;
+        try {
+            n = cr().update(ContentUris.withAppendedId(Calendars.CONTENT_URI, id), v, null, null);
+        } catch (Exception e) {
+            call.reject("Das Handy erlaubt das Einschalten hier nicht: " + e.getMessage(), "DENIED");
+            return;
+        }
+        boolean asked = false;
+        if (accName != null && accType != null) {
+            try {
+                android.os.Bundle ex = new android.os.Bundle();
+                ex.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
+                ex.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
+                ContentResolver.requestSync(new android.accounts.Account(accName, accType), CalendarContract.AUTHORITY, ex);
+                asked = true;
+            } catch (Exception ignored) {}
+        }
+        JSObject r = new JSObject();
+        r.put("updated", n);
+        r.put("syncRequested", asked);
         call.resolve(r);
     }
 

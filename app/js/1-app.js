@@ -472,14 +472,24 @@
     var day = (CD.by[sel] || []).slice().sort(function (x, y) { return (x.time ? 1 : 0) - (y.time ? 1 : 0); }), tasks = tasksFor(sel);
     var grid = dayView() === "grid" && day.some(function (e) { return e.time; });
     var h = '<div class="grp" id="dayplan"><header><span>' + (sel === t ? "Heute · " : sel === plus(t, 1) ? "Morgen · " : sel === plus(t, -1) ? "Gestern · " : "") + WDL[sd.getDay()] + ", " + sd.getDate() + ". " + MO[sd.getMonth()] + "</span>" +
-      (day.some(function (e) { return e.time; }) ? '<span class="seg2" role="group" aria-label="Ansicht"><button data-c="vlist" aria-pressed="' + !grid + '">Liste</button><button data-c="vgrid" aria-pressed="' + grid + '">Zeitraster</button></span>' : "") +
-      '<button class="lnk" data-c="new">+ Eintrag</button></header>';
+      '<button class="lnk" data-c="new">+ Eintrag</button></header>' +
+      (day.filter(function (e) { return e.time; }).length > 1 ? '<div class="seg2" role="group" aria-label="Ansicht"><button data-c="vlist" aria-pressed="' + !grid + '">Liste</button><button data-c="vgrid" aria-pressed="' + grid + '">Zeitraster</button></div>' : "");
     if (!day.length && !tasks.length) h += '<div class="cells"><div class="empty">Nichts geplant.<div class="btns" style="margin-top:12px"><button class="btn" data-c="week">Woche planen</button>' +
       (c && c.weekPlanConfig && c.weekPlanConfig().std ? '<button class="btn p" data-c="std">Standardwoche übernehmen</button>' : "") + "</div></div></div>";
     else if (grid) h += timeGrid(day, sel === t) + '<div class="cells">' + tasks.map(taskRow).join("") + "</div>";
     else h += '<div class="cells">' + dayRows(day, sel === t) + tasks.map(taskRow).join("") + "</div>";
     $("cal-day").innerHTML = h + "</div>";
-    dayPlan.min = nowMin();
+    dayPlan.min = nowMin(); dayPlan.slot = nowSlot(day);
+  }
+  // Platz der Jetzt-Linie: wie viele Einträge mit Uhrzeit schon begonnen haben
+  function nowSlot(day) { var n = nowMin(); return (day || CD && CD.by[calSel] || []).filter(function (e) { return e.time && tmin(e.time) <= n; }).length; }
+  // jede halbe Minute: nur Uhrzeit der Linie aktualisieren; neu zeichnen nur, wenn sie an eine andere Stelle rückt und niemand im Tagesplan ist
+  function tickNow() {
+    var l = document.querySelector("#dayplan .nowl"), g = document.querySelector("#dayplan .tnow"), n = nowMin();
+    if (!l && !g) return;
+    if (l) { l.querySelector("span").textContent = hm(n); l.setAttribute("aria-label", "Jetzt, " + hm(n) + " Uhr"); }
+    if (g) g.style.top = Math.round((n - 360) * 0.9) + "px";
+    if (l && nowSlot() !== dayPlan.slot && !$("cal-day").contains(document.activeElement)) renderDay();
   }
   function nowMin() { var n = new Date(); return n.getHours() * 60 + n.getMinutes(); }
   function hm(m) { return pad(Math.floor(m / 60)) + ":" + pad(m % 60); }
@@ -516,18 +526,19 @@
     var h = (allday.length ? '<div class="cells">' + allday.map(function (e) { return evRow(e, isT); }).join("") + "</div>" : "") + '<div class="tgrid" style="height:' + Math.round((H1 - H0) * PX) + 'px">';
     for (var m = H0; m <= H1; m += 60) h += '<div class="tl" style="top:' + Math.round((m - H0) * PX) + 'px"><span>' + pad(m / 60) + "</span></div>";
     timed.forEach(function (e) {
-      var A = AREA[area(e)], top = Math.round((Math.max(H0, Math.min(H1 - 20, e._a)) - H0) * PX), ht = Math.max(22, Math.round((Math.min(H1, e._b) - Math.max(H0, e._a)) * PX)), w = 100 / e._n;
+      var A = AREA[area(e)], top = Math.round((Math.max(H0, Math.min(H1 - 36, e._a)) - H0) * PX), ht = Math.max(36, Math.round((Math.min(H1, e._b) - Math.max(H0, e._a)) * PX)), w = 100 / e._n, short = ht < 48;
       h += '<button class="tb' + (e.st === "skip" ? " skip" : e.st === "done" ? " evd" : "") + '" data-ev="' + e._k + '" style="--c:' + A.c + ";top:" + top + "px;height:" + ht + "px;left:calc(44px + (100% - 48px) * " + (e._col * w / 100).toFixed(4) + ");width:calc((100% - 48px) * " + (w / 100).toFixed(4) + ' - 3px)">' +
-        "<b>" + (e.st === "done" ? "✓ " : "") + esc(e.title || "(ohne Titel)") + "</b><small>" + esc(e.time) + (e.end ? "–" + esc(e.end) : "") + "</small></button>";
+        '<span class="tbi' + (short ? " one" : "") + '"><b>' + (e.st === "done" ? "✓ " : "") + esc(e.title || "(ohne Titel)") + "</b><small>" + esc(e.time) + (e.end ? "–" + esc(e.end) : "") + "</small></span></button>";
     });
     if (isT) { var nm = nowMin(); if (nm >= H0 && nm <= H1) h += '<div class="tnow" style="top:' + Math.round((nm - H0) * PX) + 'px" aria-hidden="true"></div>'; }
     return h + "</div>";
   }
   function dayView() { try { return localStorage.getItem("sg-tagesansicht-v1") === "grid" ? "grid" : "list"; } catch (e) { return "list"; } }
   function monthMarks(k, wide, lanes) {
-    var all = (CD.by[k] || []).filter(function (e) { return !(e.of > 1 && SPANS.lane[e.id + "@" + e.occ] != null); }).map(function (e) { return [area(e), e.title]; })
+    var inBar = function (e) { return e.of > 1 && (SPANS.cell[k] || []).some(function (z) { return z.key === e.id + "@" + e.occ; }); };
+    var all = (CD.by[k] || []).filter(function (e) { return !inBar(e); }).map(function (e) { return [area(e), e.title]; })
       .concat(openTasks(k).map(function (q) { return ["aufgabe", q.title]; }));
-    var cap = Math.max(1, 3 - (lanes || 0)), nAll = all.length + (CD.by[k] || []).length - (CD.by[k] || []).filter(function (e) { return !(e.of > 1 && SPANS.lane[e.id + "@" + e.occ] != null); }).length;
+    var cap = Math.max(1, 3 - (lanes || 0)), nAll = all.length + (CD.by[k] || []).filter(inBar).length;
     var h = all.slice(0, cap).map(function (x) {
       var A = AREA[x[0]];
       return wide ? '<span class="ml" style="--c:' + A.c + '">' + ico(A.ic) + "<em>" + esc(x[1] || "(ohne Titel)") + "</em></span>" : '<span class="mb" style="--c:' + A.c + '">' + ico(A.ic) + "<i></i></span>";
@@ -546,15 +557,17 @@
       list.push({ key: key, a: a, b: b, e: e });
     });
     list.sort(function (x, y) { return x.a.localeCompare(y.a) || y.b.localeCompare(x.b); });
-    list.forEach(function (x) {
-      var li = laneEnd.findIndex(function (z) { return z < x.a; }); if (li < 0) li = laneEnd.length;
-      if (li > 1) return;   // mehr als zwei gleichzeitig: als Punkt wie andere Einträge
-      laneEnd[li] = x.b; SPANS.lane[x.key] = li;
-      for (var k = x.a; k <= x.b; k = plus(k, 1)) {
-        var wd = (parse(k).getDay() + 6) % 7;
-        (SPANS.cell[k] = SPANS.cell[k] || []).push({ lane: li, s: k === x.a || wd === 0, f: k === x.b || wd === 6, t: x.e.title || "", c: AREA[area(x.e)].c, real: k === x.e.occ });
-      }
-    });
+    // Bahnen je Wochenzeile: ein dritter Zeitraum bekommt ab der nächsten Woche einen Balken, sobald dort Platz ist
+    for (var w = 0; w < 6; w++) {
+      var ws = plus(from, w * 7), we = plus(ws, 6), used = [];
+      list.forEach(function (x) {
+        var a = x.a > ws ? x.a : ws, b = x.b < we ? x.b : we; if (a > b) return;
+        var li = used.findIndex(function (z) { return z < a; }); if (li < 0) li = used.length;
+        if (li > 1) return;   // mehr als zwei gleichzeitig in dieser Woche: als Punkt
+        used[li] = b; SPANS.lane[x.key + "@" + ws] = li; SPANS.lane[x.key] = SPANS.lane[x.key] == null ? li : SPANS.lane[x.key];
+        for (var k = a; k <= b; k = plus(k, 1)) (SPANS.cell[k] = SPANS.cell[k] || []).push({ lane: li, s: k === a, f: k === b, t: x.e.title || "", c: AREA[area(x.e)].c, key: x.key });
+      });
+    }
   }
   function spanHTML(k, wide) {
     return (SPANS.cell[k] || []).map(function (z) {
@@ -588,7 +601,7 @@
   function renderGlance() { $("cal-glance").innerHTML = calSel === today() ? '<div class="grp"><header><span>Auf einen Blick</span></header>' + glance() + "</div>" : ""; }
   function renderNext() {
     needData();
-    var sel = calSel, rows = CD.list.filter(function (e) { return e.date > sel && !(e.of > 1 && e.day > 1 && e.date > plus(sel, 1)); }).map(function (e) { return { k: e.date, tm: e.time || "", t: e.title, c: AREA[area(e)].c }; })
+    var sel = calSel, rows = CD.list.filter(function (e) { return e.date > sel && !(e.of > 1 && e.day > 1); }).map(function (e) { return { k: e.date, tm: e.time || "", t: e.title, c: AREA[area(e)].c }; })
       .concat(CD.tasks.filter(function (q) { return !q.done && q.due && q.due > sel; }).map(function (q) { return { k: q.due, tm: "", t: q.title, c: AREA.aufgabe.c, task: 1 }; }))
       .sort(function (a, b) { return (a.k + (a.tm || "~")).localeCompare(b.k + (b.tm || "~")); }).slice(0, 5);
     $("cal-next").innerHTML = '<div class="grp next"><header><span>Danach</span></header><div class="cells">' + (rows.length ? rows.map(function (x) {
@@ -689,7 +702,7 @@
   // nächster wichtiger Termin (Stern) oder Prüfung aus der Schule, mit Countdown
   function nextImportant() {
     var t = today(), hit = null;
-    try { hit = C().allItems(t, plus(t, 365)).find(function (e) { return (e.star || e.exam) && e.st !== "skip" && !(e.of > 1 && e.day > 1) && (e.date > t || !e.time || e.time >= hm(nowMin())); }); } catch (e) {}
+    try { hit = C().nextImportant(t, hm(nowMin())); } catch (e) {}
     if (!hit) return null;
     var n = Math.round((parse(hit.date) - parse(t)) / 864e5);
     return { date: hit.date, title: hit.title || "Termin", label: n === 0 ? "heute" : n === 1 ? "morgen" : "in " + n + " Tagen" };
@@ -705,7 +718,7 @@
       var wp = c.weekPlanConfig && c.weekPlanConfig(), mon = monday(today());
       if (wp && wp.on && !wp.planned[mon] && !wp.planned[plus(mon, 7)]) out.push(["training", "wand", "Woche planen", wp.std ? "Standard mit 1 Tipp" : "in 2 Minuten", "week"]);
     } catch (e) {}
-    var ni = nextImportant(); if (ni) out.splice(Math.min(1, out.length), 0, ["termin", "star", ni.label, ni.title, "imp:" + ni.date]);
+    var ni = nextImportant(); if (ni) out.splice(Math.min(1, out.length), 0, ["termin", "star", ni.label, "Wichtig: " + ni.title, "imp:" + ni.date, "Nächster wichtiger Termin " + ni.label + ": " + ni.title]);
     var b = null; try { b = JSON.parse(localStorage.getItem("zweiminutenbibel_v2") || "null"); } catch (e) {}
     // todayDone ist in der Bibel {date, ids} (Tagesziel dailyGoal); früher ein Datum
     // wie die Bibel selbst: heute gelesen, sobald lastDate heute ist; sonst todayDone (neu {date, ids}, alt ein Datum)
@@ -714,7 +727,7 @@
     var w = null; try { w = JSON.parse(localStorage.getItem("sg-wissen-v1") || "null"); } catch (e) {}
     if (w && w.sum && w.sum.due) out.push(["training", "book", w.sum.due + " Karten", "Sportwissenschaft", "karten"]);
     return '<div class="glance">' + out.slice(0, out.length > 4 ? 6 : 4).map(function (x) {   // mit „wichtig“ bis zu sechs Kacheln, damit die Bibel nicht herausfällt
-      return '<button class="gl" data-gl="' + x[4] + '" style="--c:var(--c-' + x[0] + ')"><i>' + ico(x[1]) + "</i><b>" + esc(x[2]) + "</b><small>" + esc(x[3]) + "</small></button>";
+      return '<button class="gl" data-gl="' + x[4] + '"' + (x[5] ? ' aria-label="' + esc(x[5]) + '"' : "") + ' style="--c:var(--c-' + x[0] + ')"><i>' + ico(x[1]) + "</i><b>" + esc(x[2]) + "</b><small>" + esc(x[3]) + "</small></button>";
     }).join("") + "</div>";
   }
   window.addEventListener("resize", function () {
@@ -725,7 +738,7 @@
   setInterval(function () {
     if (document.hidden || cur.v !== "kalender") return;
     if (dayRoll()) return renderCal();
-    if (calSel === today() && dayPlan.min !== nowMin() && !sheetOpen) renderDay();   // Jetzt-Linie wandert mit
+    if (calSel === today() && dayPlan.min !== nowMin() && !sheetOpen) { dayPlan.min = nowMin(); tickNow(); }   // Jetzt-Linie wandert mit
   }, 30000);
   $("n-kalender").addEventListener("scroll", function () { if (!toMonthBtn.t) toMonthBtn.t = requestAnimationFrame(function () { toMonthBtn.t = 0; toMonthBtn(); }); }, { passive: true });
   $("tomonth").addEventListener("click", function () { var el = $("n-kalender"), g = $("cal-month"); if (g) scrollCal(Math.max(0, el.scrollTop + g.getBoundingClientRect().top - el.getBoundingClientRect().top - 8)); });
@@ -991,14 +1004,64 @@
       chk('data-h="stunden"', "Stundenplan", "jede Schulstunde (ohne Ferien und Feiertage)", s.opt.stunden) +
       chk('data-h="atmung"', "Atemübungen", "geplante Übungen aus Atmung & HRV", s.opt.atmung) + "</div></div>" +
       (cals.length ? '<div class="grp"><header><span>Aus dem Handy anzeigen</span></header><div class="cells">' + cals.map(function (k) {
-        return chk('data-c="' + esc(k.id) + '"', '<i style="display:inline-block;width:10px;height:10px;border-radius:5px;background:' + esc(k.color) + ';margin-right:8px"></i>' + esc(k.name || "Kalender"), esc(k.account || ""), !s.off[k.id]);
+        // per Link eingebundene Google-Kalender: auf dem Handy oft „nicht synchronisiert“ – dann kommen keine Termine an
+        if (k.sync === false) return '<button class="row" data-s="sy:' + esc(k.id) + '" style="--c:#e5a04b"><span class="ic">' + ico("cloud") + '</span><span class="tx"><b>' + esc(k.name || "Kalender") + '</b><small>wird auf dem Handy nicht synchronisiert – antippen zum Einschalten</small></span></button>';
+        return chk('data-c="' + esc(k.id) + '"', '<i style="display:inline-block;width:10px;height:10px;border-radius:5px;background:' + esc(k.color) + ';margin-right:8px"></i>' + esc(k.name || "Kalender"), esc(k.account || "") + (k.visible === false ? " · im Handy ausgeblendet" : ""), !s.off[k.id]);
       }).join("") + "</div></div>" : "") +
+      '<p class="s">Fehlt ein Kalender, den du in Google per Link eingebunden hast? Dann unter <a href="#" data-s="abo" style="color:var(--acc)">Webkalender</a> die Adresse einfügen – die App holt ihn selbst.</p>' +
       '<div class="btns"><button class="btn" data-s="off">Abgleich aus</button><button class="btn p" data-s="now">Jetzt abgleichen</button></div>', function (act) {
+      if (act === "abo") return aboSheet();
+      if (act.indexOf("sy:") === 0) { snack("Schalte Synchronisieren ein …"); H.enableSync(act.slice(3)).then(function (x) { snack(x && x.error ? x.error + " – sonst im Google-Kalender: Einstellungen › Kalender › Synchronisieren" : "Eingeschaltet – Google lädt die Termine, das kann eine Minute dauern"); refresh(); handySheet(); }); return; }
       if (act === "now") { snack("Gleiche ab …"); H.sync(true).then(function (x) { snack(x && x.error ? "Fehler: " + x.error : "Abgeglichen" + (x ? " – " + (x.added + x.changed) + " ins Handy, " + x.read + " aus dem Handy" : "")); refresh(); handySheet(); }); }
       else if (act === "off") { H.disable(); refresh(); closeSheet(); snack("Abgleich aus – der Kalender „Planer“ bleibt im Handy, bis du ihn dort entfernst"); }
     });
     Array.prototype.forEach.call(document.querySelectorAll("#sheet [data-h]"), function (x) { x.onchange = function () { H.setOpt(x.dataset.h, x.checked).then(function () { refresh(); }); }; });
     Array.prototype.forEach.call(document.querySelectorAll("#sheet [data-c]"), function (x) { x.onchange = function () { H.setCal(x.dataset.c, x.checked); refresh(); }; });
+  }
+  /* Webkalender: per Internetadresse (.ics/webcal) eingebundene Kalender, z. B. Feiertage, Vereins- oder Schulkalender aus Google */
+  function aboBadge() { var a = C() && C().abo; if (!a) return ""; var l = a.list(); if (!l.length) return ""; var bad = l.filter(function (x) { return x.err && x.err !== "offline"; }).length; return bad ? '<em class="bad">! ' + bad + "</em>" : l.length + ""; }
+  function aboSheet() {
+    var A = C().abo, l = A.list();
+    sheet('<h3>Webkalender</h3><p class="s">Kalender, die per Link eingebunden sind (in Google „Andere Kalender › Per URL“), landen oft nicht auf dem Handy. Hier holt die App sie selbst – sie stehen danach auch offline im Kalender und werden alle 3 Stunden aufgefrischt.</p>' +
+      (l.length ? '<div class="grp"><div class="cells">' + l.map(function (a) {
+        var st = a.err ? (a.err === "offline" ? "offline – letzter Stand " + ago(a.at) : "Fehler: " + a.err) : a.n + " Termine · " + ago(a.at);
+        return '<button class="row" data-s="a:' + a.id + '" style="--c:' + esc(a.color || "var(--c-termin)") + '"><span class="ic">' + ico("cal") + '</span><span class="tx"><b>' + esc(a.name) + (a.on ? "" : " (aus)") + "</b><small>" + esc(st) + "</small></span></button>";
+      }).join("") + "</div></div>" : "") +
+      '<div class="btns">' + (l.length ? '<button class="btn" data-s="all">Alle auffrischen</button>' : "") + '<button class="btn p" data-s="add">Webkalender hinzufügen</button></div>' +
+      sRow("kshow", "cal", "Im Kalender zeigen", "Mobility und Atemübungen (Standard: aus)", "var(--muted)"), function (act) {
+      if (act === "add") return aboAddSheet();
+      if (act === "kshow") return calShowSheet();
+      if (act === "all") { snack("Lade Webkalender …"); A.refresh().then(function () { snack("Aufgefrischt"); refresh(); aboSheet(); }); return; }
+      if (act.indexOf("a:") === 0) aboOneSheet(act.slice(2));
+    });
+  }
+  function aboAddSheet() {
+    sheet('<h3>Webkalender hinzufügen</h3><label class="f"><span>Adresse des Kalenders</span><input type="url" id="abu" placeholder="https://… .ics oder webcal://…" autocomplete="off" inputmode="url"></label>' +
+      '<label class="f"><span>Name (optional)</span><input type="text" id="abn" maxlength="60" placeholder="z. B. Verein, Feiertage"></label>' +
+      '<p class="s"><b>Wo finde ich die Adresse?</b> Im Google Kalender am Computer: Einstellungen › links den Kalender wählen › „Kalender integrieren“ › „Öffentliche Adresse im iCal-Format“ (bei eigenen Kalendern: „Geheime Adresse im iCal-Format“). Bei einem per URL hinzugefügten Kalender ist es genau der Link, den du dort eingefügt hast.</p>' +
+      '<div class="btns"><button class="btn" data-s="x">Abbrechen</button><button class="btn p" data-s="ok">Hinzufügen</button></div>', function (x) {
+      if (x !== "ok") return aboSheet();
+      var u = $("abu").value.trim(); if (!u) return $("abu").focus();
+      snack("Lade Kalender …");
+      C().abo.add(u, $("abn").value).then(function (r) {
+        if (r.error) { snack(r.error); return; }
+        snack((r.n || 0) + " Termine übernommen"); refresh(); aboSheet();
+      });
+    });
+    setTimeout(function () { try { $("abu").focus(); } catch (e) {} }, 60);
+  }
+  function aboOneSheet(id) {
+    var A = C().abo, a = A.list().find(function (x) { return x.id === id; }); if (!a) return aboSheet();
+    sheet('<h3>' + esc(a.name) + '</h3><p class="s" style="word-break:break-all">' + esc(a.url) + "</p>" +
+      '<div class="grp"><div class="cells">' + toggleRow('data-ab="on"', "Im Kalender zeigen", a.n + " Termine", a.on) + "</div></div>" +
+      '<label class="f"><span>Name</span><input type="text" id="abn" maxlength="60" value="' + esc(a.name) + '"></label>' +
+      '<div class="btns"><button class="btn" data-s="del">Entfernen</button><button class="btn" data-s="re">Jetzt auffrischen</button><button class="btn p" data-s="ok">Fertig</button></div>', function (x) {
+      if (x === "del") { A.remove(id); refresh(); snack("Webkalender entfernt"); return aboSheet(); }
+      if (x === "re") { snack("Lade …"); A.refresh(id).then(function (r) { snack(r && r.error ? r.error : "Aufgefrischt – " + (r ? r.n : 0) + " Termine"); refresh(); aboOneSheet(id); }); return; }
+      var n = $("abn").value.trim(); if (n && n !== a.name) A.set(id, { name: n });
+      refresh(); aboSheet();
+    });
+    var t = document.querySelector('#sheet [data-ab="on"]'); if (t) t.onchange = function () { A.set(id, { on: t.checked }); refresh(); };
   }
   // Android-App: Erinnerungen als echte Benachrichtigungen
   function remindSheet() {
@@ -1194,6 +1257,9 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["3.8.0", ["Webkalender: per Link eingebundene Google-Kalender holt die App selbst (Mehr › Webkalender); nicht synchronisierte Handykalender lassen sich einschalten",
+      "Mobility und Atemübungen stehen nicht mehr jeden Tag im Kalender (einschaltbar im Webkalender-Blatt › Im Kalender zeigen)",
+      "Termine über mehrere Tage, Serien an bestimmten Wochentagen, „Nur dieser / folgende / alle“", "Einheiten verschieben, auslassen, abhaken – mit Rückgängig; Wochenbilanz, freie Zeiten, Zeitraster, wichtige Termine"]],
     ["3.7.0", ["Seitenmenü statt Chip-Leisten (☰ oben links, Pfadzeile unter dem Titel)", "Training aufgeräumt: Hauptaktion oben, Kennzahlen, Karten zum Aufklappen; Laufen und Kraft getrennt",
       "Schule: „Jetzt / Nächste Stunde“, Offen · Prüfungen · Erledigt, Lernzeit und Ablage im Menü", "Lernblöcke aus dem Lernplan im Kalender, Bibel „Gelesen ✓“ in „Auf einen Blick“"]],
     ["3.6.0", ["Neue Kalender-Startseite: Wochenleiste, Tagesplan, großer Monatskalender", "Langer Druck auf einen Tag trägt etwas ein"]],
@@ -1241,18 +1307,17 @@
       '<div class="grp"><header><span>Planen</span></header><div class="cells">' +
       r("aufgaben", "check", "var(--c-aufgabe)", "Aufgaben", "Heute, geplant, wichtig, erledigt", open ? open + " offen" : "") +
       r("notizen", "note", "var(--c-notiz)", "Notizen", "Ideen, optional mit Erinnerung", notes ? notes + " offen" : "") +
-      r("week", "wand", "var(--c-training)", "Woche planen", "Training, Mobility, Atmung, Lernen", "") +
-      r("std", "clock", "var(--c-training)", "Standardwoche übernehmen", "deine übliche Woche mit einem Tipp", "") + "</div></div>" +
+      r("week", "wand", "var(--c-training)", "Woche planen", "oder Standardwoche mit einem Tipp", "") + "</div></div>" +
       '<div class="grp"><header><span>Lesen und Lernen</span></header><div class="cells">' +
       r("bibel", "book", "var(--c-bibel)", "Bibel", "Abschnitt von heute, Bibliothek", "") +
       r("wissen", "star", "#5ac8fa", "Sportwissenschaft", "Lehrbuch, Karten, Quiz – Hauptort Training", (w && w.sum && w.sum.pct ? w.sum.pct + " % " : "") + link) +
       r("pause", "coffee", "#e5a04b", "Pause", "Ablenken, Wissen, Quiz", "") + "</div></div>" +
       '<div class="grp"><header><span>Abgleich und Sicherung</span></header><div class="cells">' +
       r("handy", "phone", "var(--c-termin)", "Handykalender", nat ? "Abgleich mit dem Kalender des Handys" : "Termine mit dem Handy austauschen", hk) +
+      r("abo", "cal", "var(--c-termin)", "Webkalender", "per Link eingebundene Kalender (z. B. aus Google)", aboBadge()) +
       (er ? r("erinnern", "bell", "#e5a04b", "Erinnerungen", "Benachrichtigungen, auch offline", er) : "") +
       r("sync", "cloud", "#5ac8fa", "Cloud-Sicherung", "Abgleich über GitHub", cl.warn ? '<em class="bad">! ' + cl.val + "</em>" : cl.val) +
-      r("backup", "download", "var(--muted)", "Alles als Datei sichern", "alle Daten in einer Datei", "") +
-      r("restore", "download", "var(--muted)", "Sicherung einspielen", "aus einer gesicherten Datei", "") +
+      r("backup", "download", "var(--muted)", "Sicherung als Datei", "sichern oder einspielen", "") +
       (big ? "" : umz) + "</div></div>" +
       '<div class="grp"><header><span>Darstellung und Einstellungen</span></header><div class="cells">' +
       r("design", "palette", "#8f7cf7", "Design", "Farbwelt und Glaseffekt", "") +
@@ -1291,15 +1356,17 @@
     var b = e.target.closest("[data-m]"); if (!b || b.tagName === "INPUT") return;
     var m = b.dataset.m, c = C();
     if (m === "autodw") return;
+    if (m === "kshow") return calShowSheet();
     if (m === "week") c.weekPlan();
     else if (m === "std") c.weekPlanStd();
     else if (m === "handy") phoneSheet();
+    else if (m === "abo") aboSheet();
     else if (m === "wissen") go("training", "wissen");
     else if (m === "design") c.openDesign();
     else if (m === "sync") c.openSync();
     else if (m === "install") { if (window.SGInstallEvt) window.SGInstallEvt.prompt(); }
     else if (m === "erinnern") remindSheet();
-    else if (m === "backup") moveOut("backup");
+    else if (m === "backup") sheet("<h3>Sicherung als Datei</h3><p class=\"s\">Alle Daten in einer Datei – zum Aufheben oder für ein neues Handy.</p>" + sRow("out", "download", "Alles als Datei sichern", "alle Daten in einer Datei", "var(--muted)") + sRow("in", "download", "Sicherung einspielen", "aus einer gesicherten Datei", "var(--muted)"), function (a) { if (a === "out") moveOut("backup"); else if (a === "in") moveInSheet("restore"); });
     else if (m === "restore") moveInSheet("restore");
     else if (m === "suche") c.palette("");
     else if (m === "umzug") moveOut("umzug");
@@ -1310,6 +1377,14 @@
     else go(m, null, null, { push: true });
   });
   $("n-mehr").addEventListener("change", function (e) { if (e.target.matches('[data-m="autodw"]')) { M.autoDw = e.target.checked; saveM(); } });
+  // Was der Kalender zeigt: Mobility und Atemübungen sind standardmäßig aus (jeden Tag mehrere Einträge waren zu viel)
+  function calShowSheet() {
+    var sh = C().calShow();
+    sheet('<h3>Im Kalender zeigen</h3><p class="s">Die Übungen bleiben in Training › Mobility und Atmung. Hier legst du fest, ob sie zusätzlich jeden Tag im Kalender stehen.</p><div class="grp"><div class="cells">' +
+      toggleRow('data-k="mobility"', "Mobility", "geplante Mobility-Einheiten", sh.mobility) + toggleRow('data-k="atmung"', "Atemübungen", "geplante Übungen aus Atmung & HRV", sh.atmung) +
+      '</div></div><div class="btns"><button class="btn p" data-s="x">Fertig</button></div>', function () { closeSheet(); });
+    Array.prototype.forEach.call(document.querySelectorAll("#sheet [data-k]"), function (x) { x.onchange = function () { C().setCalShow(x.dataset.k, x.checked); CD = null; }; });
+  }
   // Zustand aktuell halten: nach jedem Sicherungslauf, bei Datenänderungen und stündlich (7-Tage-Grenze)
   addEventListener("sg-sync", function () { mehrBadge(); if (cur.v === "mehr") renderMehr(); });
   setInterval(mehrBadge, 36e5);
@@ -1317,7 +1392,7 @@
   function mehrCommands() {
     var c = C(); if (!c || !c.addCommands) return setTimeout(mehrCommands, 200);
     var M_ = function (m) { return function () { go("mehr"); setTimeout(function () { var b = document.querySelector('#n-mehr [data-m="' + m + '"]'); if (b) b.click(); }, 80); }; };
-    c.addCommands([["Handykalender abgleichen", "handy"], ["Erinnerungen einstellen", "erinnern"], ["Cloud-Sicherung", "sync"], ["Alles als Datei sichern", "backup"], ["Sicherung einspielen", "restore"],
+    c.addCommands([["Handykalender abgleichen", "handy"], ["Webkalender abonnieren", "abo"], ["Erinnerungen einstellen", "erinnern"], ["Cloud-Sicherung", "sync"], ["Alles als Datei sichern", "backup"], ["Sicherung einspielen", "restore"],
       [window.SGNative ? "Daten aus Chrome übernehmen" : "In die Android-App umziehen", window.SGNative ? "umzugin" : "umzug"], ["Standardwoche übernehmen", "std"], ["Was ist neu", "neu"], ["Fehlerprotokoll", "diag"],
       ["Seitenmenü automatisch öffnen (Mehr)", "autodw"], ["Version und Update", "update"]].map(function (x) { return { g: "Einstellungen", label: x[0], run: x[1] === "autodw" ? function () { go("mehr"); } : M_(x[1]) }; }));
   }

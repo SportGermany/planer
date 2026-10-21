@@ -13,7 +13,7 @@
 /* Hülle der App: eine Navigation für alles. Unten (Tablet: links) fünf Ziele – Kalender, Training, Mobility, Schule, Mehr.
  * Oben Titel und Chips für die Unterpunkte. Die Bereiche selbst sind die bisherigen Seiten (ohne eigene Leisten),
  * sie bleiben geladen und wechseln dadurch sofort. Farben aus dem gemeinsamen Design (Werte unten nur als Rückfall). */
-:root { --bg: #131313; --s1: #202020; --s2: #272727; --s3: #2f2f2f; --line: #2c2c2c; --ink: #ebebea; --muted: #9b9a97; --faint: #6b6a67; --acc: #529cca; --accfg: #10151c;
+:root { --now: #ff6b70; --bg: #131313; --s1: #202020; --s2: #272727; --s3: #2f2f2f; --line: #2c2c2c; --ink: #ebebea; --muted: #9b9a97; --faint: #6b6a67; --acc: #529cca; --accfg: #10151c;
   --c-training: #57c98d; --c-mobility: #ef7f93; --c-atmung: #ee8f5a; --c-schule: #4f8fe8; --c-notiz: #e0b34e; --c-aufgabe: #6aa6ff; --c-bibel: #d9a86c; --c-termin: var(--acc);
   /* in der APK setzt Android die Ränder als --safe-area-inset-* (Capacitor SystemBars), im Browser gilt env() */
   --top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px)); --bot: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)); color-scheme: dark; }
@@ -275,7 +275,7 @@ textarea.diag { display: block; width: calc(100% - 32px); margin: 0 16px; min-he
 .ml { display: flex; align-items: center; gap: 3px; color: var(--c); min-width: 0; font-size: 11px; line-height: 1.25; }
 .ml svg { width: 11px; height: 11px; flex: none; stroke-width: 2.2; }
 .ml em { font-style: normal; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.ms .more { position: absolute; top: 3px; right: 3px; font-size: 12px; color: var(--muted); font-weight: 700; line-height: 1; }
+.ms .more { align-self: center; font-size: 12px; color: var(--muted); font-weight: 700; line-height: 1; }
 .mgrid.wide .mc { height: 86px; align-items: stretch; }
 .mgrid.wide .mc .n { align-self: center; }
 .mgrid.sll { animation: sll .22s ease-out; } .mgrid.slr { animation: slr .22s ease-out; }
@@ -333,7 +333,7 @@ textarea.diag { display: block; width: calc(100% - 32px); margin: 0 16px; min-he
 .sheet .row { border-radius: 16px; border-top: 0; }
 .sheet label.f { display: block; margin: 10px 16px; }
 .sheet label.f span { display: block; font-size: 12.5px; color: var(--muted); margin: 0 0 6px; }
-.sheet input[type=text], .sheet input[type=date], .sheet input[type=datetime-local], .sheet textarea { width: 100%; min-height: 50px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); padding: 12px 14px; font-size: 16px; outline: none; color-scheme: dark; }
+.sheet input[type=text], .sheet input[type=url], .sheet input[type=date], .sheet input[type=time], .sheet input[type=datetime-local], .sheet textarea { width: 100%; min-height: 50px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); padding: 12px 14px; font-size: 16px; outline: none; color-scheme: dark; }
 .sheet textarea { min-height: 100px; resize: vertical; }
 .sheet .btns { margin: 16px 16px 4px; }
 .qt { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 16px 6px; }
@@ -342,27 +342,28 @@ textarea.diag { display: block; width: calc(100% - 32px); margin: 0 16px; min-he
 .snack span { flex: 1; }
 .snack button { border: 0; background: none; color: var(--acc); font-weight: 700; padding: 8px 10px; }
 /* Phase 7: Status, Mehrtägig, Lücken, Jetzt-Linie, Zeitraster, Wochenbilanz */
-.ev.skip { opacity: .55; }
-.ev.skip .tx b { color: var(--muted); }
+.ev.skip .tx b { color: var(--muted); font-weight: 500; }
+.ev.skip .bar { opacity: .4; }
 .ev .ck1 { color: var(--c-aufgabe); font-weight: 800; }
 .ev .st1 { color: #e0a91f; }
 .calhd .wbal { flex: none; font-size: 12.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
-.gap { padding: 6px 12px 6px 76px; font-size: 12.5px; color: var(--muted); border-top: 1px dashed var(--line); }
-.nowl { display: flex; align-items: center; gap: 8px; padding: 0 12px 0 10px; height: 18px; color: #e5484d; font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.nowl span { width: 54px; }
-.nowl i { flex: 1; height: 2px; background: #e5484d; border-radius: 1px; }
-.seg2 { display: inline-flex; flex: none; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-left: auto; }
-.seg2 button { border: 0; background: none; color: var(--muted); font-size: 12.5px; font-weight: 600; min-height: 32px; padding: 0 10px; }
+.gap { padding: 6px 12px 6px 76px; font-size: 13px; color: var(--muted); border-top: 1px dashed var(--line); }
+.nowl { display: flex; align-items: center; gap: 8px; padding: 0 12px 0 10px; min-height: 20px; color: var(--now); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.nowl span { min-width: 54px; }
+.nowl i { flex: 1; height: 2px; background: var(--now); border-radius: 1px; }
+.seg2 { display: flex; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin: 0 12px 6px; }
+.seg2 button { flex: 1; border: 0; background: none; color: var(--muted); font-size: 13.5px; font-weight: 600; min-height: 44px; padding: 0 10px; }
 .seg2 button[aria-pressed="true"] { background: var(--s2); color: var(--ink); }
-#dayplan header .seg2 + .lnk { margin-left: 4px; }
 .tgrid { position: relative; margin: 6px 4px 8px; border-top: 1px solid var(--line); }
 .tgrid .tl { position: absolute; left: 0; right: 0; border-top: 1px solid var(--line); height: 0; }
-.tgrid .tl span { position: absolute; left: 4px; top: -8px; font-size: 11px; color: var(--muted); background: var(--s1); padding: 0 3px; font-variant-numeric: tabular-nums; }
-.tgrid .tb { position: absolute; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; overflow: hidden; border: 0; border-left: 3px solid var(--c); border-radius: 8px; padding: 3px 6px; text-align: left; background: color-mix(in srgb, var(--c) 18%, var(--s1)); color: var(--ink); }
+.tgrid .tl span { position: absolute; left: 4px; top: -8px; font-size: 12px; color: var(--muted); background: var(--s1); padding: 0 3px; font-variant-numeric: tabular-nums; }
+.tgrid .tb { position: absolute; display: block; overflow: hidden; border: 0; border-left: 3px solid var(--c); border-radius: 8px; padding: 3px 6px; text-align: left; background: color-mix(in srgb, var(--c) 18%, var(--s1)); color: var(--ink); }
+.tgrid .tbi { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 0; }
+.tgrid .tbi.one { flex-direction: row; gap: 6px; align-items: baseline; }
 .tgrid .tb b { font-size: 12.5px; font-weight: 650; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
-.tgrid .tb small { font-size: 11px; color: var(--muted); }
+.tgrid .tb small { font-size: 12px; color: var(--muted); white-space: nowrap; }
 .tgrid .tb.skip { opacity: .5; }
-.tgrid .tnow { position: absolute; left: 40px; right: 0; height: 2px; background: #e5484d; pointer-events: none; }
+.tgrid .tnow { position: absolute; left: 40px; right: 0; height: 2px; background: var(--now); pointer-events: none; }
 .mcell { position: relative; }
 .mspan { position: absolute; bottom: 4px; left: -1px; right: -1px; height: 5px; background: var(--c); pointer-events: none; overflow: hidden; }
 .mspan.l1 { bottom: 11px; }
@@ -370,7 +371,7 @@ textarea.diag { display: block; width: calc(100% - 32px); margin: 0 16px; min-he
 .mspan.f { right: 4px; border-top-right-radius: 3px; border-bottom-right-radius: 3px; }
 .mgrid.wide .mspan { height: 14px; bottom: 3px; }
 .mgrid.wide .mspan.l1 { bottom: 19px; }
-.mspan em { display: block; font-style: normal; font-size: 10.5px; line-height: 14px; padding: 0 4px; color: #fff; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mspan em { display: block; font-style: normal; font-size: 12px; line-height: 14px; padding: 0 4px; color: #fff; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .whys { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 16px 6px; }
 </style>
 <!-- verbund-design:start -->

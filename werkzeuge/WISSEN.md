@@ -119,6 +119,12 @@ Notizen eintragsweise zusammengeführt (neuere Änderung gewinnt).
    `wissen/js/buch.js`, den CSV-Worker und die Dateiliste in `sw.js`.
 4. Tests (Abschnitt 5), dann committen und pushen. Nutzer aktualisiert über Mehr › „Version aktualisieren“.
 
+### Webkalender (per Link)
+Google-Kalender, die nur per Internetadresse eingebunden sind, kommen oft nicht aufs Handy (Google synchronisiert sie dort nicht).
+Zwei Wege: Mehr › Handykalender zeigt sie als „nicht synchronisiert“ (Plugin `enableSync`), oder Mehr › Webkalender holt die .ics-Adresse selbst
+(`SharedCalendar.abo`, Speicher `sg-abos-v1`, kompakt gespeichert; in der APK über CapacitorHttp). Einträge sind nur lesbar (`app: "Webkalender"`, `ro` = Name).
+Mobility und Atmung stehen standardmäßig nicht im Kalender (`sg-kalender-zeigen-v1`, `calShow/setCalShow`).
+
 ### Handykalender
 Gerätekalender ist für Web-Apps gesperrt → Abgleich über .ics/.vcs: `SharedCalendar.phone` (verbund.js: `pending`, `ics`, `markSent`, `parse`, `apply`),
 Oberfläche in `app/js/1-app.js` (`phoneSheet`, `importSheet`, `takeShared`), Teilen-Ziel: `manifest.json` `share_target` + POST-Zweig in `sw.js`.

@@ -109,6 +109,7 @@ const navOk = p => p.evaluate(() => { const n = document.getElementById('nav').g
     await p.reload(); await p.waitForTimeout(2000);
     log(/Offline-Aufgabe/.test(await p.textContent('#n-kalender')) && await p.evaluate(() => SharedCalendar.notes.list().some(n => n.text === 'Offline notiert')), 'Notiz und Aufgabe offline gespeichert, nach Neustart da');
     // Kalender → Starten offline
+  await p.evaluate(() => SharedCalendar.setCalShow('atmung', true)); await p.waitForTimeout(400);   // Atemübungen standardmäßig nicht im Kalender
     await p.locator('.ev', { hasText: 'Langsames Atmen' }).locator('[data-start]').click(); await p.waitForTimeout(2500);
     log(p.url().indexOf('#mobility/atmung/hrv') > 0, 'Offline: Kalender → Atemübung starten');
     // Handykalender offline: Termin aus dem Handy teilen (Share Target im Service Worker) und Termine ins Handy übertragen
