@@ -372,6 +372,10 @@ Prüfung Phase 8 (Prüf-Agent, 16 Befunde):
 | H14 | gesperrter Schalter sah aktiv aus | `:disabled` gedämpft |
 | H15 | Vibration nur an zwei Stellen | auch Suche und Aufgaben im Kalenderblatt |
 | H16 | Bereichsfarbe bei „Starten“ und Chips verloren | Bereichsfarbe bleibt |
+Veröffentlichung 3.9.0: APK baute (neuer Android-Code kompiliert), der Emulator-Test brach wie bei 3.8.0 ab – zum zweiten Mal, also nicht Zufall:
+Im Emulator starten die Play-Dienste einige Minuten nach dem Start neu (Gerätekonfiguration, `lmkd --reinit`), Android beendet die App mit, weil die
+WebView deren Schrift-Dienst nutzt. Lösung im Test: nur bei genau diesem Logcat-Muster App neu öffnen und den Schritt einmal wiederholen (höchstens zweimal);
+jeder andere Abbruch bleibt ein Fehler. Auf echten Handys kommt das selten vor (Play-Update) – die App startet dann einfach neu, Daten bleiben.
 
 ## 3.5.0 – erste veröffentlichte Android-App
 

@@ -18,17 +18,21 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   await dev.shell('am start -n ' + PKG + '/.MainActivity');
   await wait(8000);
   // die sichtbare Ansicht der App suchen (es kann kurzzeitig mehrere WebView-Seiten geben) und warten, bis sie Größe hat
-  await dev.webView({ pkg: PKG }, { timeout: 60000 });
-  let page = null;
-  for (let i = 0; i < 40 && !page; i++) {
-    for (const w of dev.webViews().filter(w => w.pkg() === PKG)) {
-      const pg = await w.page().catch(() => null); if (!pg) continue;
-      const h = await pg.evaluate(() => innerHeight).catch(() => 0);
-      if (h > 100) { page = pg; break; }
+  const findPage = async () => {
+    await dev.webView({ pkg: PKG }, { timeout: 60000 });
+    let pg0 = null;
+    for (let i = 0; i < 40 && !pg0; i++) {
+      for (const w of dev.webViews().filter(w => w.pkg() === PKG)) {
+        const pg = await w.page().catch(() => null); if (!pg) continue;
+        const h = await pg.evaluate(() => innerHeight).catch(() => 0);
+        if (h > 100) { pg0 = pg; break; }
+      }
+      if (!pg0) await wait(1000);
     }
-    if (!page) await wait(1000);
-  }
-  if (!page) throw new Error('Keine sichtbare Ansicht der App gefunden (WebViews: ' + dev.webViews().length + ')');
+    if (!pg0) throw new Error('Keine sichtbare Ansicht der App gefunden (WebViews: ' + dev.webViews().length + ')');
+    return pg0;
+  };
+  let page = await findPage();
   const errs = []; page.on('pageerror', e => errs.push(e.message)); page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push('console: ' + m.text()); });
   page.on('response', r => { if (r.status() >= 400 && !/api\.github\.com\/repos\/[^/]+\/[^/]+\/releases\/latest/.test(r.url())) errs.push('Datei fehlt (' + r.status() + '): ' + r.url()); });
   page.on('requestfailed', r => { if (!/^https:\/\/(api\.github|github)\.com/.test(r.url())) errs.push('Laden fehlgeschlagen: ' + r.url() + ' ' + (r.failure() || {}).errorText); });
@@ -80,12 +84,26 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   const pend = await page.evaluate(() => window.Capacitor.Plugins.LocalNotifications.getPending());
   ok(hs.r.on && (pend.notifications || []).some(n => /Emulator-Training/.test(n.title)), 'Erinnerungen geplant (' + (pend.notifications || []).length + ')' + (hs.r.err ? ' Fehler: ' + hs.r.err : ''));
   // Bereiche durchgehen: jede Seite lädt, Leiste bleibt sichtbar
+  // Im Emulator starten die Google-Play-Dienste manchmal neu (Gerätekonfiguration wird nachgeladen). Android beendet dann
+  // die App mit, weil die WebView deren Schrift-Dienst nutzt („depends on provider …FontsProvider in dying proc“).
+  // Nur genau dann: App neu öffnen und den Schritt einmal wiederholen – jeder andere Abbruch bleibt ein Fehler.
+  let restarts = 0;
+  const playDied = () => /depends on provider com\.google\.android\.gms[^\n]*in dying proc/.test(execSync('adb logcat -d -t 3000', { encoding: 'utf8', maxBuffer: 64e6 }).split('\n').filter(l => /planer/.test(l)).join('\n'));
+  const reopen = async () => { await dev.shell('am start -n ' + PKG + '/.MainActivity'); await wait(8000); page = await findPage(); await page.waitForSelector('#nav button', { timeout: 30000 }); };
   for (const h of ['kalender', 'training/heute', 'training/rodeln', 'training/wissen', 'mobility/mobility', 'mobility/atmung', 'schule', 'mehr', 'bibel', 'pause', 'notizen', 'aufgaben']) {
-    try { await page.evaluate(h => { location.hash = h; }, h); } catch (e) { ok(false, 'Bereich ' + h + ': Verbindung zur App weg (' + e.message + ')'); await logcat('abbruch-' + h.replace(/\//g, '_')); throw e; }
-    await wait(2500);
-    const r = await page.evaluate(() => { const n = document.getElementById('nav').getBoundingClientRect(), f = document.querySelector('#stage iframe.on'), nat = document.querySelector('.native.on');
+    let r = null;
+    for (let tries = 0; tries < 2 && !r; tries++) {
+      try {
+        await page.evaluate(h => { location.hash = h; }, h);
+        await wait(2500);
+        r = await page.evaluate(() => { const n = document.getElementById('nav').getBoundingClientRect(), f = document.querySelector('#stage iframe.on'), nat = document.querySelector('.native.on');
       let txt = 0; try { txt = f ? f.contentDocument.body.innerText.length : (nat ? nat.innerText.length : 0); } catch (e) { txt = -1; }
       return { nav: n.bottom <= innerHeight + 1 && n.height >= 50, txt, path: f ? f.contentWindow.location.pathname : 'native' }; });
+      } catch (e) {
+        if (tries === 0 && restarts < 2 && playDied()) { restarts++; ok(true, 'Play-Dienste im Emulator neu gestartet – App neu geöffnet, Schritt ' + h + ' wiederholt'); await reopen(); continue; }
+        ok(false, 'Bereich ' + h + ': Verbindung zur App weg (' + e.message + ')'); await logcat('abbruch-' + h.replace(/\//g, '_')); throw e;
+      }
+    }
     ok(r.nav && r.txt > 20, 'Bereich ' + h + ': lädt (' + r.path + ', ' + r.txt + ' Zeichen), Leiste sichtbar');
     await dev.screenshot({ path: OUT + '/3-' + h.replace(/\//g, '_') + '.png' });
   }
