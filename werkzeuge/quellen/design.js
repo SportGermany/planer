@@ -65,6 +65,8 @@
   var KEY = "sg-design";
   // Schlicht nach dem Vorbild von Notion Kalender und Apple: ruhige Grautöne, eine Akzentfarbe, feine Linien
   var THEMES = [
+    // Material You (Standard ab 3.8.0): Tonflächen nach Material Design 3; auf Android 12+ aus den Farben des Hintergrundbilds
+    { id: "material", name: "Material You", info: "Farben aus deinem Hintergrundbild (Android 12+), sonst Violett", m3: true, bg: "#141218", s1: "#1d1b20", s2: "#211f26", s3: "#2b2930", line: "#36343b", ink: "#e6e0e9", muted: "#cac4d0", faint: "#938f99", acc: "#d0bcff", accfg: "#381e72", g2: "#efb8c8", g3: "#ccc2dc" },
     { id: "notion", name: "Notion", info: "Neutrales Grau, klares Blau (Standard)", bg: "#131313", s1: "#202020", s2: "#272727", s3: "#2f2f2f", line: "#2c2c2c", ink: "#ebebea", muted: "#9b9a97", faint: "#6b6a67", acc: "#529cca", g2: "#7c5cff", g3: "#2f8f6f" },
     { id: "apple", name: "Apple", info: "Tiefschwarz mit Systemblau", bg: "#000000", s1: "#1c1c1e", s2: "#2c2c2e", s3: "#3a3a3c", line: "#2c2c2e", ink: "#f5f5f7", muted: "#98989d", faint: "#636366", acc: "#0a84ff", g2: "#bf5af2", g3: "#30d158" },
     { id: "graphit", name: "Graphit", info: "Anthrazit mit Orange", bg: "#0f0f0f", s1: "#1e1e1e", s2: "#272727", s3: "#313131", line: "#2d2d2d", ink: "#ececec", muted: "#a0a0a0", faint: "#6a6a6a", acc: "#ff9f0a", g2: "#ff375f", g3: "#5e5ce6" },
@@ -232,32 +234,71 @@
   })();
 
   function rgba(hex, a) { var n = parseInt(hex.slice(1), 16); return "rgba(" + (n >> 16) + "," + (n >> 8 & 255) + "," + (n & 255) + "," + a + ")"; }
-  function get(id) { id = ALIAS[id] || id; return THEMES.find(function (t) { return t.id === id; }) || THEMES[0]; }
+  /* Farben aus dem Hintergrundbild (Android 12+): das Plugin liefert Tonleitern, daraus die Rollen des dunklen M3-Schemas.
+   * Zwischengespeichert in sg-monet-v1 – eingebettete Seiten und der nächste Start haben sie sofort. */
+  var MONET_KEY = "sg-monet-v1";
+  function mix(a, b, w) { var x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16), f = function (s) { return Math.round(((x >> s) & 255) * (1 - w) + ((y >> s) & 255) * w); }; return "#" + ((1 << 24) + (f(16) << 16) + (f(8) << 8) + f(0)).toString(16).slice(1); }
+  function monet() { try { var m = JSON.parse(localStorage.getItem(MONET_KEY) || "null"); return m && m.dynamic && m.accent1 && m.neutral1 ? m : null; } catch (e) { return null; } }
+  function fromMonet(base, m) {
+    var a1 = m.accent1, a2 = m.accent2 || a1, a3 = m.accent3 || a1, n1 = m.neutral1, n2 = m.neutral2 || n1;
+    return Object.assign({}, base, { bg: mix(n1["900"], "#000000", .35), s1: n1["900"], s2: mix(n1["900"], n1["800"], .45), s3: n1["800"], line: mix(n2["800"], n2["700"], .4),
+      ink: n1["100"], muted: n2["200"], faint: n2["400"], acc: a1["200"], accfg: a1["800"], g2: a3["200"], g3: a2["200"], dynamic: true });
+  }
+  function get(id) {
+    id = ALIAS[id] || id;
+    var t = THEMES.find(function (t) { return t.id === id; }) || THEMES[0], m = t.m3 && monet();
+    return m ? fromMonet(t, m) : t;
+  }
   // Umstellung auf den schlichten Stil: einmalig auf das neue Standard-Design wechseln (danach frei wählbar)
   try { if (!localStorage.getItem("sg-design-v2")) { localStorage.setItem("sg-design-v2", "1"); localStorage.setItem(KEY, "notion"); } } catch (e) {}
-  function currentId() { try { return localStorage.getItem(KEY) || "notion"; } catch (e) { return "notion"; } }
+  // 3.8.0: Material You wird einmalig zum Standard (Wunsch der Nutzerin); andere Designs bleiben wählbar
+  try { if (!localStorage.getItem("sg-design-v3")) { localStorage.setItem("sg-design-v3", "1"); localStorage.setItem(KEY, "material"); } } catch (e) {}
+  function currentId() { try { return localStorage.getItem(KEY) || "material"; } catch (e) { return "material"; } }
+  // Android: Systemschrift Roboto statt Inter (liegt im Handy, kein Laden nötig)
+  var ROBOTO = "Roboto,'Roboto Flex','Google Sans Text','Noto Sans',system-ui,-apple-system,'Segoe UI',sans-serif";
   function css(t) {
-    var roles = Object.assign({ accsoft: rgba(t.acc, .16), accfg: "#14120f" }, t), map = MAPS[MODE] || MAPS.panel;
+    var roles = Object.assign({ accsoft: rgba(t.acc, .16), accfg: "#14120f" }, t), map = MAPS[MODE] || MAPS.panel, FONT0 = FONT;
+    if (t.m3) FONT = ROBOTO;
+    try {
     var vars = Object.keys(map).map(function (k) { return "--" + k + ":" + roles[map[k]]; }).join(";");
     vars += ";" + (FONTVARS[MODE] || []).map(function (v) { return "--" + v + ":" + FONT; }).join(";") + ";--sg-acc:" + t.acc + ";--sg-line:" + t.line + ";color-scheme:dark";
     // :not(#sg) hebt die Regel über alle Hell/Dunkel-Regeln der Apps – alle Apps bleiben dunkel.
     // In der Bibel bleiben Sepia- und Nachtmodus als Lesemodi erhalten.
     var sel = MODE === "bibel" ? "html:root:not(#sg):not([data-theme=\"sepia\"]):not([data-theme=\"night\"])" : "html:root:not(#sg)";
     return "@font-face{font-family:'Inter SG';src:url(" + FONTURL + ") format('woff2');font-weight:100 900;font-display:swap}" +
-      sel + "{" + vars + "}html:not(#sg) body{background-color:var(--bg)}body,button,input,select,textarea{font-family:" + FONT + ";font-feature-settings:'cv11','ss01'}" + PLAIN + glassCSS(t) + (LAYOUT[MODE] || "") + (DIRPARENT ? unifyCSS(t, roles) : "");
+      sel + "{" + vars + "}html:not(#sg) body{background-color:var(--bg)}body,button,input,select,textarea{font-family:" + FONT + (t.m3 ? "" : ";font-feature-settings:'cv11','ss01'") + "}" + PLAIN + glassCSS(t) + (LAYOUT[MODE] || "") + (DIRPARENT ? unifyCSS(t, roles) : "") + (t.m3 ? M3CSS : "");
+    } finally { FONT = FONT0; }
   }
+  /* Material-You-Formen für alle Seiten (die Hülle hat eigene, ausführlichere Regeln in app/index.html, Klasse html.m3) */
+  var M3CSS = "html.m3 input:not([type=checkbox]):not([type=radio]):not([type=range]),html.m3 select,html.m3 textarea{border-radius:12px}";
   function apply(id) {
     var t = get(id || currentId());
+    document.documentElement.classList.toggle("m3", !!t.m3);
     var st = document.getElementById("sg-theme");
     if (!st) { st = document.createElement("style"); st.id = "sg-theme"; (document.head || document.documentElement).appendChild(st); }
     st.textContent = css(t);
     document.querySelectorAll("meta[name=theme-color]").forEach(function (m) { m.setAttribute("content", t.bg); m.removeAttribute("media"); });
     window.dispatchEvent(new CustomEvent("sg-theme", { detail: t }));
+    bars(t);
     return t;
+  }
+  // Android-App, oberstes Fenster: Leisten in der Flächenfarbe; Farben aus dem Hintergrundbild holen (ändern sich mit dem Hintergrund)
+  function SP() { try { if (window.top !== window) return null; var C = window.Capacitor; return C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.PlanerSystem || null; } catch (e) { return null; } }
+  function bars(t) { var P = SP(); if (P && P.bars) P.bars({ bg: t.bg, light: false }).catch(function () {}); }
+  function loadMonet() {
+    var P = SP(); if (!P || !P.colors) return;
+    P.colors().then(function (m) {
+      var old = localStorage.getItem(MONET_KEY), now = JSON.stringify(m || {});
+      if (old !== now) { try { localStorage.setItem(MONET_KEY, now); } catch (e) {} if (get(currentId()).m3) apply(); }
+    }).catch(function () {});
   }
   function glassOn() { try { return localStorage.getItem("sg-glass") !== "0"; } catch (e) { return true; } }
   document.documentElement.classList.toggle("sg-noglass", !glassOn());
   window.SGNav = (GLASS_NAV[MODE] || [])[0] || "";
+  setTimeout(loadMonet, 600);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) loadMonet(); });
+  // kurze Rückmeldung per Vibration (Android-App); im Browser still
+  window.SGHaptic = function (kind) { var P = SP() || (function () { try { return window.top.Capacitor.Plugins.PlanerSystem; } catch (e) { return null; } })(); if (P && P.haptic) P.haptic({ kind: kind || "tap" }).catch(function () {}); };
   window.SGTheme = {
     glass: glassOn,
     setGlass: function (on) { try { localStorage.setItem("sg-glass", on ? "1" : "0"); } catch (e) {} document.documentElement.classList.toggle("sg-noglass", !on); window.dispatchEvent(new CustomEvent("sg-theme-set", { detail: "glass" })); },
@@ -268,7 +309,7 @@
   // ?design=… in der Adresse: zum Ausprobieren ohne zu speichern
   var q = /[?&]design=([a-z]+)/.exec(location.search);
   apply(q ? q[1] : null);
-  window.addEventListener("storage", function (e) { if (e.key === KEY || e.key === null) apply(); if (e.key === "sg-glass") document.documentElement.classList.toggle("sg-noglass", !glassOn()); });
+  window.addEventListener("storage", function (e) { if (e.key === KEY || e.key === MONET_KEY || e.key === null) apply(); if (e.key === "sg-glass") document.documentElement.classList.toggle("sg-noglass", !glassOn()); });
 })();
 /* Eine App, ein Bereich: Adressen der früheren Einzel-Apps (trainingsblog, Schulplaner, Bibel, kalender …)
  * zeigen auf die passende Stelle in /planer/. Sonst öffnet Chrome sie außerhalb der App – und offline gibt es sie nicht.

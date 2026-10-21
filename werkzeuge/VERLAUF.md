@@ -338,6 +338,14 @@ Prüfung Phase 7 (Prüf-Agent, 21 Befunde):
 | 20 | Wochentag folgte Datum nicht; Knöpfe 40 px | folgt bei einem gewählten Tag; 44 px |
 | 21 | Rückgängig hinterließ `null`-Felder | stellt den alten Eintrag genau wieder her |
 
+### Phase 8 – Design „Material You“ (in Arbeit, Version 3.9.0)
+Wahl der Nutzerin: Vorschlag 1 „Material You“ (Designvorschläge mit je zwei Bildern als Artefakt). Plan:
+- Zentrale Farbwelt `material` in design.js (Standard, einmalig umgestellt; andere Designs wählbar), dunkles M3-Schema.
+- Android 12+: Farben aus dem Hintergrundbild (neues Plugin `PlanerSystem.colors`, zwischengespeichert `sg-monet-v1`),
+  Status-/Navigationsleiste in Flächenfarbe (`bars`), Vibration beim Abhaken (`haptic`); Systemschrift Roboto statt Inter.
+- Hülle: Tonflächen statt Linien, M3-Leiste (80 dp, Pille), Schalter, Chips, FAB, Blätter; danach Seite für Seite schlanker
+  (Terminblatt, Training, Mobility mit höchstens zwei Ebenen, Schule ohne Einrichtungsblock auf der Startseite).
+
 ## 3.5.0 – erste veröffentlichte Android-App
 
 Secret `APK_PASSWORT` vom Nutzer eingetragen (Passwort bekam er als PDF, weil er die .txt nicht öffnen konnte).

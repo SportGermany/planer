@@ -16,6 +16,8 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         // eigenes Plugin: Abgleich mit dem Kalender des Handys
         registerPlugin(PlanerKalenderPlugin.class);
+        // Design „Material You“: Farben aus dem Hintergrundbild, Leistenfarbe, Rückmeldung per Vibration
+        registerPlugin(PlanerSystemPlugin.class);
         super.onCreate(savedInstanceState);
         // Die App benutzt Ordner-Adressen wie /planer/app/ oder /planer/training/ (wie auf GitHub Pages).
         // Capacitors Server liefert für Adressen ohne Dateiendung nichts aus – hier wird daraus …/index.html.
