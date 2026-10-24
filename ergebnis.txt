@@ -1,0 +1,26 @@
+✓ Emulator verbunden: sdk_gphone64_x86_64
+✓ Start in der Hülle: https://localhost/planer/app/#kalender
+✓ App erkennt die Android-Umgebung (SGNative), Version 3.9.1
+✓ Untere Leiste sichtbar und im Bild [762.2857055664062,842.2857055664062,842,80] Rand unten 0px
+✓ Willkommen mit Umzug beim ersten Start
+✓ Handykalender „Mein Kalender“ mit einem Termin vorbereitet (id 1)
+✓ Einrichtung: Handykalender und Erinnerungen
+✓ Handykalender an, Kalender „Planer“ angelegt (id 2)
+✓ Termine der App stehen im Android-Kalender „Planer“ (1 Einträge)
+✓ Handytermin „Arzttermin“ erscheint in der App
+✓ Erinnerungen geplant (2)
+✓ Bereich kalender: lädt (native, 473 Zeichen), Leiste sichtbar
+✓ Bereich training/heute: lädt (/planer/training/, 1312 Zeichen), Leiste sichtbar
+✓ Bereich training/rodeln: lädt (/planer/training/bahnplan/, 100 Zeichen), Leiste sichtbar
+✓ Bereich training/wissen: lädt (/planer/wissen/, 724 Zeichen), Leiste sichtbar
+✓ Bereich mobility/mobility: lädt (/planer/training/mobility/, 571 Zeichen), Leiste sichtbar
+✓ Bereich mobility/atmung: lädt (/planer/training/atmung/, 655 Zeichen), Leiste sichtbar
+✓ Bereich schule: lädt (/planer/schule/, 364 Zeichen), Leiste sichtbar
+✓ Bereich mehr: lädt (native, 1012 Zeichen), Leiste sichtbar
+✓ Bereich bibel: lädt (/planer/bibel/, 435 Zeichen), Leiste sichtbar
+✓ Bereich pause: lädt (/planer/pause/, 613 Zeichen), Leiste sichtbar
+✓ Play-Dienste im Emulator neu gestartet – App neu geöffnet, Schritt notizen wiederholt
+✓ Bereich notizen: lädt (native, 67 Zeichen), Leiste sichtbar
+✓ Bereich aufgaben: lädt (/planer/, 95 Zeichen), Leiste sichtbar
+✓ Nach der Tastatur ist die Leiste wieder im Bild [762.2857055664062,842.2857055664062,842]
+✓ Keine Fehler in der App
