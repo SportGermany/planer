@@ -1,7 +1,14 @@
 package de.sportgermany.planer;
 
+import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -45,6 +52,80 @@ public class MainActivity extends BridgeActivity {
                 }
             }
         );
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        takeCalendarIntent(intent);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        // beim Kaltstart über „Öffnen mit Planer“ / „Teilen“
+        takeCalendarIntent(getIntent());
+    }
+
+    /** Kalenderdatei oder geteilten Termintext aus dem Intent lesen und an die App geben (einmal je Intent). */
+    private void takeCalendarIntent(Intent in) {
+        if (in == null || in.getBooleanExtra("planerTaken", false)) return;
+        String act = in.getAction();
+        if (!Intent.ACTION_VIEW.equals(act) && !Intent.ACTION_SEND.equals(act) && !Intent.ACTION_SEND_MULTIPLE.equals(act)) return;
+        in.putExtra("planerTaken", true);
+        final Intent it = in;
+        new Thread(() -> {
+            try {
+                StringBuilder text = new StringBuilder();
+                String name = "";
+                ArrayList<Uri> uris = new ArrayList<>();
+                if (Intent.ACTION_VIEW.equals(act) && it.getData() != null) uris.add(it.getData());
+                if (Intent.ACTION_SEND.equals(act)) {
+                    Uri u = it.getParcelableExtra(Intent.EXTRA_STREAM);
+                    if (u != null) uris.add(u);
+                }
+                if (Intent.ACTION_SEND_MULTIPLE.equals(act)) {
+                    ArrayList<Uri> list = it.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
+                    if (list != null) uris.addAll(list);
+                }
+                for (Uri u : uris) {
+                    if (name.isEmpty()) name = displayName(u);
+                    text.append(readText(u)).append("\n");
+                }
+                if (uris.isEmpty()) {
+                    CharSequence t = it.getCharSequenceExtra(Intent.EXTRA_TEXT);
+                    if (t != null) text.append(t);
+                    String subj = it.getStringExtra(Intent.EXTRA_SUBJECT);
+                    if (subj != null && text.indexOf("BEGIN:") < 0) text.insert(0, subj + "\n");
+                    name = "geteiltem Text";
+                }
+                if (text.length() > 0) PlanerSystemPlugin.offerFile(name.isEmpty() ? "Kalenderdatei" : name, text.toString());
+            } catch (Exception e) {
+                android.util.Log.w("Planer", "Kalenderdatei konnte nicht gelesen werden: " + e.getMessage());
+            }
+        }).start();
+    }
+
+    private String readText(Uri u) throws Exception {
+        try (InputStream is = getContentResolver().openInputStream(u)) {
+            if (is == null) return "";
+            ByteArrayOutputStream bo = new ByteArrayOutputStream();
+            byte[] buf = new byte[16384];
+            int n, total = 0;
+            while ((n = is.read(buf)) > 0 && total < 8 * 1024 * 1024) {
+                bo.write(buf, 0, n);
+                total += n;
+            }
+            return new String(bo.toByteArray(), StandardCharsets.UTF_8);
+        }
+    }
+
+    private String displayName(Uri u) {
+        try (Cursor c = getContentResolver().query(u, new String[] { OpenableColumns.DISPLAY_NAME }, null, null, null)) {
+            if (c != null && c.moveToFirst() && !c.isNull(0)) return c.getString(0);
+        } catch (Exception ignored) {}
+        String p = u.getLastPathSegment();
+        return p != null ? p : "";
     }
 
     /** Dieselbe Anfrage, nur mit index.html am Ende des Pfads. */

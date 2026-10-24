@@ -102,7 +102,10 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
         colors: () => Promise.resolve({ dynamic: true, accent1: { 200: '#A8D5A2', 800: '#0B3A12' }, accent2: { 200: '#B9CCB4' }, accent3: { 200: '#A1CFD6' },
           neutral1: { 100: '#E2E3DD', 800: '#2F312D', 900: '#1A1C19' }, neutral2: { 200: '#C3C8BE', 400: '#8D9289', 700: '#424940', 800: '#2C322B' } }),
         bars: o => { st.bars = (st.bars || []).concat([o.bg]); return Promise.resolve(); },
-        haptic: o => { st.haptic = (st.haptic || []).concat([o.kind]); return Promise.resolve(); } },
+        haptic: o => { st.haptic = (st.haptic || []).concat([o.kind]); return Promise.resolve(); },
+        // „Öffnen mit Planer“: Android legt die Datei ab, die App holt sie (Ereignis fileOpened)
+        takeFile: () => { const f = st.file || {}; st.file = null; return Promise.resolve(f); },
+        addListener: (ev, fn) => { (st.ls = st.ls || {})[ev] = fn; return Promise.resolve({ remove() {} }); } },
       CapacitorHttp: { get: o => { st.http = (st.http || []).concat([o.url]); return Promise.resolve({ status: 200, data: 'BEGIN:VCALENDAR\r\nX-WR-CALNAME:Verein\r\nBEGIN:VEVENT\r\nUID:a@b\r\nDTSTART;VALUE=DATE:20991231\r\nSUMMARY:Silvesterlauf\r\nEND:VEVENT\r\nEND:VCALENDAR' }); } },
       LocalNotifications: {
         requestPermissions: () => Promise.resolve({ display: 'granted' }), checkExactNotificationSetting: () => Promise.resolve({ exact_alarm: 'granted' }),
@@ -140,6 +143,13 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
   await q.evaluate(() => { location.hash = 'kalender'; }); await q.waitForTimeout(600);
   const ckb = await q.$('#dayplan [data-ck]'); if (ckb) { await ckb.click(); await q.waitForTimeout(300); }
   ok((await q.evaluate(() => window.__sim.haptic || [])).includes('done'), 'Vibration beim Abhaken');
+  // Kalenderdatei direkt öffnen („Öffnen mit Planer“)
+  await q.evaluate(() => { const s = window.__sim; s.file = { name: 'Quali-Lehrgang.ics', text: 'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:q1@x\r\nDTSTART;TZID=Europe/Berlin:20991023T160000\r\nDTEND;TZID=Europe/Berlin:20991023T173000\r\nSUMMARY:Training G1\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:q2@x\r\nDTSTART;VALUE=DATE:20991023\r\nDTEND;VALUE=DATE:20991029\r\nSUMMARY:Quali-Lehrgang\r\nEND:VEVENT\r\nEND:VCALENDAR' }; s.ls.fileOpened(); });
+  await q.waitForTimeout(900);
+  const imp = await q.textContent('#sheet');
+  ok(/2 Termine übernehmen/.test(imp) && /Quali-Lehrgang\.ics/.test(imp), 'Kalenderdatei geöffnet: Import-Blatt erscheint (' + imp.slice(0, 60) + ')');
+  await q.click('#sheet [data-s=yes]'); await q.waitForTimeout(400);
+  ok(await q.evaluate(() => SharedCalendar.allItems('2099-10-23', '2099-10-28').filter(e => /Quali-Lehrgang|Training G1/.test(e.title)).length >= 7), 'Termine übernommen (mehrtägig über 6 Tage)');
   // Handytermin in der App ändern und löschen
   const ok2 = await q.evaluate(async () => { await SharedCalendar.handy.update(501, { title: 'Arzttermin Dr. Weber' }); const a = SharedCalendar.allItems('2000-01-01', '2099-01-01').some(e => e.title === 'Arzttermin Dr. Weber');
     await SharedCalendar.handy.remove(501); const b = !SharedCalendar.allItems('2000-01-01', '2099-01-01').some(e => /Arzttermin/.test(e.title)); return [a, b, window.__sim.removed]; });

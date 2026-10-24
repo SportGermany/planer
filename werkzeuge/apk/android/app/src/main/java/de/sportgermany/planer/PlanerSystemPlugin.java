@@ -22,6 +22,37 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 @CapacitorPlugin(name = "PlanerSystem")
 public class PlanerSystemPlugin extends Plugin {
 
+    /* Geöffnete oder geteilte Kalenderdatei: MainActivity legt sie hier ab, die App holt sie mit takeFile() ab
+     * (beim Start) bzw. bekommt das Ereignis „fileOpened“ (App lief schon). */
+    private static JSObject pendingFile = null;
+    private static PlanerSystemPlugin instance = null;
+
+    @Override
+    public void load() {
+        instance = this;
+    }
+
+    static void offerFile(String name, String text) {
+        JSObject f = new JSObject();
+        f.put("name", name);
+        f.put("text", text);
+        synchronized (PlanerSystemPlugin.class) {
+            pendingFile = f;
+        }
+        if (instance != null) instance.notifyListeners("fileOpened", new JSObject(), true);
+    }
+
+    /** Die zuletzt geöffnete/geteilte Kalenderdatei abholen (einmal): { name, text } oder leer. */
+    @PluginMethod
+    public void takeFile(PluginCall call) {
+        JSObject f;
+        synchronized (PlanerSystemPlugin.class) {
+            f = pendingFile;
+            pendingFile = null;
+        }
+        call.resolve(f != null ? f : new JSObject());
+    }
+
     private static final int[] TONES = { 10, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900 };
 
     /** Systemfarben als Tonleitern: accent1–3, neutral1–2, je Ton (10…900) eine Farbe #rrggbb. Vor Android 12: dynamic = false. */

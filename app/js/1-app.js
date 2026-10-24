@@ -1136,6 +1136,21 @@
       snack((r.added ? r.added + " neu" : "") + (r.added && r.updated ? ", " : "") + (r.updated ? r.updated + " aktualisiert" : "") + (!r.added && !r.updated ? "Schon alles im Kalender" : " im Kalender"));
     });
   }
+  /* Android-App: Kalenderdatei direkt geöffnet („Öffnen mit Planer“) oder geteilt („Teilen › Planer“) –
+     die App holt sie vom Plugin ab und zeigt gleich „N Termine übernehmen?“. */
+  function nativeFiles() {
+    var P = null; try { P = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform() && Capacitor.Plugins.PlanerSystem; } catch (e) {}
+    if (!P || !P.takeFile) return;
+    var take = function () {
+      P.takeFile().then(function (f) {
+        if (!f || !f.text) return;
+        if (cur.v !== "kalender") go("kalender");
+        setTimeout(function () { importSheet(C().phone.parse(f.text, f.name), f.name || "der Kalenderdatei"); }, 300);
+      }).catch(function () {});
+    };
+    if (P.addListener) P.addListener("fileOpened", take);
+    take();
+  }
   // Geteiltes aus dem Handy (Share Target): sw.js legt es im Cache „sg-teilen“ ab und öffnet #teilen
   function takeShared() {
     if (!("caches" in window)) return;
@@ -1259,6 +1274,7 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["3.9.1", ["Kalenderdateien (.ics, .vcs) direkt öffnen: Datei antippen › „Planer“ oder teilen › „Planer“ – die Termine werden gleich zum Übernehmen angezeigt"]],
     ["3.9.0", ["Neues Design „Material You“: auf Android 12+ in den Farben deines Hintergrundbilds, Leisten in passender Farbe, Systemschrift Roboto",
       "Blätter lassen sich nach unten wegziehen, kurze Vibration beim Abhaken, „Starten“ als runder Knopf",
       "Training schlanker; Handykalender: Ändern und Löschen von Handyterminen aus der App funktioniert wieder, kleinere App (3,6 MB weniger)"]],
@@ -1876,6 +1892,7 @@
     if (!C()) return setTimeout(start, 30);
     C().onChange(function () { clearTimeout(refresh.t); refresh.t = setTimeout(refresh, 100); });
     // neue Vollbild-Suche statt der Befehlspalette (fällt sie aus, bleibt die alte als Rückfall)
+    nativeFiles();
     if (C().setSnack) C().setSnack(function (t, fn) { snack(t, function () { fn(); refresh(); }); });   // Rückgängig auch aus dem Terminblatt
     if (C().setPalette && window.SGSuche) C().setPalette(function (text) { try { openSearch(text); } catch (e) { if (sx) sxFail(e); else { diag("Suche: " + e.message); C().setPalette(null); C().palette(text); } } });
     if (location.hash.length > 1) fromHash(); else { history.replaceState({ app: 1 }, "", "#kalender"); render(); }

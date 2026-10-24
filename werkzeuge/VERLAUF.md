@@ -378,6 +378,12 @@ WebView deren Schrift-Dienst nutzt. Lösung im Test: nur bei genau diesem Logcat
 jeder andere Abbruch bleibt ein Fehler. Auf echten Handys kommt das selten vor (Play-Update) – die App startet dann einfach neu, Daten bleiben.
 Ergebnis: Im nächsten Lauf trat der Neustart wieder auf (bei training/heute), wurde abgefangen, alle übrigen Prüfungen grün – Release v3.9.0 mit planer-3.9.0.apk.
 
+## 3.9.1 – Kalenderdateien direkt öffnen
+**Wunsch:** „Mach mir die App so, dass ich Kalenderdateien gleich öffnen kann“ (Anlass: Wochenplan Quali-Lehrgang als PDF → .ics-Datei).
+Umsetzung: Android meldet die App für .ics/.vcs (Öffnen mit, auch über die Endung bei „unbekannter Datei“) und für „Teilen“ (Datei oder Termintext) an.
+MainActivity liest die Datei (onStart/onNewIntent, eigener Faden, max. 8 MB) und gibt sie über `PlanerSystem.takeFile`/Ereignis `fileOpened` an die Hülle,
+die sofort „N Termine übernehmen?“ zeigt (vorhandene werden aktualisiert, nicht doppelt). Test in apk.js.
+
 ## 3.5.0 – erste veröffentlichte Android-App
 
 Secret `APK_PASSWORT` vom Nutzer eingetragen (Passwort bekam er als PDF, weil er die .txt nicht öffnen konnte).
