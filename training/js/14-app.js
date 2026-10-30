@@ -725,6 +725,10 @@ function kpis(){
   for (var i = 0; i < 7; i++){ var d = W.addDays(mon, i), on = !!(S.log[d] && S.log[d].done); dots += '<i class="' + (on ? "on" : "") + (d === S.today ? " today" : "") + '"></i>'; }
   kk.querySelector(".dots").innerHTML = dots; kk.setAttribute("aria-label", "Diese Woche " + n + " von 7 Tagen trainiert");
   var wb = $("kpiWeek"), wbc = akkCard("weekbar"); wb.toggleAttribute("data-acc-open", false); if (wbc && wbc.offsetParent) wb.setAttribute("data-acc-open", "weekbar");
+  // Serie und Kalorien als Chips (in der App ersetzen sie 🔥/▲ im ausgeblendeten Kopf)
+  var ks = $("kpiStreak"), kb = $("kpiBurn"), bb = $("btnBurn");
+  if (ks){ var sv = ($("streakVal") || {}).textContent || "0"; ks.querySelector("b").textContent = sv; ks.setAttribute("aria-label", "Serie " + sv + " Tage"); }
+  if (kb){ kb.hidden = !bb || bb.style.display === "none"; kb.querySelector("b").textContent = ($("burnVal") || {}).textContent || "0"; if (!kb.dataset.on){ kb.dataset.on = 1; kb.addEventListener("click", function(){ if (bb) bb.click(); }); } }
   var vis = [kr, kw, kk].filter(function(x){ return !x.hidden; }).length;
   row.style.gridTemplateColumns = "repeat(" + vis + ", minmax(0, 1fr))";
 }

@@ -16,7 +16,7 @@ Sprache in App, Commits, Doku: Deutsch. Ausführliches Wissen: `werkzeuge/WISSEN
 ## Wo was steht
 | Datei | Inhalt |
 |---|---|
-| `app/index.html`, `app/js/1-app.js` | Hülle: Navigation (Tabelle `V`), Kalender-Startseite (renderStrip/Day/Month, evSheet, planDo), Mehr (renderMehr), Blätter (`sheet`/`closeSheet`), Suche (`openSearch`), Webkalender-/Handykalender-Blätter |
+| `app/index.html`, `app/js/1-app.js` | Hülle: Navigation (Tabelle `V`, Reiter `tabRow`/`tabMore`, `alias` für alte #mobility-Adressen), Startseite Heute (renderStrip/Up/Day/Next, Monat hinter Symbol `setMon`, evSheet, planDo), Mehr (renderMehr, Gruppenblätter `MEHR`/`mehrAct`), Blätter (`sheet`/`closeSheet`), Suche (`openSearch`), Webkalender-/Handykalender-Blätter |
 | `werkzeuge/quellen/verbund.js` | Kalender-Kern `SharedCalendar`: Speicher, `occurrences`/`repStarts` (Serien, mehrtägig), `allItems`/`withStatus`/`planSet`, Terminblatt (`form`, `seriesApply`), Cloud-Gist-Abgleich, Wochenplanung, .ics, Handykalender (`hOut`, `hSync`), Webkalender (`api.abo`), Erinnerungen |
 | `werkzeuge/quellen/design.js` | Farbwelten (`THEMES`), Material You + Hintergrundbild-Farben (`sg-monet-v1`), `SGHaptic`, Adress-Umschreibung `SGFixUrl`, `SGVersion` |
 | `werkzeuge/quellen/{schnell,suche,bibelstelle,suchdaten}.js` | Schnelleingabe, Such-Kern, Bibelstellen (Node-Tests) |

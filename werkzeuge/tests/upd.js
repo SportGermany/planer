@@ -17,7 +17,7 @@ const APP = 'http://localhost:8765/planer/app/';
     execSync('SGV=9.9.8 ' + B);
     // Mehr › Version: findet 9.9.8 und lädt sie gleich (Hinweis „gefunden – wird geladen“)
     const load = p.waitForEvent('load', { timeout: 40000 }).then(() => true).catch(() => false);
-    await p.click('#n-mehr [data-m=update]');
+    await p.click('#n-mehr [data-m="g:set"]'); await p.waitForTimeout(350); await p.click('#sheet [data-m=update]');
     check(await load, 'Neue Version gefunden, App lädt neu');
     await p.waitForTimeout(2500);
     const after = await p.evaluate(async () => [SGVersion, await caches.keys()]);

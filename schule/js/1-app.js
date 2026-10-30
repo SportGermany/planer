@@ -690,8 +690,11 @@ function agendaHTML(from, days) {
   }
   return html || `<div class="empty">Keine Termine in den nächsten ${days} Tagen.</div>`;
 }
+// Einrichtung (4.0): erst nur eine Zeile, aufgeklappt die Fragen – der Tagesüberblick bleibt frei
+let setupOpen = false;
 function setupCard() {
   const k = klasse(), g = db.settings.wpfg;
+  if (!setupOpen) return `<button class="card tip setupbar" data-a="setupOpen"><span><b>Schule einrichten</b><span class="small muted">Klasse und Fächergruppe · 30 Sekunden</span></span><span class="chev" aria-hidden="true">›</span></button>`;
   return `<div class="card tip" style="margin-top:10px"><b>Einrichtung (30 Sekunden)</b>
     <div class="small" style="margin-top:6px">In welche Klasse gehst du im Schuljahr ${curSy()}?</div>
     <div class="rowb">${[7, 8, 9, 10].map(n => `<button class="chip${k === n ? ' on' : ''}" data-a="setKlasse" data-v="${n}">${n}. Klasse</button>`).join('')}</div>
@@ -2545,6 +2548,7 @@ document.addEventListener('click', e => {
     case 'setWpfg': setWpfg(v); save(); EVI = null; sheetOpen ? refreshSettings() : render(); break;
     case 'setupDone': setSetting('setupDone', true); save(); render(); toast('Eingerichtet ✓ – trag jetzt deinen Stundenplan ein'); break;
     case 'setupSkip': setSetting('setupDone', true); save(); render(); break;
+    case 'setupOpen': setupOpen = true; render(); break;
     // Termine
     case 'add': if (sheetOpen) { sheetReturn = null; } openForm(null, v || null); break;
     case 'edit': { const ev = db.events.find(x => x.id === v); if (ev) { sheetReturn = sheetOpen && sheetMode?.startsWith('subject:') ? (() => { const id = sheetMode.slice(8); return () => openSubject(id); })() : null; openForm(ev); } break; }

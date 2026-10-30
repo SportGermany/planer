@@ -5,7 +5,28 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
-## 4.0.0 (in Arbeit) – Umbau nach `werkzeuge/UMBAU-4.md`
+## 4.0.0 – Aufgeräumt (Wunsch: „überfüllt, Startseite sieht schlecht aus, Seitenmenü kommt immer“)
+
+Entscheidungen des Nutzers (Rückfrage): Entwurf „Aufgeräumt“ umsetzen · Training ohne Seitenmenü · Mobility unter Training · Monat hinter ein Symbol.
+- **Navigation:** unten 4 Ziele (Heute · Training · Schule · Mehr). Neuer Modus `nav: "tabs"` in `V`: Reiter oben (gleich breit, ohne Querscrollen),
+  die ersten `vis` sichtbar, der Rest plus `foot` hinter „Mehr ▾“ (Blatt). Seitenmenü-Code bleibt, wird aber von keinem Ziel mehr benutzt;
+  Schalter „Seitenmenü automatisch öffnen“ entfällt. Mobility/Atmung sind Unterbereiche von Training; `alias()` leitet `#mobility/…` (Lesezeichen,
+  Erinnerungen, alte Verknüpfungen) auf `#training/…` um.
+- **Startseite „Heute“:** Datumszeile + Wochenleiste, Karte „Als Nächstes“ (nächster offener Eintrag mit Uhrzeit, ein Knopf), Liste „Heute“,
+  „Demnächst“ (3 Einträge + nächster wichtiger ★). KW-Zeile, Wochenbilanz-Kopf, „Auf einen Blick“ und „Zum Monat“ entfallen auf der Startseite:
+  Monat über Kalender-Symbol oben oder „Monat ›“ (eigener Verlaufseintrag, Zurück → Tag; Tag im Monat tippen → dessen Tagesansicht),
+  Wochenbilanz unter dem Monat, Bibel/Notizen/Aufgaben/Woche planen als Kacheln in Mehr. Starten: Knopf in „Als Nächstes“, sonst Eintrag › „… öffnen“.
+- **Mehr:** 4 Kacheln, Sportwissenschaft, Pause, Gruppen als Blatt: Kalender verbinden (Handy, Webkalender), Sicherung (Cloud, Datei, Umzug),
+  Einstellungen (Design, Erinnerungen, Training einstellen, Version, Was ist neu, Fehlerprotokoll). Suche findet alles wie vorher.
+- **Training heute (in der App):** Kopf mit Begrüßung/🔥/▲ weg (Titel steht in der Hülle), Kennzahlen als kleine Chips inkl. Serie und kcal,
+  Muskel-Schlagwörter und doppelte Statistikzeile weg. **Schule:** Einrichtung als eine Zeile, Fragen erst nach Tipp.
+
+Fehler beim Umbau:
+- Klick-Handler für Gruppenblätter lief vor `var sheetEl = …` → `undefined.addEventListener`. Ursache: Reihenfolge im Skript. Lösung: `$("sheet")` direkt.
+- Komma fehlte nach dem verschobenen Atmung-Eintrag (`] }` statt `] },`) → Syntaxfehler, leere Hülle. Lösung: Komma; `node --check` vor jedem Test.
+- Doppeltipp im Monat: erster Tipp schließt den Monat, zweiter hätte die Tagesansicht darunter getroffen. Lösung: 400 ms Tippsperre (`scrollBusy`).
+
+## 4.0.0 (Vorarbeit) – Umbau nach `werkzeuge/UMBAU-4.md`
 
 Auftrag des Nutzers als Claude-Doc, im Repo gesichert als `werkzeuge/UMBAU-4.md` (10 Phasen, Abnahme in Abschnitt 12).
 Entscheidungen: alle Standardwerte aus Abschnitt 2 übernommen (keine Rückfragen nötig): Laufen und Kraft getrennt ·

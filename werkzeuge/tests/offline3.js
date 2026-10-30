@@ -55,19 +55,15 @@ const navOk = p => p.evaluate(() => { const n = document.getElementById('nav').g
     log(r && r.ok() && /Rodeltraining/.test(await p.textContent('#n-kalender')) && !errs.length, 'Hülle und Kalender offline' + (errs.length ? ' ' + errs.join('|') : ''));
     // jedes Ziel, jeder Unterpunkt: Seite sichtbar, keine Fehler, alle Eingabefelder bedienbar
     let total = 0;
-    // Auswahl wie von Hand: Seitenmenü (Training, Schule, Bibel, Pause) oder Chips (Mobility)
+    // Auswahl wie von Hand (4.0): Reiter oben oder „Mehr ▾“, dann Unterpunkt-Chip
     const pick = async (s, k) => {
-      if (await p.isVisible('#menu')) {
-        await p.click('#menu'); await p.waitForTimeout(300);
-        if (k && !await p.isVisible('#dwpn [data-sec="' + s + '"][data-kid="' + k + '"]')) await p.click('#dwpn [data-exp="' + s + '"]');
-        await p.click(k ? '#dwpn [data-sec="' + s + '"][data-kid="' + k + '"]' : '#dwpn .dw-r [data-sec="' + s + '"]');
-      } else {
-        if (await p.isVisible('#chips [data-sec="' + s + '"]')) { await p.click('#chips [data-sec="' + s + '"]'); await p.waitForTimeout(600); }
-        if (k) await p.click('#chips [data-kid="' + k + '"]');
-      }
+      if (await p.isVisible('#chips .tb[data-sec="' + s + '"]')) await p.click('#chips .tb[data-sec="' + s + '"]');
+      else if (await p.isVisible('#chips [data-tmore]')) { await p.click('#chips [data-tmore]'); await p.waitForTimeout(350); await p.click('#sheet [data-s="sec:' + s + '"]'); }
+      await p.waitForTimeout(600);
+      if (k) await p.click('#chips .crow.sub [data-kid="' + k + '"]');
       await p.waitForTimeout(1500);
     };
-    for (const t of ['training', 'mobility', 'schule', 'bibel', 'pause']) {
+    for (const t of ['training', 'schule', 'bibel', 'pause']) {
       if (t === 'bibel' || t === 'pause') { await p.click('#nav [data-tab=mehr]'); await p.waitForTimeout(400); await p.click('#n-mehr [data-m=' + t + ']'); }
       else await p.click('#nav [data-tab=' + t + ']');
       await p.waitForTimeout(800);
@@ -98,7 +94,7 @@ const navOk = p => p.evaluate(() => { const n = document.getElementById('nav').g
       log(ok && !errs.length, 'Offline: Mehr › ' + m + (errs.length ? ' ' + errs.join('|') : ''));
     }
     // alte Adressen offline → Hülle
-    for (const [from, want] of [['', '#kalender'], ['training/#atmung/train', '#mobility/atmung/hrv'], ['bibel/#lesen', '#bibel/lesen'], ['wissen/#quiz', '#training/wissen/quiz']]) {
+    for (const [from, want] of [['', '#kalender'], ['training/#atmung/train', '#training/atmung/hrv'], ['bibel/#lesen', '#bibel/lesen'], ['wissen/#quiz', '#training/wissen/quiz']]) {
       await p.goto(U + from).catch(() => {}); await p.waitForTimeout(2000);
       log(p.url().indexOf(APP + want) === 0, 'Offline alte Adresse /planer/' + from + ' → ' + p.url().replace(U, ''));
     }
@@ -110,8 +106,10 @@ const navOk = p => p.evaluate(() => { const n = document.getElementById('nav').g
     log(/Offline-Aufgabe/.test(await p.textContent('#n-kalender')) && await p.evaluate(() => SharedCalendar.notes.list().some(n => n.text === 'Offline notiert')), 'Notiz und Aufgabe offline gespeichert, nach Neustart da');
     // Kalender → Starten offline
   await p.evaluate(() => SharedCalendar.setCalShow('atmung', true)); await p.waitForTimeout(400);   // Atemübungen standardmäßig nicht im Kalender
-    await p.locator('.ev', { hasText: 'Langsames Atmen' }).locator('[data-start]').click(); await p.waitForTimeout(2500);
-    log(p.url().indexOf('#mobility/atmung/hrv') > 0, 'Offline: Kalender → Atemübung starten');
+    if (await p.$('#cal-up [data-start]') && /Langsames Atmen/.test(await p.textContent('#cal-up'))) await p.click('#cal-up [data-start]');
+    else { await p.locator('#dayplan .ev', { hasText: 'Langsames Atmen' }).locator('.tx').click(); await p.waitForTimeout(300); await p.click('#sheet [data-s=open]'); }
+    await p.waitForTimeout(2500);
+    log(p.url().indexOf('#training/atmung/hrv') > 0, 'Offline: Kalender → Atemübung starten');
     // Handykalender offline: Termin aus dem Handy teilen (Share Target im Service Worker) und Termine ins Handy übertragen
     errs.length = 0;
     await p.goto(APP + '#kalender'); await p.waitForTimeout(1500);
@@ -121,11 +119,11 @@ const navOk = p => p.evaluate(() => { const n = document.getElementById('nav').g
     await p.click('#sheet [data-s=yes]').catch(() => {}); await p.waitForTimeout(500);
     const got = await p.evaluate(() => SharedCalendar.list().some(x => x.title === 'Offline geteilt'));
     await p.goto(APP + '#mehr'); await p.waitForTimeout(1500);
-    await p.click('#n-mehr [data-m=handy]'); await p.waitForTimeout(300);
+    await p.click('#n-mehr [data-m="g:conn"]'); await p.waitForTimeout(350); await p.click('#sheet [data-m=handy]'); await p.waitForTimeout(300);
     const dl = await Promise.all([p.waitForEvent('download', { timeout: 5000 }), p.click('#sheet [data-s=outall]')]).then(x => x[0]).catch(() => null);
     log(shared === 200 && got && dl && !errs.length, 'Offline: Handykalender – Termin teilen › Planer übernommen, Termine als Datei ins Handy' + (errs.length ? ' ' + errs.join('|') : ''));
     // Version aktualisieren offline: Hinweis, App läuft weiter
-    await p.goto(APP + '#mehr'); await p.waitForTimeout(1500); await p.click('#n-mehr [data-m=update]'); await p.waitForTimeout(800);
+    await p.goto(APP + '#mehr'); await p.waitForTimeout(1500); await p.click('#n-mehr [data-m="g:set"]'); await p.waitForTimeout(350); await p.click('#sheet [data-m=update]'); await p.waitForTimeout(800);
     log(/Ohne Internet|nicht erreichbar/.test(await p.textContent('#snack')), 'Version aktualisieren offline: ' + (await p.textContent('#snack')).slice(0, 60));
   } finally { server(true); }
   console.log(`\n${out.length} grün, ${fail.length} Fehler`); fail.forEach(f => console.log('FEHLER:', f));

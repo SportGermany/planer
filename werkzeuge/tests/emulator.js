@@ -90,7 +90,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   let restarts = 0;
   const playDied = () => /depends on provider com\.google\.android\.gms[^\n]*in dying proc/.test(execSync('adb logcat -d -t 3000', { encoding: 'utf8', maxBuffer: 64e6 }).split('\n').filter(l => /planer/.test(l)).join('\n'));
   const reopen = async () => { await dev.shell('am start -n ' + PKG + '/.MainActivity'); await wait(8000); page = await findPage(); await page.waitForSelector('#nav button', { timeout: 30000 }); };
-  for (const h of ['kalender', 'training/heute', 'training/rodeln', 'training/wissen', 'mobility/mobility', 'mobility/atmung', 'schule', 'mehr', 'bibel', 'pause', 'notizen', 'aufgaben']) {
+  for (const h of ['kalender', 'training/heute', 'training/rodeln', 'training/wissen', 'training/mobility', 'training/atmung', 'schule', 'mehr', 'bibel', 'pause', 'notizen', 'aufgaben']) {
     let r = null;
     for (let tries = 0; tries < 2 && !r; tries++) {
       try {

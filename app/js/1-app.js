@@ -1,8 +1,8 @@
 /* Planer – Hülle für die ganze App.
  * Fünf Ziele: Kalender (Start) · Training · Mobility · Schule · Mehr. Der Kalender zeigt alles aus allen Bereichen und
  * führt mit einem Tipp dorthin. Die Bereiche sind die bisherigen Seiten (eingebettet, ohne eigene Leisten); sie bleiben
- * geladen und wechseln sofort. Unterpunkte im Seitenmenü (Tablet: feste Spalte), nur Mobility behält Chips.
- * Adressen: #kalender, #training/rodeln/plan, #mobility/atmung, #schule/plan, #mehr, #bibel/lesen, #notizen, #u=<alte Adresse>. */
+ * geladen und wechseln sofort. Unterpunkte als Reiter oben (4.0: kein Seitenmenü mehr), Unter-Unterpunkte als Chips.
+ * Adressen: #kalender, #training/rodeln/plan, #training/atmung (früher #mobility/atmung), #schule/plan, #mehr, #bibel/lesen, #notizen, #u=<alte Adresse>. */
 (function () {
   "use strict";
   var BASE = "/" + (location.pathname.split("/")[1] || "") + "/";
@@ -20,7 +20,7 @@
     school: '<path d="M2.5 9l9.5-5 9.5 5-9.5 5z"/><path d="M6.5 11.2v4.8c0 1.5 2.5 3 5.5 3s5.5-1.5 5.5-3v-4.8"/>',
     more: '<rect x="4" y="4" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="2"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>', menu: '<path d="M4 7h16M4 12h16M4 17h16"/>', plus: '<path d="M12 5v14M5 12h14"/>', back: '<path d="M20 12H5M11 5l-7 7 7 7"/>',
-    chev: '<path d="M9 5l7 7-7 7"/>', chevl: '<path d="M15 5l-7 7 7 7"/>', check: '<path d="M4 6.5l1.8 1.8L9 5M4 12.5l1.8 1.8L9 11M4 18.5l1.8 1.8L9 17M12.5 7h7.5M12.5 13h7.5M12.5 19h7.5"/>',
+    chev: '<path d="M9 5l7 7-7 7"/>', down: '<path d="M7 10l5 5 5-5"/>', list: '<path d="M8 6.5h12M8 12h12M8 17.5h12M4 6.5h.01M4 12h.01M4 17.5h.01"/>', chevl: '<path d="M15 5l-7 7 7 7"/>', check: '<path d="M4 6.5l1.8 1.8L9 5M4 12.5l1.8 1.8L9 11M4 18.5l1.8 1.8L9 17M12.5 7h7.5M12.5 13h7.5M12.5 19h7.5"/>',
     note: '<path d="M5 3.5h10l4 4v13H5z"/><path d="M15 3.5v4h4M8.5 12h7M8.5 16h5"/>', book: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5"/>',
     wind: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>', coffee: '<path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16M8 3v3M11 3v3"/>',
     wand: '<path d="M4 20L16 8M14 6l4 4M18 3v3M21 6h-3M7 4v2M8 5H6"/>', ok: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2.5l1.6 2.6 3-.6.6 3 2.6 1.6-1.4 2.9 1.4 2.9-2.6 1.6-.6 3-3-.6L12 21.5l-1.6-2.6-3 .6-.6-3-2.6-1.6L5.6 12 4.2 9.1l2.6-1.6.6-3 3 .6z"/>',
@@ -43,46 +43,46 @@
 
   /* ---------- Ziele und Unterpunkte ----------
    * p = Seite (Pfad unter /planer/), h = Sprungadresse der Seite, s = Unterbereich in deren (ausgeblendeter) Leiste,
-   * sel = Knopf, der den Unterbereich wählt (X = s), kids = Untereinträge, nav = "drawer" (Seitenmenü) oder "chips",
+   * sel = Knopf, der den Unterbereich wählt (X = s), kids = Untereinträge, nav = "tabs" (Reiter, vis = Zahl sichtbarer, Rest hinter „Mehr ▾“), "chips" oder "drawer" (altes Seitenmenü, ungenutzt), st = kurzer Reitername, ic = Symbol im Mehr-Blatt,
    * c = Bereichsfarbe, foot = Einträge unten im Seitenmenü [Ziel, Text, Symbol] */
   var MODNAV = "nav [data-tab='X'],nav [data-go='X'],nav [data-v='X']";
   var V = {
-    kalender: { t: "Kalender", tab: "kalender", native: "kalender" },
-    training: { t: "Training", tab: "training", nav: "drawer", c: "var(--c-training)", foot: [["tset", "Training einstellen", "gear"]], secs: [
+    kalender: { t: "Heute", tab: "kalender", native: "kalender" },
+    training: { t: "Training", tab: "training", nav: "tabs", c: "var(--c-training)", foot: [["tset", "Training einstellen", "gear"]], secs: [
       { id: "heute", t: "Heute", p: "training/", h: "heute" },
       { id: "lauf", t: "Laufen", p: "training/", h: "lauf" },
       { id: "kraft", t: "Kraft", p: "training/", h: "kraft" },
-      { id: "rodeln", t: "Rodeln", p: "training/bahnplan/", sel: MODNAV, kids: [{ id: "plan", t: "Kurvenbuch", s: "plan" }, { id: "bahnen", t: "Bahnen", s: "bahnen" }, { id: "laeufe", t: "Läufe & Zeiten", s: "laeufe" }, { id: "buch", t: "Drucken", s: "buch" }] },
-      { id: "auswertung", t: "Auswertung", p: "training/", kids: [{ id: "fitness", t: "Fitness", h: "fitness" }, { id: "analyse", t: "Analyse", h: "daten" }, { id: "rueckblick", t: "Kalender & Rückblick", h: "kalender" }] },
-      { id: "wissen", t: "Sportwissenschaft", p: "wissen/", kids: [{ id: "lesen", t: "Lesen", h: "lesen" }, { id: "karten", t: "Karteikarten", h: "karten" }, { id: "quiz", t: "Quiz", h: "quiz" }, { id: "suche", t: "Suche", h: "suche" }] }
-    ] },
-    mobility: { t: "Mobility", tab: "mobility", nav: "chips", secs: [
       { id: "mobility", t: "Mobility", p: "training/mobility/", sel: MODNAV, kids: [{ id: "heute", t: "Tagesblock", s: "heute" }, { id: "wettkampf", t: "Wettkampf", s: "wettkampf" }, { id: "uebungen", t: "Übungen", s: "uebungen" }, { id: "fortschritt", t: "Fortschritt", s: "fortschritt" }] },
-      { id: "atmung", t: "Atmung & HRV", p: "training/atmung/", sel: MODNAV, kids: [{ id: "heute", t: "Heute", s: "today" }, { id: "hrv", t: "Üben & HRV messen", s: "train" }, { id: "woche", t: "Woche", s: "week" }, { id: "verlauf", t: "Verlauf", s: "log" }, { id: "plan", t: "12-Wochen-Plan", s: "plan" }] }
+      { id: "atmung", t: "Atmung & HRV", st: "Atmung", ic: "wind", p: "training/atmung/", sel: MODNAV, kids: [{ id: "heute", t: "Heute", s: "today" }, { id: "hrv", t: "Üben & HRV messen", s: "train" }, { id: "woche", t: "Woche", s: "week" }, { id: "verlauf", t: "Verlauf", s: "log" }, { id: "plan", t: "12-Wochen-Plan", s: "plan" }] },
+      { id: "rodeln", t: "Rodeln", ic: "sled", p: "training/bahnplan/", sel: MODNAV, kids: [{ id: "plan", t: "Kurvenbuch", s: "plan" }, { id: "bahnen", t: "Bahnen", s: "bahnen" }, { id: "laeufe", t: "Läufe & Zeiten", s: "laeufe" }, { id: "buch", t: "Drucken", s: "buch" }] },
+      { id: "auswertung", t: "Auswertung", ic: "pulse", p: "training/", kids: [{ id: "fitness", t: "Fitness", h: "fitness" }, { id: "analyse", t: "Analyse", h: "daten" }, { id: "rueckblick", t: "Kalender & Rückblick", h: "kalender" }] },
+      { id: "wissen", t: "Sportwissenschaft", ic: "book", p: "wissen/", kids: [{ id: "lesen", t: "Lesen", h: "lesen" }, { id: "karten", t: "Karteikarten", h: "karten" }, { id: "quiz", t: "Quiz", h: "quiz" }, { id: "suche", t: "Suche", h: "suche" }] }
     ] },
-    schule: { t: "Schule", tab: "schule", nav: "drawer", c: "var(--c-schule)", secs: [
-      { id: "heute", t: "Schultag", p: "schule/", sel: ".tab[data-v='X']", s: "heute" },
+    schule: { t: "Schule", tab: "schule", nav: "tabs", vis: 3, c: "var(--c-schule)", secs: [
+      { id: "heute", t: "Schultag", st: "Heute", p: "schule/", sel: ".tab[data-v='X']", s: "heute" },
       { id: "plan", t: "Stundenplan", p: "schule/", sel: ".tab[data-v='X']", s: "plan" },
-      { id: "aufgaben", t: "Aufgaben & Prüfungen", p: "schule/", sel: ".tab[data-v='X']", s: "aufgaben" },
-      { id: "lernzeit", t: "Lernzeit", p: "schule/", h: "lernzeit" },
-      { id: "ablage", t: "Ablage", p: "schule/", h: "ablage" },
-      { id: "lernplan", t: "Lernplan", p: "schule/", sel: ".tab[data-v='X']", s: "lehrgang" },
-      { id: "ferien", t: "Schuljahr & Ferien", p: "schule/", sel: ".tab[data-v='X']", s: "kalender" }
+      { id: "aufgaben", t: "Aufgaben & Prüfungen", st: "Aufgaben", p: "schule/", sel: ".tab[data-v='X']", s: "aufgaben" },
+      { id: "lernzeit", t: "Lernzeit", ic: "clock", p: "schule/", h: "lernzeit" },
+      { id: "ablage", t: "Ablage", ic: "note", p: "schule/", h: "ablage" },
+      { id: "lernplan", t: "Lernplan", ic: "check", p: "schule/", sel: ".tab[data-v='X']", s: "lehrgang" },
+      { id: "ferien", t: "Schuljahr & Ferien", ic: "cal", p: "schule/", sel: ".tab[data-v='X']", s: "kalender" }
     ] },
     mehr: { t: "Mehr", tab: "mehr", native: "mehr" },
     // über „Mehr“ erreichbar (Zurück führt dorthin)
     aufgaben: { t: "Aufgaben", tab: "mehr", up: "mehr", secs: [{ id: "alle", t: "Aufgaben", p: "", h: "tasks" }] },
     notizen: { t: "Notizen", tab: "mehr", up: "mehr", native: "notizen" },
-    bibel: { t: "Bibel", tab: "mehr", up: "mehr", nav: "drawer", c: "var(--c-bibel)", secs: [
-      { id: "heute", t: "Heute", p: "bibel/", h: "heute" }, { id: "lesen", t: "Weiterlesen", p: "bibel/", h: "lesen" },
-      { id: "bibliothek", t: "Bibliothek", p: "bibel/", h: "bibliothek" }, { id: "meine", t: "Meine Bibel", p: "bibel/", h: "meinebibel" }, { id: "einst", t: "Einstellungen", p: "bibel/", h: "mehr" }] },
-    pause: { t: "Pause", tab: "mehr", up: "mehr", nav: "drawer", c: "var(--c-atmung)", secs: [
+    bibel: { t: "Bibel", tab: "mehr", up: "mehr", nav: "tabs", vis: 3, c: "var(--c-bibel)", secs: [
+      { id: "heute", t: "Heute", p: "bibel/", h: "heute" }, { id: "lesen", t: "Weiterlesen", st: "Lesen", p: "bibel/", h: "lesen" },
+      { id: "bibliothek", t: "Bibliothek", p: "bibel/", h: "bibliothek" }, { id: "meine", t: "Meine Bibel", ic: "book", p: "bibel/", h: "meinebibel" }, { id: "einst", t: "Einstellungen", ic: "gear", p: "bibel/", h: "mehr" }] },
+    pause: { t: "Pause", tab: "mehr", up: "mehr", nav: "tabs", vis: 3, c: "var(--c-atmung)", secs: [
       { id: "ablenken", t: "Ablenken", p: "pause/", sel: "#nav .tab[data-t='X']", s: "ablenken" }, { id: "wissen", t: "Wissen", p: "pause/", sel: "#nav .tab[data-t='X']", s: "wissen" },
-      { id: "quiz", t: "Quiz", p: "pause/", sel: "#nav .tab[data-t='X']", s: "quiz" }, { id: "verlauf", t: "Verlauf", p: "pause/", sel: "#nav .tab[data-t='X']", s: "kalender" },
-      { id: "einst", t: "Einstellungen", p: "pause/", sel: "#nav .tab[data-t='X']", s: "einst" }] },
+      { id: "quiz", t: "Quiz", p: "pause/", sel: "#nav .tab[data-t='X']", s: "quiz" }, { id: "verlauf", t: "Verlauf", ic: "cal", p: "pause/", sel: "#nav .tab[data-t='X']", s: "kalender" },
+      { id: "einst", t: "Einstellungen", ic: "gear", p: "pause/", sel: "#nav .tab[data-t='X']", s: "einst" }] },
     tset: { t: "Training einstellen", tab: "mehr", up: "mehr", secs: [{ id: "einst", t: "Einstellungen", p: "training/", h: "einst" }] }
   };
-  var TABS = [["kalender", "Kalender", "cal"], ["training", "Training", "run"], ["mobility", "Mobility", "stretch"], ["schule", "Schule", "school"], ["mehr", "Mehr", "more"]];
+  var TABS = [["kalender", "Heute", "cal"], ["training", "Training", "run"], ["schule", "Schule", "school"], ["mehr", "Mehr", "more"]];
+  // frühere Adressen #mobility/… (Lesezeichen, Erinnerungen, Verknüpfungen) landen jetzt unter Training
+  function alias(v, s) { return v === "mobility" ? ["training", s || "mobility"] : [v, s]; }
 
   /* ---------- gemerkte Auswahl ---------- */
   var M = {}; try { M = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) {}
@@ -142,13 +142,13 @@
   function kidOf(s, id) { return s && s.kids ? s.kids.find(function (k) { return k.id === id; }) || s.kids[0] : null; }
   function render() {
     var v = V[cur.v] || V.kalender;
-    titleEl.textContent = v.t;
+    titleEl.textContent = cur.v === "kalender" && calMon ? "Monat" : v.t;
     document.title = v.t + " · Planer";
     backEl.hidden = !v.up; backEl.innerHTML = ico("back");
     var dw = hasDw(v);
     var lostFocus = document.activeElement === menuEl && !dw;
     // Pfadzeile auch bei Mobility (Chips) – dort nur Anzeige, kein Menü
-    var hasPath = dw || !!(v.secs && (v.secs.length > 1 || v.secs[0].kids));
+    var hasPath = dw || (v.nav !== "tabs" && !!(v.secs && (v.secs.length > 1 || v.secs[0].kids)));
     menuEl.hidden = !dw; pathEl.hidden = !hasPath; pathEl.disabled = !dw; topEl.classList.toggle("hasmenu", dw); topEl.classList.toggle("haspath", hasPath); document.body.classList.toggle("hasdw", dw);
     pathEl.tabIndex = wideMQ.matches ? -1 : 0;
     if (!dw && drawerOpen) closeDrawer();
@@ -157,10 +157,10 @@
     Array.prototype.forEach.call(navEl.children, function (b) { b.classList.toggle("on", b.dataset.tab === v.tab); });
     mehrBadge();
     // Kopf-Aktionen
-    actsEl.innerHTML = '<button class="ib" data-act="search" aria-label="Suchen">' + ico("search") + "</button>";
+    actsEl.innerHTML = (cur.v === "kalender" ? '<button class="ib" data-act="month" aria-pressed="' + calMon + '" aria-label="' + (calMon ? "Zurück zur Tagesansicht" : "Monatskalender") + '">' + ico(calMon ? "list" : "cal") + "</button>" : "") +
+      '<button class="ib" data-act="search" aria-label="Suchen">' + ico("search") + "</button>";
     fab.classList.toggle("on", cur.v === "kalender" || cur.v === "notizen");
     fab.innerHTML = ico("plus");
-    if ($("tomonth")) { if (cur.v === "kalender") setTimeout(toMonthBtn, 50); else $("tomonth").classList.remove("on"); }
     if (v.native) {
       chipsEl.innerHTML = ""; stage.classList.remove("lined"); dwPn.innerHTML = "";
       var n = $("n-" + v.native); show(n); $("load").classList.remove("on");
@@ -175,11 +175,13 @@
     if (dw) { pathEl.setAttribute("aria-label", "Bereichsmenü öffnen, aktuell " + pathEl.textContent); renderDrawer(v, s, k); }
     else { pathEl.removeAttribute("aria-label"); dwPn.innerHTML = ""; }
     var h = "";
-    if (!dw && v.secs.length > 1) h += '<div class="crow">' + v.secs.map(function (x) { return '<button class="chip' + (x.id === s.id ? " on" : "") + '" data-sec="' + x.id + '">' + esc(x.t) + "</button>"; }).join("") + "</div>";
-    if (s.kids && !dw) h += '<div class="crow sub">' + s.kids.map(function (x) { return '<button class="chip' + (k && x.id === k.id ? " on" : "") + '" data-kid="' + x.id + '">' + esc(x.t) + "</button>"; }).join("") + "</div>";
+    if (v.nav === "tabs") h += tabRow(v, s);
+    else if (!dw && v.secs.length > 1) h += '<div class="crow">' + v.secs.map(function (x) { return '<button class="chip' + (x.id === s.id ? " on" : "") + '" data-sec="' + x.id + '">' + esc(x.t) + "</button>"; }).join("") + "</div>";
+    // Unterpunkte umbrechen statt seitlich scrollen – nur Mobility und Atmung behalten ihre Chip-Leiste wie gehabt
+    if (s.kids && !dw) h += '<div class="crow sub' + (/^(mobility|atmung)$/.test(s.id) ? "" : " w") + '">' + s.kids.map(function (x) { return '<button class="chip' + (k && x.id === k.id ? " on" : "") + '" data-kid="' + x.id + '">' + esc(x.t) + "</button>"; }).join("") + "</div>";
     chipsEl.innerHTML = h; stage.classList.toggle("lined", !!h);
     // gewählten Chip sichtbar machen – nur die Chip-Reihe scrollen, nie die Seite
-    Array.prototype.forEach.call(chipsEl.querySelectorAll(".chip.on"), function (c) { var r = c.parentNode; if (c.offsetLeft + c.offsetWidth > r.scrollLeft + r.clientWidth || c.offsetLeft < r.scrollLeft) r.scrollLeft = c.offsetLeft - 16; });
+    Array.prototype.forEach.call(chipsEl.querySelectorAll(".crow .chip.on"), function (c) { var r = c.parentNode; if (c.offsetLeft + c.offsetWidth > r.scrollLeft + r.clientWidth || c.offsetLeft < r.scrollLeft) r.scrollLeft = c.offsetLeft - 16; });
     // Seite zeigen und Unterbereich wählen
     var spec = { h: (k && k.h) || s.h, s: (k && k.s) || s.s, sel: s.sel };
     if (cur.sub) { if (s.sel) spec.s = cur.sub; else spec.h = cur.sub; cur.sub = null; }
@@ -190,6 +192,25 @@
     apply(f, spec, fresh);
   }
 
+  /* ---------- Reiter ----------
+   * Unterbereiche als Reiter oben (statt Seitenmenü): die ersten vis (4) sichtbar, der Rest und foot hinter „Mehr ▾“.
+   * Ist ein Bereich aus „Mehr“ gewählt, trägt der letzte Reiter dessen Namen. Kein Querscrollen. */
+  function tabSplit(v) { var n = v.vis || 4, more = v.secs.slice(n); return more.length < 2 && !(v.foot || []).length ? [v.secs, []] : [v.secs.slice(0, n), more]; }
+  function tabRow(v, s) {
+    var sp = tabSplit(v), inMore = sp[1].some(function (x) { return x.id === s.id; }), more = sp[1].length || (v.foot || []).length;
+    return '<div class="trow" role="tablist" style="--c:' + (v.c || "var(--acc)") + '">' + sp[0].map(function (x) {
+      var on = x.id === s.id; return '<button class="tb' + (on ? " on" : "") + '" role="tab" aria-selected="' + on + '" data-sec="' + x.id + '">' + esc(x.st || x.t) + "</button>";
+    }).join("") + (more ? '<button class="tb more' + (inMore ? " on" : "") + '" data-tmore="1" aria-haspopup="dialog" aria-label="Weitere Bereiche' + (inMore ? ", aktuell " + esc(s.t) : "") + '"><span>' + esc(inMore ? (s.st || s.t) : "Mehr") + "</span>" + ico("down") + "</button>" : "") + "</div>";
+  }
+  function tabMore() {
+    var v = V[cur.v], sp = tabSplit(v);
+    sheet("<h3>" + esc(v.t) + "</h3>" + sp[1].map(function (x) { return sRow("sec:" + x.id, x.ic || "chev", x.t, x.kids ? x.kids.map(function (k) { return k.t; }).join(" · ") : "", v.c); }).join("") +
+      (v.foot || []).map(function (f) { return sRow("go:" + f[0], f[2], f[1], "", "var(--acc)"); }).join(""), function (a) {
+      var sec = a.indexOf("sec:") === 0 ? a.slice(4) : null, to = a.indexOf("go:") === 0 ? a.slice(3) : null;
+      closeSheet(false, function () { if (sec) go(cur.v, sec, null, { push: false }); else if (to) go(to, null, null, { push: true }); });
+    });
+  }
+
   /* ---------- Navigation und Verlauf ----------
    * Adresse = Ziel/Unterpunkt/Unter-Unterpunkt. Wechsel zwischen den Zielen unten ersetzen den Eintrag; vom Kalender
    * aus und in Unterseiten von „Mehr“ entsteht ein Eintrag – die Zurück-Geste führt dann zurück. */
@@ -197,8 +218,10 @@
   function go(v, s, k, opt) {
     opt = opt || {};
     if (drawerOpen) return closeDrawer(function () { go(v, s, k, opt); });
+    var al = alias(v, s); v = al[0]; s = al[1];
     if (!V[v]) v = "kalender";
     var push = opt.push != null ? opt.push : (cur.v === "kalender" && v !== "kalender") || (V[v].up === cur.v);
+    if (calMon && v !== "kalender") { calMon = false; calModeCls(); if (history.state && history.state.mon) history.replaceState({ app: 1, from: history.state.from }, "", location.hash); }
     var hsh = hashOf(v, s, k), prev = cur.v;
     cur = { v: v, s: s || null, k: k || null, sub: opt.sub || null };
     // from = Ziel davor: „Zurück zu Mehr“ darf nur dann zurückgehen, wenn davor wirklich Mehr war
@@ -209,8 +232,9 @@
     var h = decodeURIComponent(location.hash.slice(1));
     if (h.indexOf("u=") === 0) { history.replaceState({ app: 1 }, "", "#kalender"); cur = { v: "kalender" }; render(); return openUrl(h.slice(2)); }
     if (h === "teilen") { history.replaceState({ app: 1 }, "", "#kalender"); cur = { v: "kalender" }; render(); return setTimeout(takeShared, 300); }
-    var p = h.split("/");
-    cur = { v: V[p[0]] ? p[0] : "kalender", s: p[1] || null, k: p[2] || null };
+    var p = h.split("/"), al = alias(p[0], p[1]);
+    if (al[0] !== p[0]) history.replaceState(history.state, "", hashOf(al[0], al[1], p[2]));
+    cur = { v: V[al[0]] ? al[0] : "kalender", s: al[1] || null, k: p[2] || null };
     render();
   }
   // Zurück: erst das Seitenmenü zu, dann das Blatt, erst dann wird navigiert
@@ -223,6 +247,7 @@
     if (drawerOpen) { closeDrawer(null, true); return; }
     if (dwAfter) { var a = dwAfter; dwAfter = null; a(); return; }
     if (sheetOpen) { closeSheet(true); return; }
+    if (calMon && !(history.state && history.state.mon)) { calMon = false; calModeCls(); if (cur.v === "kalender" && /^#?(kalender)?$/.test(location.hash)) { render(); $("n-kalender").scrollTop = 0; return; } }
     fromHash();
   });
   navEl.addEventListener("click", function (e) {
@@ -232,12 +257,12 @@
     if (t === cur.v) { if (t === "kalender") { setSel(today()); renderCal(); $("n-kalender").scrollTop = 0; } else if (hasDw(V[t])) openDrawer(); return; }
     pushedFromCal = cur.v === "kalender";
     go(t, null, null, { push: cur.v === "kalender" });
-    if (M.autoDw && hasDw(V[t]) && !wideMQ.matches) setTimeout(openDrawer, 60);
   });
   var pushedFromCal = false;
   backEl.addEventListener("click", function () { var v = V[cur.v]; if (history.state && history.state.app && history.length > 1) history.back(); else go(v.up || "kalender"); });
   chipsEl.addEventListener("click", function (e) {
     var a = e.target.closest("[data-sec]"), b = e.target.closest("[data-kid]");
+    if (e.target.closest("[data-tmore]")) { if (window.SGHaptic) SGHaptic("tap"); tabMore(); return; }
     if (a) go(cur.v, a.dataset.sec, null, { push: false });
     else if (b) go(cur.v, cur.s, b.dataset.kid, { push: false });
   });
@@ -355,8 +380,8 @@
     go("kalender");
   }
   function openModule(id, sub) {
-    if (id === "mobility") return go("mobility", "mobility", { wettkampf: "wettkampf", uebungen: "uebungen", fortschritt: "fortschritt" }[sub] || "heute");
-    if (id === "atmung") return go("mobility", "atmung", { train: "hrv", week: "woche", log: "verlauf", plan: "plan" }[sub] || "heute");
+    if (id === "mobility") return go("training", "mobility", { wettkampf: "wettkampf", uebungen: "uebungen", fortschritt: "fortschritt" }[sub] || "heute");
+    if (id === "atmung") return go("training", "atmung", { train: "hrv", week: "woche", log: "verlauf", plan: "plan" }[sub] || "heute");
     if (id === "bahnplan") return go("training", "rodeln", { bahnen: "bahnen", laeufe: "laeufe", buch: "buch" }[sub] || "plan");
   }
   function openApp(appId, hash) {
@@ -373,8 +398,8 @@
   function setSel(k) { calSel = k; calMonth = k.slice(0, 8) + "01"; }
   var AREA = {
     training: { c: "var(--c-training)", ic: "run", label: "Training", act: "Starten", to: function () { go("training", "heute"); } },
-    mobility: { c: "var(--c-mobility)", ic: "stretch", label: "Mobility", act: "Starten", to: function () { go("mobility", "mobility", "heute"); } },
-    atmung: { c: "var(--c-atmung)", ic: "wind", label: "Atmung", act: "Üben", to: function () { go("mobility", "atmung", "hrv"); } },
+    mobility: { c: "var(--c-mobility)", ic: "stretch", label: "Mobility", act: "Starten", to: function () { go("training", "mobility", "heute"); } },
+    atmung: { c: "var(--c-atmung)", ic: "wind", label: "Atmung", act: "Üben", to: function () { go("training", "atmung", "hrv"); } },
     schule: { c: "var(--c-schule)", ic: "school", label: "Schule", act: "Öffnen", to: function (e) { go("schule", e && e.exam ? "aufgaben" : "heute"); } },
     notiz: { c: "var(--c-notiz)", ic: "note", label: "Notiz", act: "", to: function (e) { noteSheet(e.noteId); } },
     termin: { c: "var(--c-termin)", ic: "cal", label: "Termin", act: "", to: null },
@@ -436,10 +461,22 @@
   function dayRoll() { var t = today(); if (t === calToday) return false; if (calSel === calToday) setSel(t); calToday = t; return true; }
   function calBox() {
     var w = $("n-kalender").firstElementChild;
-    if (!$("cal-strip")) w.innerHTML = '<div id="cal-strip"></div><div id="cal-day"></div><div id="cal-month"></div><div id="cal-glance"></div><div id="cal-next"></div>';
+    if (!$("cal-strip")) w.innerHTML = '<div id="cal-strip"></div><div id="cal-up"></div><div id="cal-day"></div><div id="cal-next"></div><div id="cal-month"></div>';
+    calModeCls();
     return w;
   }
-  function renderCal() { dayRoll(); calBox(); calData(); renderStrip(); renderDay(); renderMonth(); renderGlance(); renderNext(); toMonthBtn(); }
+  function renderCal() { dayRoll(); calBox(); calData(); renderStrip(); renderUp(); renderDay(); renderNext(); if (calMon) renderMonth(); }
+  /* Monat hinter dem Kalender-Symbol (4.0): eigener Verlaufseintrag, Zurück führt zur Tagesansicht.
+     Ein Tag im Monat gewählt → zurück zur Tagesansicht dieses Tages. */
+  var calMon = false;
+  function calModeCls() { var w = $("n-kalender").firstElementChild; if (w) w.classList.toggle("mon", calMon); }
+  function setMon(on) {
+    if (on === calMon) return;
+    if (on) { calMon = true; calMonth = calSel.slice(0, 8) + "01"; history.pushState({ app: 1, mon: 1, from: history.state && history.state.from }, "", location.hash); calModeCls(); renderMonth(); render(); $("n-kalender").scrollTop = 0; if (window.SGHaptic) SGHaptic("tap"); return; }
+    scrollBusy = Date.now() + 400;   // ein zweiter Tipp (Doppeltipp im Monat) trifft nicht die Tagesansicht darunter
+    if (history.state && history.state.mon) { history.back(); return; }   // popstate schaltet um
+    calMon = false; calModeCls(); render(); $("n-kalender").scrollTop = 0;
+  }
   function dayLabel(k, n) {
     var d = parse(k), t = today();
     if (n == null) n = (CD && CD.by[k] || []).length + (CD ? openTasks(k).length : 0);
@@ -453,13 +490,8 @@
   }
   function renderStrip() {
     needData();
-    var t = today(), from = monday(calSel), to = plus(from, 6), a = parse(from), b = parse(to);
-    var lab = a.getMonth() === b.getMonth() ? MO[a.getMonth()] + " " + a.getFullYear()
-      : a.getFullYear() === b.getFullYear() ? MS[a.getMonth()] + "/" + MS[b.getMonth()] + " " + b.getFullYear()
-      : MS[a.getMonth()] + " " + a.getFullYear() + "/" + MS[b.getMonth()] + " " + b.getFullYear();
-    var wb = null; try { wb = C().weekBalance(from); } catch (e) {}
-    var bal = wb && wb.n ? '<span class="wbal" aria-label="Wochenbilanz: ' + wb.done + " von " + (wb.n - wb.skip) + ' Einheiten erledigt' + (wb.skip ? ", " + wb.skip + " ausgelassen" : "") + '">' + wb.done + " von " + (wb.n - wb.skip) + " Einheiten" + (wb.skip ? " · " + wb.skip + " ausgelassen" : "") + "</span>" : "";
-    var h = '<div class="calhd"><b>KW ' + kwOf(from) + " · " + lab + "</b>" + bal + (calSel !== t ? '<button class="lnk" data-c="today">Heute</button>' : "") + '</div><div class="week" id="strip">';
+    var t = today(), from = monday(calSel), to = plus(from, 6), sd = parse(calSel);
+    var h = '<div class="calhd"><b>' + WDL[sd.getDay()] + ", " + sd.getDate() + ". " + MO[sd.getMonth()] + (sd.getFullYear() !== parse(t).getFullYear() ? " " + sd.getFullYear() : "") + "</b>" + (calSel !== t ? '<button class="lnk" data-c="today">Heute</button>' : "") + '</div><div class="week" id="strip">';
     for (var k = from; k <= to; k = plus(k, 1)) {
       var d = parse(k);
       h += '<button class="wd' + (k === t ? " t" : "") + (k === calSel ? " s" : "") + '" data-day="' + k + '" aria-pressed="' + (k === calSel) + '" aria-label="' + dayLabel(k) + '"><small>' + WD[d.getDay()] + '</small><span class="n">' + d.getDate() + '</span><span class="dots">' + stripDots(k) + "</span></button>";
@@ -472,8 +504,7 @@
     var t = today(), sel = calSel, sd = parse(sel), c = C();
     var day = (CD.by[sel] || []).slice().sort(function (x, y) { return (x.time ? 1 : 0) - (y.time ? 1 : 0); }), tasks = tasksFor(sel);
     var grid = dayView() === "grid" && day.some(function (e) { return e.time; });
-    var h = '<div class="grp" id="dayplan"><header><span>' + (sel === t ? "Heute · " : sel === plus(t, 1) ? "Morgen · " : sel === plus(t, -1) ? "Gestern · " : "") + WDL[sd.getDay()] + ", " + sd.getDate() + ". " + MO[sd.getMonth()] + "</span>" +
-      '<button class="lnk" data-c="new">+ Eintrag</button></header>' +
+    var h = '<div class="grp" id="dayplan"><header><span>' + (sel === t ? "Heute" : sel === plus(t, 1) ? "Morgen" : sel === plus(t, -1) ? "Gestern" : WDL[sd.getDay()] + ", " + sd.getDate() + ". " + MO[sd.getMonth()]) + "</span></header>" +
       (day.filter(function (e) { return e.time; }).length > 1 ? '<div class="seg2" role="group" aria-label="Ansicht"><button data-c="vlist" aria-pressed="' + !grid + '">Liste</button><button data-c="vgrid" aria-pressed="' + grid + '">Zeitraster</button></div>' : "");
     if (!day.length && !tasks.length) h += '<div class="cells"><div class="empty">Nichts geplant.<div class="btns" style="margin-top:12px"><button class="btn" data-c="week">Woche planen</button>' +
       (c && c.weekPlanConfig && c.weekPlanConfig().std ? '<button class="btn p" data-c="std">Standardwoche übernehmen</button>' : "") + "</div></div></div>";
@@ -595,41 +626,48 @@
       }
       h += "</div>";
     }
-    h += '</div><div class="mfoot"><button class="lnk" data-c="legend">Legende</button></div>';
+    var wb = null; try { wb = C().weekBalance(monday(calSel)); } catch (e) {}
+    h += '</div><div class="mfoot">' + (wb && wb.n ? '<span class="wbal">Woche ' + kwOf(monday(calSel)) + ": " + wb.done + " von " + (wb.n - wb.skip) + " Einheiten erledigt" + (wb.skip ? " · " + wb.skip + " ausgelassen" : "") + "</span>" : "") + '<button class="lnk" data-c="legend">Legende</button></div>';
     $("cal-month").innerHTML = h;
     bindMonth($("mgrid"));
   }
-  function renderGlance() { $("cal-glance").innerHTML = calSel === today() ? '<div class="grp"><header><span>Auf einen Blick</span></header>' + glance() + "</div>" : ""; }
+  /* „Als Nächstes“ (nur heute): der nächste offene Eintrag mit Uhrzeit, der noch nicht vorbei ist – mit genau einem Knopf */
+  function renderUp() {
+    var el = $("cal-up"), t = today(); if (!el) return;
+    if (calSel !== t) { el.innerHTML = ""; return; }
+    var n = nowMin(), e = (CD.by[t] || []).filter(function (x) { return x.time && !x.st && endMin(x) > n; }).sort(function (a, b) { return a.time.localeCompare(b.time); })[0];
+    if (!e) { el.innerHTML = ""; return; }
+    var A = AREA[area(e)], d = tmin(e.time) - n, when = d <= 0 ? "läuft" : d < 60 ? "in " + d + " Min." : "in " + Math.round(d / 60) + " Std.";
+    el.innerHTML = '<div class="upc" style="--c:' + A.c + '"><button class="upt" data-ev="' + e._k + '"><small>Als Nächstes · ' + when + "</small><b>" + (e.star ? "★ " : "") + esc(e.title || "(ohne Titel)") + "</b><span>" + esc(e.time) + (e.end ? "–" + esc(e.end) : "") + " · " + esc(A.label) + "</span></button>" +
+      (A.act && A.to ? '<button class="btn p upb" data-start="' + e._k + '">' + ico("play") + esc(A.act) + "</button>" : "") + "</div>";
+  }
   function renderNext() {
     needData();
     var sel = calSel, rows = CD.list.filter(function (e) { return e.date > sel && !(e.of > 1 && e.day > 1); }).map(function (e) { return { k: e.date, tm: e.time || "", t: e.title, c: AREA[area(e)].c }; })
       .concat(CD.tasks.filter(function (q) { return !q.done && q.due && q.due > sel; }).map(function (q) { return { k: q.due, tm: "", t: q.title, c: AREA.aufgabe.c, task: 1 }; }))
-      .sort(function (a, b) { return (a.k + (a.tm || "~")).localeCompare(b.k + (b.tm || "~")); }).slice(0, 5);
-    $("cal-next").innerHTML = '<div class="grp next"><header><span>Danach</span></header><div class="cells">' + (rows.length ? rows.map(function (x) {
-      var d = parse(x.k);
+      .sort(function (a, b) { return (a.k + (a.tm || "~")).localeCompare(b.k + (b.tm || "~")); }).slice(0, 3);
+    // der nächste wichtige Termin (★, Prüfung) steht immer dabei, auch wenn er weiter weg ist
+    var ni = sel === today() ? nextImportant() : null;
+    if (ni && ni.date > sel && !rows.some(function (x) { return x.k === ni.date && x.t === ni.title; })) rows.push({ k: ni.date, tm: "", t: ni.title, c: AREA.termin.c, star: 1 });
+    rows.forEach(function (x) { if (!x.star && ni && x.k === ni.date && x.t === ni.title) x.star = 1; });
+    var t0 = today();
+    $("cal-next").innerHTML = '<div class="grp next"><header><span>Demnächst</span><button class="lnk" data-c="mon">Monat ›</button></header><div class="cells">' + (rows.length ? rows.map(function (x) {
+      var d = parse(x.k), dn = Math.round((d - parse(t0)) / 864e5);
       return '<button class="nd" data-day="' + x.k + '"><span class="d">' + WD[d.getDay()] + "<small>" + d.getDate() + "." + (d.getMonth() + 1) + '.</small></span><span class="l"><span style="--c:' + x.c + '"><i></i><span class="tt">' +
-        (x.tm ? esc(x.tm) + " " : x.task ? "Aufgabe: " : "") + esc(x.t || "(ohne Titel)") + "</span></span></span></button>";
+        (x.star ? "★ " : "") + (x.task ? "Aufgabe: " : "") + esc(x.t || "(ohne Titel)") + "</span></span><small>" + (dn === 1 ? "morgen" : dn > 1 && dn < 7 ? "in " + dn + " Tagen" : "") + (x.tm ? (dn === 1 || (dn > 1 && dn < 7) ? " · " : "") + esc(x.tm) : "") + "</small></span></button>";
     }).join("") : '<div class="empty">Danach ist nichts geplant.</div>') + "</div></div>";
   }
   // Tag gewählt: Leiste, Tagesplan, Monat, Blick und Danach neu; von unten (Monat, Danach) weich nach oben zum Tagesplan
   function renderAfterPick(scrollUp) {
-    renderStrip(); renderDay(); renderMonth(); renderGlance(); renderNext();
-    if (scrollUp) scrollCal(0); else toMonthBtn();
+    renderStrip(); renderUp(); renderDay(); renderNext(); if (calMon) renderMonth();
+    if (scrollUp) scrollCal(0);
   }
   var scrollBusy = 0;
   function scrollCal(y) {
     scrollBusy = Date.now() + 320;
     var el = $("n-kalender"), s = el.scrollTop, d = y - s, t0 = performance.now(), dur = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 250;
-    if (!dur || Math.abs(d) < 2) { el.scrollTop = y; toMonthBtn(); return; }
-    (function f(n) { var p = Math.min(1, (n - t0) / dur); el.scrollTop = s + d * (1 - Math.pow(1 - p, 3)); if (p < 1) requestAnimationFrame(f); else toMonthBtn(); })(t0);
-  }
-  // „Zum Monat“: sichtbar, solange der Tagesplan im Bild ist und das Raster nicht
-  function toMonthBtn() {
-    var b = $("tomonth"), el = $("n-kalender"), g = $("mgrid"), dp = $("dayplan");
-    if (!b || !g || !dp || cur.v !== "kalender") { if (b) b.classList.remove("on"); return; }
-    var top = el.getBoundingClientRect(), gr = g.getBoundingClientRect(), dr = dp.getBoundingClientRect();
-    var gridIn = gr.top < top.bottom - 60 && gr.bottom > top.top, dayIn = dr.top < top.bottom && dr.bottom > top.top;
-    b.classList.toggle("on", dayIn && !gridIn);
+    if (!dur || Math.abs(d) < 2) { el.scrollTop = y; return; }
+    (function f(n) { var p = Math.min(1, (n - t0) / dur); el.scrollTop = s + d * (1 - Math.pow(1 - p, 3)); if (p < 1) requestAnimationFrame(f); })(t0);
   }
   // Wischen (links/rechts) auf einem Element: fn(+1 | -1)
   function swipe(el, fn) {
@@ -669,7 +707,7 @@
   function monthSwipe(dir) {
     var nm = shiftMonth(calMonth, dir), y = +nm.slice(0, 4), m = +nm.slice(5, 7), last = new Date(y, m, 0).getDate(), day = Math.min(+calSel.slice(8, 10), last);
     calSel = nm.slice(0, 8) + (day < 10 ? "0" : "") + day; calMonth = nm;
-    renderStrip(); renderDay(); renderMonth(dir > 0 ? "l" : "r"); renderGlance(); renderNext(); toMonthBtn();
+    renderStrip(); renderUp(); renderDay(); renderMonth(dir > 0 ? "l" : "r"); renderNext();
   }
   function monthPickSheet(y) {
     y = y || +calMonth.slice(0, 4);
@@ -678,7 +716,7 @@
       MO.map(function (m, i) { return '<button class="chip' + (i === cm && y === cy ? " on" : "") + '" data-s="m' + i + '">' + MS[i] + "</button>"; }).join("") + "</div></div>", function (act) {
       if (act === "py") return monthPickSheet(y - 1);
       if (act === "ny") return monthPickSheet(y + 1);
-      if (act.charAt(0) === "m") { calMonth = y + "-" + pad(+act.slice(1) + 1) + "-01"; closeSheet(); renderMonth(); toMonthBtn(); }
+      if (act.charAt(0) === "m") { calMonth = y + "-" + pad(+act.slice(1) + 1) + "-01"; closeSheet(); renderMonth(); }
     });
   }
   function legendSheet() {
@@ -693,7 +731,7 @@
     if (e.of > 1) tm = (e.time ? esc(e.time) : e.end ? "<small>bis</small>" + esc(e.end) : "") + "<small>Tag " + e.day + "/" + e.of + "</small>";
     var sub = A.label + (e.of > 1 ? " · Tag " + e.day + " von " + e.of : "") + (e.st === "done" ? " · erledigt" : e.st === "skip" ? " · ausgelassen" + (e.why ? " (" + e.why + ")" : "") : "") + (e.note && a !== "notiz" ? " · " + e.note.split("\n")[0].slice(0, 50) : "");
     return '<button class="ev' + (e.st === "done" ? " evd" : e.st === "skip" ? " skip" : "") + '" data-ev="' + e._k + '" style="--c:' + A.c + '"><span class="tm">' + tm + '</span><span class="bar"></span><span class="tx"><b>' + (e.st === "done" ? '<span class="ck1" aria-hidden="true">✓</span> ' : "") + (e.star ? '<span class="st1" aria-label="wichtig">★</span> ' : "") + esc(e.title || "(ohne Titel)") + "</b><small>" + esc(sub) + "</small></span>" +
-      (A.act && isToday && !e.st ? '<span class="go" data-start="' + e._k + '">' + ico("play") + "<em>" + A.act + "</em></span>" : "") + "</button>";
+      "</button>";
   }
   function taskRow(q) {
     var late = q.due < today() && !q.done;
@@ -708,6 +746,13 @@
     var n = Math.round((parse(hit.date) - parse(t)) / 864e5);
     return { date: hit.date, title: hit.title || "Termin", label: n === 0 ? "heute" : n === 1 ? "morgen" : "in " + n + " Tagen" };
   }
+  // Bibel heute gelesen? todayDone ist in der Bibel {date, ids} (Tagesziel dailyGoal); früher ein Datum
+  // wie die Bibel selbst: heute gelesen, sobald lastDate heute ist; sonst todayDone (neu {date, ids}, alt ein Datum)
+  function bibleState() {
+    var b = null; try { b = JSON.parse(localStorage.getItem("zweiminutenbibel_v2") || "null"); } catch (e) {}
+    var bd = b && b.todayDone, read = !!b && (b.lastDate === today() || bd === today() || (!!bd && bd.date === today() && (bd.ids || []).length >= (b.dailyGoal || 1)));
+    return { read: read, sub: (b && b.streak ? "Serie " + b.streak : "heute lesen") + (b && b.plan === "hl" ? " · Bekannte Kapitel" : b && b.plan ? " · Ganze Bibel" : "") };
+  }
   // „Auf einen Blick“ (nur heute): was jetzt wichtig ist, ein Tipp führt hin
   function glance() {
     var c = C(), out = [];
@@ -720,11 +765,8 @@
       if (wp && wp.on && !wp.planned[mon] && !wp.planned[plus(mon, 7)]) out.push(["training", "wand", "Woche planen", wp.std ? "Standard mit 1 Tipp" : "in 2 Minuten", "week"]);
     } catch (e) {}
     var ni = nextImportant(); if (ni) out.splice(Math.min(1, out.length), 0, ["termin", "star", ni.label, "Wichtig: " + ni.title, "imp:" + ni.date, "Nächster wichtiger Termin " + ni.label + ": " + ni.title]);
-    var b = null; try { b = JSON.parse(localStorage.getItem("zweiminutenbibel_v2") || "null"); } catch (e) {}
-    // todayDone ist in der Bibel {date, ids} (Tagesziel dailyGoal); früher ein Datum
-    // wie die Bibel selbst: heute gelesen, sobald lastDate heute ist; sonst todayDone (neu {date, ids}, alt ein Datum)
-    var bd = b && b.todayDone, read = !!b && (b.lastDate === today() || bd === today() || (!!bd && bd.date === today() && (bd.ids || []).length >= (b.dailyGoal || 1)));
-    out.push(["bibel", "book", read ? "Gelesen ✓" : "Bibel", (b && b.streak ? "Serie " + b.streak : "heute lesen") + (b && b.plan === "hl" ? " · Bekannte Kapitel" : b && b.plan ? " · Ganze Bibel" : ""), "bibel"]);
+    var bs = bibleState();
+    out.push(["bibel", "book", bs.read ? "Gelesen ✓" : "Bibel", bs.sub, "bibel"]);
     var w = null; try { w = JSON.parse(localStorage.getItem("sg-wissen-v1") || "null"); } catch (e) {}
     if (w && w.sum && w.sum.due) out.push(["training", "book", w.sum.due + " Karten", "Sportwissenschaft", "karten"]);
     return '<div class="glance">' + out.slice(0, out.length > 4 ? 6 : 4).map(function (x) {   // mit „wichtig“ bis zu sechs Kacheln, damit die Bibel nicht herausfällt
@@ -734,15 +776,13 @@
   window.addEventListener("resize", function () {
     if (cur.v !== "kalender" || !$("mgrid")) return;
     var w = ($("n-kalender").clientWidth || innerWidth) >= 600;
-    if (w !== renderMonth.wide) renderMonth(); toMonthBtn();
+    if (calMon && w !== renderMonth.wide) renderMonth();
   });
   setInterval(function () {
     if (document.hidden || cur.v !== "kalender") return;
     if (dayRoll()) return renderCal();
     if (calSel === today() && dayPlan.min !== nowMin() && !sheetOpen) { dayPlan.min = nowMin(); tickNow(); }   // Jetzt-Linie wandert mit
   }, 30000);
-  $("n-kalender").addEventListener("scroll", function () { if (!toMonthBtn.t) toMonthBtn.t = requestAnimationFrame(function () { toMonthBtn.t = 0; toMonthBtn(); }); }, { passive: true });
-  $("tomonth").addEventListener("click", function () { var el = $("n-kalender"), g = $("cal-month"); if (g) scrollCal(Math.max(0, el.scrollTop + g.getBoundingClientRect().top - el.getBoundingClientRect().top - 8)); });
   $("n-kalender").addEventListener("click", function (e) {
     // während des weichen Hochscrollens (etwa 300 ms) zählt kein Tipp – sonst trifft ein Doppeltipp, was gerade darunter gleitet
     if (Date.now() < scrollBusy) { e.preventDefault(); return; }
@@ -751,15 +791,16 @@
     var st = e.target.closest("[data-start]"); if (st) { var it = ITEMS[st.dataset.start]; AREA[area(it)].to(it); return; }
     var ev = e.target.closest("[data-ev]"); if (ev) return evSheet(ITEMS[ev.dataset.ev]);
     var tk = e.target.closest("[data-task]"); if (tk) return go("aufgaben", null, null, { push: true });
-    var md = e.target.closest("[data-mday]"); if (md) { if (Date.now() - mSuppress < 600) return; setSel(md.dataset.mday); renderAfterPick(true); return; }
+    var md = e.target.closest("[data-mday]"); if (md) { if (Date.now() - mSuppress < 600) return; setSel(md.dataset.mday); renderAfterPick(); setMon(false); return; }
     var d = e.target.closest("[data-day]"); if (d) { setSel(d.dataset.day); renderAfterPick(!!e.target.closest("#cal-next")); return; }
     var gl = e.target.closest("[data-gl]");
     if (gl) { var g = gl.dataset.gl; if (g.indexOf("imp:") === 0) { setSel(g.slice(4)); renderAfterPick(true); return; } if (g === "week") return C().weekPlan(); if (g === "bibel") return go("bibel", "lesen", null, { push: true }); if (g === "karten") return go("training", "wissen", "karten"); return go(g, null, null, { push: true }); }
     var b = e.target.closest("[data-c]"); if (!b) return;
     var a = b.dataset.c;
     if (a === "today") { setSel(today()); renderAfterPick(); }
-    else if (a === "mprev" || a === "mnext") { calMonth = shiftMonth(calMonth, a === "mnext" ? 1 : -1); renderMonth(a === "mnext" ? "l" : "r"); toMonthBtn(); }
-    else if (a === "mtoday") { calMonth = today().slice(0, 8) + "01"; renderMonth(); toMonthBtn(); }
+    else if (a === "mprev" || a === "mnext") { calMonth = shiftMonth(calMonth, a === "mnext" ? 1 : -1); renderMonth(a === "mnext" ? "l" : "r"); }
+    else if (a === "mtoday") { calMonth = today().slice(0, 8) + "01"; renderMonth(); }
+    else if (a === "mon") setMon(true);
     else if (a === "mpick") monthPickSheet();
     else if (a === "legend") legendSheet();
     else if (a === "new") addSheet();
@@ -1274,6 +1315,11 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["4.0.0", ["Aufgeräumt: unten nur noch Heute · Training · Schule · Mehr – Mobility und Atmung stehen jetzt unter Training",
+      "Reiter oben statt Seitenmenü (Training, Schule, Bibel, Pause); seltener Benutztes hinter „Mehr ▾“",
+      "Startseite „Heute“: Als Nächstes mit einem Knopf, Liste für heute, Demnächst; der Monat liegt hinter dem Kalender-Symbol oben",
+      "Mehr: vier Kacheln und drei Gruppen (Kalender verbinden, Sicherung, Einstellungen)",
+      "Training heute: Kennzahlen als kleine Chips, Schule: Einrichtung als eine Zeile"]],
     ["3.9.1", ["Kalenderdateien (.ics, .vcs) direkt öffnen: Datei antippen › „Planer“ oder teilen › „Planer“ – die Termine werden gleich zum Übernehmen angezeigt"]],
     ["3.9.0", ["Neues Design „Material You“: auf Android 12+ in den Farben deines Hintergrundbilds, Leisten in passender Farbe, Systemschrift Roboto",
       "Blätter lassen sich nach unten wegziehen, kurze Vibration beim Abhaken, „Starten“ als runder Knopf",
@@ -1321,34 +1367,39 @@
       : r("umzug", "phone", "var(--c-training)", "In die Android-App umziehen", "Umzugsdatei für die APK erstellen", "", big ? "big" : "");
     var nv = window.SGNewVer; try { nv = nv || localStorage.getItem("sg-update-neu"); } catch (e) {}
     var newVer = nv && nv !== window.SGVersion && newer(nv, window.SGVersion) ? nv : "";
+    var bs = bibleState();
+    function tile(m, ic, col, t, sub) { return '<button class="gl" data-m="' + m + '" style="--c:' + col + '"><i>' + ico(ic) + "</i><b>" + t + "</b><small>" + sub + "</small></button>"; }
+    var conn = [hk, aboBadge()].filter(function (x) { return x && /bad|!/.test(x); })[0] || "";
+    // Mehr (4.0): vier Kacheln, zwei Seiten, drei Gruppen hinter je einem Blatt – alles Weitere über die Suche
+    MEHR = {
+      conn: r("handy", "phone", "var(--c-termin)", "Handykalender", nat ? "Abgleich mit dem Kalender des Handys" : "Termine mit dem Handy austauschen", hk) +
+        r("abo", "cal", "var(--c-termin)", "Webkalender", "per Link eingebundene Kalender (z. B. aus Google)", aboBadge()),
+      safe: r("sync", "cloud", "#5ac8fa", "Cloud-Sicherung", "Abgleich über GitHub", cl.warn ? '<em class="bad">! ' + cl.val + "</em>" : cl.val) +
+        r("backup", "download", "var(--muted)", "Sicherung als Datei", "sichern oder einspielen", "") + (big ? "" : umz),
+      set: r("design", "palette", "#8f7cf7", "Design", "Farbwelt und Glaseffekt", "") +
+        (er ? r("erinnern", "bell", "#e5a04b", "Erinnerungen", "Benachrichtigungen, auch offline", er) : "") +
+        r("tset", "gear", "var(--c-training)", "Training einstellen", "Ziele, Ruhetage – Hauptort Training", link) +
+        (window.SGInstallEvt && !nat ? r("install", "download", "var(--muted)", "App installieren", "auf den Startbildschirm", "") : "") +
+        r("update", "download", "var(--muted)", "Version " + esc(window.SGVersion || ""), nat ? "neue Version von GitHub holen" : "Version aktualisieren", newVer ? '<em class="hi">Neu: ' + esc(newVer) + "</em>" : "") +
+        r("neu", "star", "var(--muted)", "Was ist neu", "Änderungen der letzten Versionen", "") +
+        r("diag", "pulse", "var(--muted)", "Fehlerprotokoll", "für die Fehlersuche am Handy", (window.SGShellDiag() || []).length || "")
+    };
     $("n-mehr").firstElementChild.innerHTML =
       // Knopf im Aussehen eines Suchfelds: öffnet die Suche (dort wird getippt – keine zweite Suche, keine Tastatur-Probleme)
       '<button class="msearch" id="mehrq" data-m="suche">' + ico("search") + "<span>Einstellungen und Seiten suchen</span></button>" +
       (big ? '<div class="grp"><div class="cells">' + umz + "</div></div>" : "") +
-      '<div class="grp"><header><span>Planen</span></header><div class="cells">' +
-      r("aufgaben", "check", "var(--c-aufgabe)", "Aufgaben", "Heute, geplant, wichtig, erledigt", open ? open + " offen" : "") +
-      r("notizen", "note", "var(--c-notiz)", "Notizen", "Ideen, optional mit Erinnerung", notes ? notes + " offen" : "") +
-      r("week", "wand", "var(--c-training)", "Woche planen", "oder Standardwoche mit einem Tipp", "") + "</div></div>" +
-      '<div class="grp"><header><span>Lesen und Lernen</span></header><div class="cells">' +
-      r("bibel", "book", "var(--c-bibel)", "Bibel", "Abschnitt von heute, Bibliothek", "") +
-      r("wissen", "star", "#5ac8fa", "Sportwissenschaft", "Lehrbuch, Karten, Quiz – Hauptort Training", (w && w.sum && w.sum.pct ? w.sum.pct + " % " : "") + link) +
+      '<div class="glance mtiles">' +
+      tile("aufgaben", "check", "var(--c-aufgabe)", "Aufgaben", open ? open + " offen" : "alles erledigt") +
+      tile("notizen", "note", "var(--c-notiz)", "Notizen", notes ? notes + " offen" : "schnell festhalten") +
+      tile("bibel", "book", "var(--c-bibel)", bs.read ? "Bibel ✓" : "Bibel", bs.sub) +
+      tile("week", "wand", "var(--c-training)", "Woche planen", "Standardwoche mit 1 Tipp") + "</div>" +
+      '<div class="grp"><div class="cells">' +
+      r("wissen", "book", "#5ac8fa", "Sportwissenschaft", "Lehrbuch, Karten, Quiz", (w && w.sum && w.sum.due ? w.sum.due + " Karten " : w && w.sum && w.sum.pct ? w.sum.pct + " % " : "") + link) +
       r("pause", "coffee", "#e5a04b", "Pause", "Ablenken, Wissen, Quiz", "") + "</div></div>" +
-      '<div class="grp"><header><span>Abgleich und Sicherung</span></header><div class="cells">' +
-      r("handy", "phone", "var(--c-termin)", "Handykalender", nat ? "Abgleich mit dem Kalender des Handys" : "Termine mit dem Handy austauschen", hk) +
-      r("abo", "cal", "var(--c-termin)", "Webkalender", "per Link eingebundene Kalender (z. B. aus Google)", aboBadge()) +
-      (er ? r("erinnern", "bell", "#e5a04b", "Erinnerungen", "Benachrichtigungen, auch offline", er) : "") +
-      r("sync", "cloud", "#5ac8fa", "Cloud-Sicherung", "Abgleich über GitHub", cl.warn ? '<em class="bad">! ' + cl.val + "</em>" : cl.val) +
-      r("backup", "download", "var(--muted)", "Sicherung als Datei", "sichern oder einspielen", "") +
-      (big ? "" : umz) + "</div></div>" +
-      '<div class="grp"><header><span>Darstellung und Einstellungen</span></header><div class="cells">' +
-      r("design", "palette", "#8f7cf7", "Design", "Farbwelt und Glaseffekt", "") +
-      r("tset", "gear", "var(--c-training)", "Training einstellen", "Ziele, Ruhetage – Hauptort Training", link) +
-      (window.SGInstallEvt && !nat ? r("install", "download", "var(--muted)", "App installieren", "auf den Startbildschirm", "") : "") +
-      (wideMQ.matches ? "" : toggleRow('data-m="autodw"', "Seitenmenü automatisch öffnen", "beim Wechsel zu Training, Schule …", !!M.autoDw)) + "</div></div>" +
-      '<div class="grp"><header><span>Über die App</span></header><div class="cells">' +
-      r("update", "download", "var(--muted)", "Version " + esc(window.SGVersion || ""), nat ? "neue Version von GitHub holen" : "Version aktualisieren", newVer ? '<em class="hi">Neu: ' + esc(newVer) + "</em>" : "") +
-      r("neu", "star", "var(--muted)", "Was ist neu", "Änderungen der letzten Versionen", "") +
-      r("diag", "pulse", "var(--muted)", "Fehlerprotokoll", "für die Fehlersuche am Handy", (window.SGShellDiag() || []).length || "") + "</div></div>";
+      '<div class="grp"><div class="cells">' +
+      r("g:conn", "cal", "var(--c-termin)", "Kalender verbinden", "Handykalender, Webkalender (Google)", conn) +
+      r("g:safe", "cloud", "#5ac8fa", "Sicherung", "Cloud, Datei" + (nat ? "" : ", Umzug in die App"), cl.warn ? '<em class="bad">! ' + cl.val + "</em>" : "") +
+      r("g:set", "gear", "#8f7cf7", "Einstellungen", "Design, Erinnerungen, Training · Version " + esc(window.SGVersion || ""), newVer ? '<em class="hi">Neu: ' + esc(newVer) + "</em>" : (er && /bad/.test(er) ? er : "")) + "</div></div>";
     mehrBadge();
   }
   // einheitlicher Schalter (Zeile mit Schalter rechts) für Mehr und die Einstellungs-Blätter
@@ -1373,10 +1424,23 @@
       else closeSheet();
     });
   }
+  window.SGShell.mehr = function () { return MEHR; };   // Zeilen der Gruppen (Tests, Zustandsanzeige)
+  var MEHR = {}, MEHRT = { conn: ["Kalender verbinden", "Termine aus dem Handy und aus Google & Co. im Planer zeigen"], safe: ["Sicherung", "Damit nichts verloren geht"], set: ["Einstellungen", ""] };
+  // Gruppe aus Mehr als Blatt: dieselben Zeilen wie früher direkt in Mehr (data-m), ein Tipp schließt das Blatt und führt aus
+  function mehrGroup(g) {
+    sheet("<h3>" + MEHRT[g][0] + "</h3>" + (MEHRT[g][1] ? '<p class="s">' + MEHRT[g][1] + "</p>" : "") + '<div class="cells mgrp">' + MEHR[g] + "</div>", function () {});
+  }
+  $("sheet").addEventListener("click", function (e) {
+    var b = e.target.closest(".mgrp [data-m]"); if (!b) return;
+    var m = b.dataset.m; closeSheet(false, function () { mehrAct(m); });
+  });
   $("n-mehr").addEventListener("click", function (e) {
     var b = e.target.closest("[data-m]"); if (!b || b.tagName === "INPUT") return;
-    var m = b.dataset.m, c = C();
-    if (m === "autodw") return;
+    mehrAct(b.dataset.m);
+  });
+  function mehrAct(m) {
+    var c = C();
+    if (m.indexOf("g:") === 0) return mehrGroup(m.slice(2));
     if (m === "kshow") return calShowSheet();
     if (m === "week") c.weekPlan();
     else if (m === "std") c.weekPlanStd();
@@ -1395,9 +1459,9 @@
     else if (m === "neu") whatsNewSheet();
     else if (m === "diag") diagSheet();
     else if (m === "update") { if (window.SGUpdate) window.SGUpdate.check(function (t) { snack(t); }); }
+    else if (m === "bibel") go("bibel", "lesen", null, { push: true });
     else go(m, null, null, { push: true });
-  });
-  $("n-mehr").addEventListener("change", function (e) { if (e.target.matches('[data-m="autodw"]')) { M.autoDw = e.target.checked; saveM(); } });
+  }
   // Was der Kalender zeigt: Mobility und Atemübungen sind standardmäßig aus (jeden Tag mehrere Einträge waren zu viel)
   function calShowSheet() {
     var sh = C().calShow();
@@ -1412,10 +1476,10 @@
   // Einträge von „Mehr“ sind auch über die Suche erreichbar
   function mehrCommands() {
     var c = C(); if (!c || !c.addCommands) return setTimeout(mehrCommands, 200);
-    var M_ = function (m) { return function () { go("mehr"); setTimeout(function () { var b = document.querySelector('#n-mehr [data-m="' + m + '"]'); if (b) b.click(); }, 80); }; };
+    var M_ = function (m) { return function () { go("mehr"); setTimeout(function () { mehrAct(m); }, 80); }; };
     c.addCommands([["Handykalender abgleichen", "handy"], ["Webkalender abonnieren", "abo"], ["Erinnerungen einstellen", "erinnern"], ["Cloud-Sicherung", "sync"], ["Alles als Datei sichern", "backup"], ["Sicherung einspielen", "restore"],
       [window.SGNative ? "Daten aus Chrome übernehmen" : "In die Android-App umziehen", window.SGNative ? "umzugin" : "umzug"], ["Standardwoche übernehmen", "std"], ["Was ist neu", "neu"], ["Fehlerprotokoll", "diag"],
-      ["Seitenmenü automatisch öffnen (Mehr)", "autodw"], ["Version und Update", "update"]].map(function (x) { return { g: "Einstellungen", label: x[0], run: x[1] === "autodw" ? function () { go("mehr"); } : M_(x[1]) }; }));
+      ["Version und Update", "update"]].map(function (x) { return { g: "Einstellungen", label: x[0], run: M_(x[1]) }; }));
   }
   if (!window.SGSuche) mehrCommands();   // nur für die alte Palette (Rückfall)
 
@@ -1464,7 +1528,7 @@
   addEventListener("sg-update", function (e) { window.SGNewVer = e.detail; try { localStorage.setItem("sg-update-neu", e.detail); } catch (x) {} if (cur.v === "mehr") renderMehr(); snack("Version " + e.detail + " ist da.", function () { window.SGUpdate.install(function (t) { snack(t); }, e.detail); }, "Aktualisieren"); });
 
   /* ---------- Kopf, Plus, Suche ---------- */
-  actsEl.addEventListener("click", function (e) { var b = e.target.closest("[data-act]"); if (b && b.dataset.act === "search" && C()) C().palette(); });
+  actsEl.addEventListener("click", function (e) { var b = e.target.closest("[data-act]"); if (!b) return; if (b.dataset.act === "month") return setMon(!calMon); if (b.dataset.act === "search" && C()) C().palette(); });
   fab.addEventListener("click", function () { if (cur.v === "notizen") noteSheet(null); else addSheet(); });
 
   /* ---------- Aktualisieren, wenn sich Daten ändern ---------- */
@@ -1523,7 +1587,7 @@
     var t0 = today();
     add("Kalender", "Heute", "kalender start tag briefing", function () { toDay(t0); });
     add("Kalender", "Morgen", "kalender tag", function () { toDay(plus(t0, 1)); });
-    add("Kalender", "Monatskalender", "monat monatsübersicht übersicht alle aller apps", function () { go("kalender"); setTimeout(function () { $("tomonth").click(); }, 80); });
+    add("Kalender", "Monatskalender", "monat monatsübersicht übersicht alle aller apps", function () { go("kalender"); setTimeout(function () { setMon(true); }, 80); });
     add("Kalender", "Woche planen", "wochenplanung planen training", function () { c.weekPlan(); });
     add("Kalender", "Nächste Woche planen", "wochenplanung", function () { var d = parse(t0); c.weekPlan("", plus(t0, 7 - ((d.getDay() + 6) % 7))); });
     add("Kalender", "Standardwoche übernehmen", "standard woche", function () { c.weekPlanStd(); });
@@ -1548,15 +1612,15 @@
     add("Training", "Auswertung: Analyse", "daten import", function () { go("training", "auswertung", "analyse"); });
     add("Training", "Auswertung: Kalender & Rückblick", "training kalender", function () { go("training", "auswertung", "rueckblick"); });
     add("Training", "Training einstellen", "einstellungen ziele ruhetage", function () { go("tset", null, null, { push: true }); });
-    add("Mobility und Atmung", "Mobility Tagesblock", "mobility block dehnen", function () { go("mobility", "mobility", "heute"); });
-    add("Mobility und Atmung", "Mobility Wettkampf", "vor nach dem wettkampf", function () { go("mobility", "mobility", "wettkampf"); });
-    add("Mobility und Atmung", "Mobility Übungen", "mobility übungen", function () { go("mobility", "mobility", "uebungen"); });
-    add("Mobility und Atmung", "Mobility Fortschritt", "mobility test", function () { go("mobility", "mobility", "fortschritt"); });
-    add("Mobility und Atmung", "Atemübung starten", "atmung atem üben resonanz", function () { go("mobility", "atmung", "hrv"); });
-    add("Mobility und Atmung", "Morgen-HRV messen", "atmung atem hrv puls morgen", function () { go("mobility", "atmung", "heute"); });
-    add("Mobility und Atmung", "Atemplan der Woche", "atmung atem woche", function () { go("mobility", "atmung", "woche"); });
-    add("Mobility und Atmung", "Atem-Verlauf", "atmung atem verlauf", function () { go("mobility", "atmung", "verlauf"); });
-    add("Mobility und Atmung", "Atem 12-Wochen-Plan", "atmung atem plan", function () { go("mobility", "atmung", "plan"); });
+    add("Mobility und Atmung", "Mobility Tagesblock", "mobility block dehnen", function () { go("training", "mobility", "heute"); });
+    add("Mobility und Atmung", "Mobility Wettkampf", "vor nach dem wettkampf", function () { go("training", "mobility", "wettkampf"); });
+    add("Mobility und Atmung", "Mobility Übungen", "mobility übungen", function () { go("training", "mobility", "uebungen"); });
+    add("Mobility und Atmung", "Mobility Fortschritt", "mobility test", function () { go("training", "mobility", "fortschritt"); });
+    add("Mobility und Atmung", "Atemübung starten", "atmung atem üben resonanz", function () { go("training", "atmung", "hrv"); });
+    add("Mobility und Atmung", "Morgen-HRV messen", "atmung atem hrv puls morgen", function () { go("training", "atmung", "heute"); });
+    add("Mobility und Atmung", "Atemplan der Woche", "atmung atem woche", function () { go("training", "atmung", "woche"); });
+    add("Mobility und Atmung", "Atem-Verlauf", "atmung atem verlauf", function () { go("training", "atmung", "verlauf"); });
+    add("Mobility und Atmung", "Atem 12-Wochen-Plan", "atmung atem plan", function () { go("training", "atmung", "plan"); });
     add("Schule", "Schultag", "schule heute stunde", function () { go("schule", "heute"); });
     add("Schule", "Stundenplan", "schule plan stunden", function () { go("schule", "plan"); });
     add("Schule", "Aufgaben und Prüfungen", "schule hausaufgaben prüfung test", function () { go("schule", "aufgaben"); });
@@ -1617,7 +1681,7 @@
     var D = window.SG_SUCHDATEN || {};
     (D.bahnen || []).forEach(function (b) { out.push({ kind: "training", t: b[1], x: "bahn rodeln kurvenbuch strecke " + b[2] + " " + b[3], st: "Bahn · " + b[2] + ", " + b[3], ic: "sled", key: "b:" + b[0], run: function () { go("training", "rodeln", "bahnen"); } }); });
     try { var bp = JSON.parse(localStorage.getItem("bahnplan.v1") || "null"); (bp && bp.tracks || []).forEach(function (tr) { if (tr.name) out.push({ kind: "training", t: tr.name, x: "bahn kurvenbuch meine", st: "Meine Bahn · Kurvenbuch", ic: "sled", key: "mb:" + tr.id, run: function () { go("training", "rodeln", "plan"); } }); }); } catch (e) {}
-    (D.mob || []).forEach(function (m) { out.push({ kind: "training", t: m[1], x: "mobility übung " + m[2], st: "Mobility-Übung", ic: "stretch", c: "var(--c-mobility)", key: "m:" + m[0], run: function () { go("mobility", "mobility", "uebungen"); } }); });
+    (D.mob || []).forEach(function (m) { out.push({ kind: "training", t: m[1], x: "mobility übung " + m[2], st: "Mobility-Übung", ic: "stretch", c: "var(--c-mobility)", key: "m:" + m[0], run: function () { go("training", "mobility", "uebungen"); } }); });
     (D.gym || []).forEach(function (m) { out.push({ kind: "training", t: m[1], x: "gym kraft übung gerät", st: "Gym-Übung", key: "g:" + m[0], run: function () { go("training", "kraft"); } }); });
     (D.dehn || []).forEach(function (m) { out.push({ kind: "training", t: m[1], x: "dehnen dehnübung " + m[2], st: "Dehnübung · " + m[2], key: "d:" + m[0], run: function () { go("training", "kraft"); } }); });
     try {

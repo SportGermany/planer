@@ -4,7 +4,7 @@ const fs = require('fs');
 const U = 'http://localhost:8765/planer/', APP = U + 'app/';
 const SEED = fs.readFileSync(__dirname + '/seed.js', 'utf8');
 const ONLY = process.argv[2] || '';
-const VER = '3.9.1';
+const VER = '4.0.0';
 const results = [];
 const PAGES = ['', 'schule/', 'pause/', 'training/', 'training/mobility/', 'training/atmung/', 'training/bahnplan/', 'bibel/', 'wissen/'];
 const PHONE = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 };
@@ -42,7 +42,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
       await open(p, '#kalender');
       assert(await p.evaluate(() => window.SGVersion) === VER, 'Version');
       assert(await p.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 1, 'waagrechtes Scrollen');
-      assert((await p.$$('#nav button')).length === 5, '5 Ziele');
+      assert((await p.$$('#nav button')).length === 4, '4 Ziele');
       assert(!e.length, e.join(' | ')); await c.close();
     });
     for (const pg of PAGES) await test(`A Seite einzeln ohne Fehler (${lab}): /planer/${pg}`, async () => {
@@ -56,7 +56,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
   await test('A Alte Adressen landen in der Hülle an der richtigen Stelle', async () => {
     const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
     const cases = [['', '#kalender', 'kalender'], ['#tasks', '#aufgaben', 'mehr'], ['training/', '#training', 'training'], ['training/#lauf', '#training/lauf', 'training'],
-      ['training/#atmung/train', '#mobility/atmung/hrv', 'mobility'], ['training/mobility/', '#mobility/mobility', 'mobility'], ['training/bahnplan/', '#training/rodeln', 'training'],
+      ['training/#atmung/train', '#training/atmung/hrv', 'training'], ['training/mobility/', '#training/mobility', 'training'], ['app/#mobility/atmung', '#training/atmung', 'training'], ['training/bahnplan/', '#training/rodeln', 'training'],
       ['bibel/#lesen', '#bibel/lesen', 'mehr'], ['schule/', '#schule', 'schule'], ['pause/', '#pause', 'mehr'], ['wissen/#karten', '#training/wissen/karten', 'training'], ['#sg=x_notiz', '#notizen', 'mehr']];
     const bad = [];
     for (const [from, want, tab] of cases) {
@@ -86,6 +86,9 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     setTimeout(() => { if (dx || dy) tgt.dispatchEvent(new TouchEvent('touchmove', { touches: [t(x0 + dx, y0 + dy)], changedTouches: [t(x0 + dx, y0 + dy)], bubbles: true }));
       tgt.dispatchEvent(new TouchEvent('touchend', { touches: [], changedTouches: [t(x0 + dx, y0 + dy)], bubbles: true })); res(); }, ms || 30);
   }), [sel, dx, dy, ms]);
+  // Wochenbilanz steht im Monat (4.0) – kurz hinein, lesen, zurück
+  const balOf = async p => { await mon(p); const t = await p.textContent('#cal-month .wbal').catch(() => ''); await p.goBack(); await wait(p, 350); return t; };
+  const mon = async p => { if (!(await p.evaluate(() => document.querySelector('#n-kalender .wrap').classList.contains('mon')))) { await p.click('[data-act=month]'); await wait(p, 350); } };
   const trFrame = p => p.frames().find(f => /\/planer\/training\/(#|$)/.test(f.url()));
   // Ist in der sichtbaren Seite der Unterbereich aus V aktiv? (Sprungadresse h oder Knopf sel)
   const activeOk = p => p.evaluate(() => {
@@ -106,147 +109,89 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     return '';
   });
   const dwOpen = p => p.evaluate(() => document.getElementById('drawer').classList.contains('on'));
-  await test('S Seitenmenü: jeder Pfad (Ziel, Eintrag, Untereintrag) öffnet die richtige Seite und den Unterbereich', async () => {
+  // Reiter (4.0): sichtbarer Reiter oder „Mehr ▾“-Blatt, dann ggf. Unterpunkt-Chip
+  const pickSec = async (p, sid) => {
+    if (await p.isVisible(`#chips .tb[data-sec="${sid}"]`)) return p.click(`#chips .tb[data-sec="${sid}"]`);
+    await p.click('#chips [data-tmore]'); await wait(p, 350); await p.click(`#sheet [data-s="sec:${sid}"]`);
+  };
+  await test('S Reiter: jeder Pfad (Ziel, Reiter, Unterpunkt) öffnet die richtige Seite und den Unterbereich', async () => {
     const c = await ctxFor({ viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true }), p = await c.newPage(), e = watch(p);
     await open(p, '#kalender');
     const bad = []; let n = 0;
     for (const t of ['training', 'schule', 'bibel', 'pause']) {
       await p.goto(APP + '#' + t); await wait(p, 1500);
-      assert(!(await p.$$('#chips .chip')).length, 'Chips in ' + t);
-      const V = await p.evaluate(t => SGShell.V[t].secs.map(s => [s.id, (s.kids || []).map(k => k.id)]), t);
-      for (const [sid, kids] of V) for (const kid of (kids.length ? kids : [null])) {
-        await p.click('#menu'); await wait(p, 300);
-        if (!await dwOpen(p)) { bad.push(t + ': Menü geht nicht auf'); continue; }
-        if (kid) {
-          if (!await p.isVisible(`#dwpn [data-sec="${sid}"][data-kid="${kid}"]`)) await p.click(`#dwpn [data-exp="${sid}"]`);
-          await p.click(`#dwpn [data-sec="${sid}"][data-kid="${kid}"]`);
-        } else await p.click(`#dwpn .dw-r [data-sec="${sid}"]`);
-        await wait(p, 1400); n++;
+      if (await p.isVisible('#menu')) bad.push(t + ': Menü-Symbol sichtbar');
+      const V = await p.evaluate(t => SGShell.V[t].secs.map(s => [s.id, (s.kids || []).map(k => k.id), s.st || s.t]), t);
+      for (const [sid, kids, lab] of V) for (const kid of (kids.length ? kids : [null])) {
+        await pickSec(p, sid); await wait(p, 900);
+        if (kid) { await p.click(`#chips .crow.sub [data-kid="${kid}"]`); await wait(p, 900); }
+        await wait(p, 500); n++;
         const st = await state(p), want = '#' + t + '/' + sid + (kid ? '/' + kid : '');
-        if (await dwOpen(p)) bad.push(want + ' Menü bleibt offen');
+        if (await p.evaluate(() => document.getElementById('sheet').classList.contains('on'))) bad.push(want + ' Blatt bleibt offen');
         if (st.hash !== want) bad.push(want + ' Adresse ' + st.hash);
         let a = await activeOk(p); if (a) { await wait(p, 1500); a = await activeOk(p); }
         if (a) bad.push(want + ': ' + a);
-        const path = await p.textContent('#path');
-        if (!path.startsWith(await p.textContent(`#dwpn .dw-r [data-sec="${sid}"]`))) bad.push(want + ' Pfadzeile ' + path);
+        const on = await p.textContent('#chips .tb.on').catch(() => '');
+        if (on.trim() !== lab) bad.push(want + ' Reiter ' + on);
       }
     }
-    // Ende des Menüs: Training einstellen, Zurück zu Mehr
-    await p.goto(APP + '#training/heute'); await wait(p, 1200); await p.click('#menu'); await wait(p, 300);
-    await p.click('#dwpn [data-dgo=tset]'); await wait(p, 1500);
+    // „Mehr ▾“: Training einstellen
+    await p.goto(APP + '#training/heute'); await wait(p, 1200); await p.click('#chips [data-tmore]'); await wait(p, 350);
+    await p.click('#sheet [data-s="go:tset"]'); await wait(p, 1500);
     if ((await state(p)).hash !== '#tset') bad.push('Training einstellen → ' + (await state(p)).hash);
-    await p.goto(APP + '#mehr'); await wait(p, 800); await p.click('#n-mehr [data-m=bibel]'); await wait(p, 1500);
-    await p.click('#menu'); await wait(p, 300); await p.click('#dwpn [data-dgo=mehr]'); await wait(p, 800);
-    if ((await state(p)).hash !== '#mehr') bad.push('Zurück zu Mehr → ' + (await state(p)).hash);
-    // Mobility behält die Chips
+    // Mobility steht unter Training, behält die Chips; alte Adresse #mobility/… leitet um
     await p.goto(APP + '#mobility/atmung/verlauf'); await wait(p, 2000);
-    if (await p.isVisible('#menu') || (await p.$$('#chips .chip')).length < 5) bad.push('Mobility ohne Chips');
+    let st = await state(p);
+    if (st.hash !== '#training/atmung/verlauf' || st.tab !== 'training' || (await p.$$('#chips .crow.sub .chip')).length < 5) bad.push('Atmung ' + st.hash + ' ' + st.tab);
     await p.click('#chips [data-kid=woche]'); await wait(p, 1200);
-    if ((await state(p)).hash !== '#mobility/atmung/woche' || await activeOk(p)) bad.push('Mobility-Chip ' + (await activeOk(p)));
+    if ((await state(p)).hash !== '#training/atmung/woche' || await activeOk(p)) bad.push('Atmung-Chip ' + (await activeOk(p)));
     assert(n >= 25, 'nur ' + n + ' Pfade');
     assert(!bad.length, bad.join('; '));
     assert(!e.length, e.join(' | ')); await c.close();
   });
-  await test('S Seitenmenü öffnen/schließen: Symbol, Pfadzeile, Tab, Hintergrund, Wischen, Escape; Zurück schließt zuerst', async () => {
-    const c = await ctxFor({ viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true }), p = await c.newPage(), e = watch(p);
+  await test('S Reiter: nie ein Menü von selbst, Zurück schließt erst das Mehr-Blatt, Sprung aus der Seite markiert den Reiter', async () => {
+    const c = await ctxFor({ viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true }), p = await c.newPage(), e = watch(p), bad = [];
     await open(p, '#kalender');
-    assert(!await p.isVisible('#menu'), 'Symbol im Kalender');
+    assert((await p.$$('#nav button')).length === 4, '4 Ziele unten');
     await p.click('#nav [data-tab=training]'); await wait(p, 1200);
     const h0 = (await state(p)).hash;
-    assert(!await dwOpen(p), 'öffnet von selbst');
-    // Symbol 44×44 links, Pfadzeile darunter
-    const r = await p.evaluate(() => { const m = document.getElementById('menu').getBoundingClientRect(), t = document.getElementById('title').getBoundingClientRect(), q = document.getElementById('path').getBoundingClientRect(); return [m.width, m.height, m.left, t.left, q.top - t.bottom]; });
-    assert(r[0] >= 44 && r[1] >= 44 && r[2] < r[3] && r[4] >= -2, 'Kopf ' + r);
-    await p.click('#menu'); await wait(p, 300); assert(await dwOpen(p), 'Symbol');
-    assert(await p.evaluate(() => document.activeElement && document.activeElement.classList.contains('on')), 'Fokus auf aktivem Eintrag');
-    // Zurück: erst Menü zu, Seite bleibt
+    await p.click('#nav [data-tab=training]'); await wait(p, 400);
+    if (await p.evaluate(() => document.getElementById('drawer').classList.contains('on') || document.getElementById('sheet').classList.contains('on'))) bad.push('zweiter Tipp öffnet Menü');
+    if (await p.isVisible('#menu') || await p.isVisible('#path')) bad.push('Symbol/Pfadzeile sichtbar');
+    await p.click('#chips [data-tmore]'); await wait(p, 350);
     await p.goBack(); await wait(p, 400);
-    assert(!await dwOpen(p) && (await state(p)).hash === h0, 'Zurück schließt Menü: ' + (await state(p)).hash);
-    assert(await p.evaluate(() => document.activeElement === document.getElementById('menu')), 'Fokus zurück aufs Symbol');
-    await p.click('#path'); await wait(p, 450); assert(await dwOpen(p), 'Pfadzeile');
-    await p.mouse.click(350, 400); await wait(p, 400); assert(!await dwOpen(p), 'Hintergrund');
-    await p.click('#nav [data-tab=training]'); await wait(p, 300); assert(await dwOpen(p), 'Tab nochmal');
-    await touch(p, '#dwpn', -120, 4, 80); await wait(p, 400); assert(!await dwOpen(p), 'Wischen nach links');
-    await p.click('#menu'); await wait(p, 300); await p.keyboard.press('Escape'); await wait(p, 400); assert(!await dwOpen(p), 'Escape');
-    // kein Öffnen durch Wischen vom Rand
-    await touch(p, '#stage', 200, 0, 80); await wait(p, 300); assert(!await dwOpen(p), 'Randwischen öffnet');
-    assert((await state(p)).hash === h0, 'Adresse verändert ' + (await state(p)).hash);
-    // Zurück-Reihenfolge Menü → Seite: Training wurde vom Kalender aus geöffnet
-    await p.click('#menu'); await wait(p, 300);
-    await p.click('#dwpn .dw-r [data-sec=kraft]'); await wait(p, 900);
-    assert((await state(p)).hash === '#training/kraft', 'Kraft ' + (await state(p)).hash);
-    await p.click('#menu'); await wait(p, 300);
-    await p.goBack(); await wait(p, 400); assert(!await dwOpen(p) && (await state(p)).hash === '#training/kraft', 'erst Menü zu');
-    await p.goBack(); await wait(p, 600); assert((await state(p)).tab === 'kalender', 'dann Seite zurück: ' + (await state(p)).hash);
-    // Untereinträge: nur einer offen, aktiver aufgeklappt
-    await p.goto(APP + '#training/rodeln/bahnen'); await wait(p, 1500); await p.click('#menu'); await wait(p, 300);
-    let ex = await p.$$eval('#dwpn .dw-g.ex .dw-r [data-sec]', l => l.map(x => x.dataset.sec));
-    assert(ex.join() === 'rodeln', 'aufgeklappt ' + ex);
-    await p.click('#dwpn [data-exp=auswertung]'); await wait(p, 150);
-    ex = await p.$$eval('#dwpn .dw-g.ex .dw-r [data-sec]', l => l.map(x => x.dataset.sec));
-    assert(ex.join() === 'auswertung', 'nur einer ' + ex);
-    assert(!e.length, e.join(' | ')); await c.close();
-  });
-  await test('S Prüfbefunde Phase 2: Doppeltipp, Tastatur bleibt im Menü, Zurück zu Mehr, Tablet-Aufklappen, Ausschnitt aus der Seite', async () => {
-    const c = await ctxFor({ viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true }), p = await c.newPage(), e = watch(p), bad = [];
-    await open(p, '#kalender'); await p.click('#nav [data-tab=training]'); await wait(p, 1200);
-    // zwei schnelle Tipps: das sich schließende Menü nimmt keinen zweiten an, kein falscher Verlaufseintrag
-    await p.click('#menu'); await wait(p, 400);
-    await p.click('#dwpn .dw-r [data-sec=lauf]'); await wait(p, 100); await p.mouse.click(60, 250); await wait(p, 900);
-    if ((await state(p)).hash !== '#training/lauf') bad.push('Doppeltipp ' + (await state(p)).hash);
-    await p.goBack(); await wait(p, 600); if ((await state(p)).tab !== 'kalender') bad.push('Verlauf nach Doppeltipp ' + (await state(p)).hash);
-    // Tab bleibt im Menü (Rest ist gesperrt), Escape schließt
-    await p.goto(APP + '#schule'); await wait(p, 1500); await p.click('#menu'); await wait(p, 400);
-    for (let n = 0; n < 15; n++) { await p.keyboard.press('Tab'); const w = await p.evaluate(() => { const a = document.activeElement; return a === document.body ? 'body' : a.closest('#dwpn') ? 'menu' : a.tagName + '#' + a.id; }); if (w !== 'menu' && w !== 'body') { bad.push('Fokus verlässt Menü: ' + w); break; } }
-    await p.keyboard.press('Escape'); await wait(p, 400); if (await dwOpen(p)) bad.push('Escape nach Tab');
-    if (await p.evaluate(() => document.getElementById('stage').hasAttribute('inert'))) bad.push('bleibt gesperrt');
-    // „Zurück zu Mehr“ führt nach Mehr, auch wenn Bibel aus dem Kalender kam
-    await p.goto(APP + '#kalender'); await wait(p, 1200); await p.evaluate(() => SGShell.openUrl('bibel/#lesen')); await wait(p, 1500);
-    await p.click('#menu'); await wait(p, 400); await p.click('#dwpn [data-dgo=mehr]'); await wait(p, 900);
-    if ((await state(p)).hash !== '#mehr') bad.push('Zurück zu Mehr ' + (await state(p)).hash);
-    // Sprung aus der Seite (Alternative „Nur Dehnen“) landet auf Kraft mit passender Pfadzeile
+    if (await p.evaluate(() => document.getElementById('sheet').classList.contains('on')) || (await state(p)).hash !== h0) bad.push('Zurück schließt Blatt: ' + (await state(p)).hash);
+    await p.click('#chips .tb[data-sec=kraft]'); await wait(p, 900);
+    if ((await state(p)).hash !== '#training/kraft') bad.push('Kraft ' + (await state(p)).hash);
+    await p.goBack(); await wait(p, 600); if ((await state(p)).tab !== 'kalender') bad.push('Zurück zum Kalender ' + (await state(p)).hash);
+    // aus „Mehr ▾“ gewählt: letzter Reiter trägt den Namen
+    await p.goto(APP + '#training/rodeln/bahnen'); await wait(p, 1500);
+    if (!/Rodeln/.test(await p.textContent('#chips .tb.more.on').catch(() => ''))) bad.push('Mehr-Reiter ohne Namen');
+    // Sprung aus der Seite (Alternative „Nur Dehnen“) landet auf Kraft
     await p.goto(APP + '#training/heute'); await wait(p, 2200);
     await trFrame(p).evaluate(() => document.getElementById('btnAdaptiveStretch').click()); await wait(p, 1500);
-    const st = await state(p);
-    if (st.hash !== '#training/kraft' || !/^Kraft/.test(st.path) || await activeOk(p)) bad.push('Nur Dehnen → ' + st.hash + ' ' + st.path + ' ' + await activeOk(p));
-    await c.close();
-    // Tablet: nach Zuklappen und Wechsel ist der neue aktive Eintrag aufgeklappt
-    const t = await ctxFor(TAB), q = await t.newPage(); e.push(...watch(q));
-    await open(q, '#training/rodeln/plan'); await q.click('#dwpn [data-exp=rodeln]'); await wait(q, 150);
-    await q.click('#dwpn [data-sec=auswertung][data-kid=fitness]', { force: true }).catch(async () => { await q.click('#dwpn [data-exp=auswertung]'); await q.click('#dwpn [data-sec=auswertung][data-kid=fitness]'); }); await wait(q, 1200);
-    const ex = await q.$$eval('#dwpn .dw-g.ex .dw-r [data-sec]', l => l.map(x => x.dataset.sec).join());
-    if (ex !== 'auswertung') bad.push('Tablet aufgeklappt: ' + ex);
-    if (await q.evaluate(() => document.getElementById('path').tabIndex) !== -1) bad.push('Pfadzeile auf Tablet fokussierbar');
-    await t.close();
-    // Querformat-Handy (915 × 412): Menü zum Aufziehen statt fester Spalte
-    const l = await ctxFor({ viewport: { width: 915, height: 412 }, isMobile: true, hasTouch: true }), r = await l.newPage();
-    await open(r, '#schule'); if (!await r.isVisible('#menu')) bad.push('Querformat ohne Menü-Symbol'); await l.close();
+    if ((await state(p)).hash !== '#training/kraft' || (await p.textContent('#chips .tb.on')).trim() !== 'Kraft' || await activeOk(p)) bad.push('Nur Dehnen → ' + (await state(p)).hash);
     assert(!bad.length, bad.join('; '));
-    assert(!e.length, e.join(' | '));
+    assert(!e.length, e.join(' | ')); await c.close();
   });
   for (const [lab, opt, zoom] of [['360×640', { viewport: { width: 360, height: 640 }, isMobile: true, hasTouch: true }, 1], ['360×800 Schrift 130 %', { viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true }, 1.3],
-    ['800×1280', { viewport: { width: 800, height: 1280 }, hasTouch: true }, 1], ['1280×800', TAB, 1], ['1280×800 Schrift 130 %', TAB, 1.3]]) {
-    await test(`S Seitenmenü passt: ${lab}`, async () => {
+    ['915×412 quer', { viewport: { width: 915, height: 412 }, isMobile: true, hasTouch: true }, 1], ['800×1280', { viewport: { width: 800, height: 1280 }, hasTouch: true }, 1], ['1280×800', TAB, 1], ['1280×800 Schrift 130 %', TAB, 1.3]]) {
+    await test(`S Reiter passen: ${lab}`, async () => {
       const c = await ctxFor(opt), p = await c.newPage(), e = watch(p);
-      await open(p, '#schule/aufgaben');
-      if (zoom !== 1) { await p.evaluate(z => { document.documentElement.style.zoom = z; }, zoom); await wait(p, 300); }
-      const wide = opt.viewport.width / zoom >= 900;
-      if (!wide) { await p.click('#menu'); await wait(p, 350); }
-      const r = await p.evaluate(() => {
-        const pn = document.getElementById('dwpn').getBoundingClientRect(), it = [...document.querySelectorAll('#dwpn .dw-it')].filter(x => x.offsetParent).map(x => x.getBoundingClientRect().height),
-          st = document.getElementById('stage').getBoundingClientRect(), last = [...document.querySelectorAll('#dwpn .dw-it')].pop().getBoundingClientRect();
-        return { w: pn.width, left: pn.left, minH: Math.min(...it), stLeft: st.left, menu: !!document.getElementById('menu').offsetParent, over: document.documentElement.scrollWidth - innerWidth,
-          title: (t => t.scrollWidth <= t.clientWidth + 1)(document.getElementById('title')), lastIn: last.bottom <= innerHeight + 1 || document.getElementById('dwpn').scrollHeight > document.getElementById('dwpn').clientHeight };
-      });
-      ['w', 'left', 'minH', 'stLeft'].forEach(k => { r[k] /= zoom; });
-      if (wide) assert(Math.abs(r.w - 260) < 2 && r.left >= 91 && r.stLeft >= 350 && !r.menu, 'feste Spalte ' + JSON.stringify(r));
-      else assert(r.w <= Math.min(opt.viewport.width / zoom * 0.86, 320) + 1 && r.left === 0 && r.menu, 'Menü ' + JSON.stringify(r));
-      assert(r.minH >= 55.5, 'Einträge zu niedrig ' + r.minH);
-      assert(r.over <= 1 && r.title && r.lastIn, 'Überlauf ' + JSON.stringify(r));
-      // Eintrag wählen klappt in jeder Größe
-      await p.click('#dwpn .dw-r [data-sec=plan]'); await wait(p, 1200);
+      for (const h of ['#training/heute', '#schule/aufgaben', '#bibel/heute']) {
+        await p.goto(APP + h); await wait(p, 1200);
+        if (zoom !== 1) { await p.evaluate(z => { document.documentElement.style.zoom = z; }, zoom); await wait(p, 300); }
+        const r = await p.evaluate(() => {
+          const row = document.querySelector('#chips .trow'), tb = [...row.querySelectorAll('.tb')];
+          return { n: tb.length, minH: Math.min(...tb.map(x => x.getBoundingClientRect().height)), cut: tb.filter(x => x.scrollWidth > x.clientWidth + 1).map(x => x.textContent),
+            rowOver: row.scrollWidth - row.clientWidth, over: document.documentElement.scrollWidth - innerWidth, font: Math.min(...tb.map(x => parseFloat(getComputedStyle(x).fontSize))) };
+        });
+        assert(r.n >= 4 && r.minH >= 44 / zoom - .5 && r.rowOver <= 1 && r.over <= 1 && r.font >= 12, h + ' ' + JSON.stringify(r));
+        if (zoom === 1) assert(!r.cut.length, h + ' abgeschnitten: ' + r.cut);
+      }
+      await p.goto(APP + '#schule/aufgaben'); await wait(p, 900);
+      await p.click('#chips .tb[data-sec=plan]'); await wait(p, 1200);
       assert((await state(p)).hash === '#schule/plan' && !(await activeOk(p)), 'Wahl ' + (await state(p)).hash);
-      assert(!await dwOpen(p), 'Menü bleibt offen');
       assert(!e.length, e.join(' | ')); await c.close();
     });
   }
@@ -304,6 +249,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     const s0 = await f.evaluate(() => { const c = document.querySelector('.acc[data-acc=exercises]'), b = c.querySelector('h2 > button.acc-t'); return [c.classList.contains('closed'), b && b.getAttribute('aria-expanded'), c.querySelector('.acc-sum').textContent, c.getBoundingClientRect().height, b && b.getAttribute('aria-controls') === c.id, !c.querySelector('.card-h[role]')]; });
     assert(s0[0] && s0[1] === 'false' && /Übungen|Lauftag|Minuten/.test(s0[2]) && s0[3] < 80 && s0[4] && s0[5], 'zu ' + s0);
     // Tipp irgendwo auf die zugeklappte Karte (nicht nur die Kopfzeile)
+    await f.evaluate(() => { const r = document.querySelector('.acc[data-acc=exercises]').getBoundingClientRect(); window.scrollBy(0, r.top - 120); }); await wait(p, 150);
     const box = await (await f.$('.acc[data-acc=exercises]')).boundingBox(); await p.mouse.click(box.x + box.width - 30, box.y + box.height - 6, { delay: 30 }).catch(() => {});
     await f.evaluate(() => { const c = document.querySelector('.acc[data-acc=exercises]'); if (c.classList.contains('closed')) c.click(); }); await wait(p, 200);
     assert(await f.evaluate(() => document.querySelector('.acc[data-acc=exercises]').classList.contains('open') && document.getElementById('todayList').offsetParent !== null), 'aufklappen');
@@ -436,12 +382,12 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     await f.click('#subnav [data-v="auf:pruef"]'); await wait(p, 300);
     assert(await f.evaluate(() => document.querySelectorAll('#view .card.next .nc-count').length >= 1), 'Prüfungsliste mit Countdown');
     for (const [id, want] of [['lernzeit', '.timer'], ['ablage', '#view']]) {
-      await p.click('#menu'); await wait(p, 400); await p.click(`#dwpn .dw-r [data-sec=${id}]`); await wait(p, 1500);
+      await pickSec(p, id); await wait(p, 1500);
       const st = await state(p), ok = await f.evaluate(([id, want]) => document.getElementById('title').textContent === (id === 'lernzeit' ? 'Lernzeit' : 'Ablage') && !!document.querySelector(want) && document.getElementById('subnav').hidden, [id, want]);
       assert(st.hash === '#schule/' + id && ok, id + ' ' + st.hash + ' ' + ok);
     }
     // zurück zu „Aufgaben & Prüfungen“ zeigt die Liste, nicht die Ablage
-    await p.click('#menu'); await wait(p, 400); await p.click('#dwpn .dw-r [data-sec=aufgaben]'); await wait(p, 1200);
+    await pickSec(p, 'aufgaben'); await wait(p, 1200);
     assert(await f.evaluate(() => document.getElementById('title').textContent === 'Aufgaben' && !document.getElementById('subnav').hidden), 'Aufgabenliste nach Ablage');
     assert(!e.length, e.join(' | ')); await c.close();
   });
@@ -463,7 +409,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     ({ c, p, e } = await mk('2026-10-20T09:40:00+02:00')); await open(p, '#schule/heute'); let f = schFrame(p);
     await f.click('.card.next [data-a=timerFor]'); await wait(p, 1200);
     let st = await state(p); if (st.hash !== '#schule/lernzeit' || st.path !== 'Lernzeit') bad.push('Lernzeit-Pfad ' + st.hash + ' ' + st.path);
-    await p.click('#menu'); await wait(p, 400); await p.click('#dwpn .dw-r [data-sec=heute]'); await wait(p, 1200);
+    await pickSec(p, 'heute'); await wait(p, 1200);
     await f.click('[data-a=tab][data-v=aufgaben].more'); await wait(p, 1200); st = await state(p);
     if (st.hash !== '#schule/aufgaben' || !(await f.evaluate(() => document.getElementById('title').textContent === 'Aufgaben'))) bad.push('Alle → ' + st.hash);
     // Plus in „Prüfungen“ öffnet eine Prüfung
@@ -481,7 +427,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
   await test('P4 Keine waagrecht scrollende Knopf-Reihe in der ganzen App (außer Mobility)', async () => {
     const c = await ctxFor(SMALL), p = await c.newPage(), e = watch(p), bad = [];
     await open(p, '#kalender');
-    const paths = await p.evaluate(() => { const V = SGShell.V, l = []; Object.keys(V).forEach(v => { if (!V[v].secs) return l.push(v); V[v].secs.forEach(s => (s.kids ? s.kids.map(k => v + '/' + s.id + '/' + k.id) : [v + '/' + s.id]).forEach(x => l.push(x))); }); return l.filter(x => !/^mobility/.test(x)); });
+    const paths = await p.evaluate(() => { const V = SGShell.V, l = []; Object.keys(V).forEach(v => { if (!V[v].secs) return l.push(v); V[v].secs.forEach(s => (s.kids ? s.kids.map(k => v + '/' + s.id + '/' + k.id) : [v + '/' + s.id]).forEach(x => l.push(x))); }); return l.filter(x => !/^training\/(mobility|atmung)/.test(x)); });
     const scan = () => [...document.querySelectorAll('body *')].filter(el => { const cs = getComputedStyle(el); return /auto|scroll/.test(cs.overflowX) && el.scrollWidth > el.clientWidth + 2 && el.querySelectorAll(':scope > button, :scope > .chip, :scope > a').length >= 2 && el.offsetParent; }).map(el => el.className || el.id);
     for (const h of paths) {
       await p.evaluate(h => { location.hash = h; }, h); await wait(p, 1300);
@@ -500,54 +446,63 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     const r = await p.evaluate(() => { const d = new Date(); d.setDate(d.getDate() + 1); const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
       return { k, items: SharedCalendar.allItems(k, k).filter(x => /^lh-/.test(x.id)).map(x => x.title) }; });
     assert(r.items.join() === 'Lernen: Kapitel 1–3', 'Verbund ' + JSON.stringify(r));
-    await p.click(`#mgrid [data-mday="${r.k}"]`); await wait(p, 600);
+    await mon(p); await p.click(`#mgrid [data-mday="${r.k}"]`); await wait(p, 600);
     assert(/Lernen: Kapitel 1–3/.test(await p.textContent('#dayplan')), 'Tagesplan');
     assert(!e.length, e.join(' | ')); await c.close();
   });
-  await test('P4 Bibel in „Auf einen Blick“: Gelesen ✓, Serie und Leseplan', async () => {
+  await test('P4 Bibel-Kachel in Mehr: Gelesen ✓, Serie und Leseplan', async () => {
     const c = await ctxFor(SMALL), p = await c.newPage(), e = watch(p);
     await c.addInitScript(() => { const d = new Date(), k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
       const b = JSON.parse(localStorage.getItem('zweiminutenbibel_v2') || '{}'); Object.assign(b, { streak: 6, plan: 'hl', dailyGoal: 1, todayDone: { date: k, ids: ['x'] } }); localStorage.setItem('zweiminutenbibel_v2', JSON.stringify(b)); });
-    await open(p, '#kalender');
-    const t = await p.textContent('[data-gl=bibel]');
-    assert(/Gelesen ✓/.test(t) && /Serie 6/.test(t) && /Bekannte Kapitel/.test(t), 'Karte: ' + t);
+    await open(p, '#mehr');
+    const t = await p.textContent('#n-mehr .mtiles [data-m=bibel]');
+    assert(/Bibel ✓/.test(t) && /Serie 6/.test(t) && /Bekannte Kapitel/.test(t), 'Karte: ' + t);
     await p.evaluate(() => { const d = new Date(), k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'), b = JSON.parse(localStorage.getItem('zweiminutenbibel_v2'));
       Object.assign(b, { dailyGoal: 2, todayDone: { date: k, ids: ['x'] }, lastDate: k }); localStorage.setItem('zweiminutenbibel_v2', JSON.stringify(b)); });
     await p.reload(); await wait(p, 2200);
-    assert(/Gelesen ✓/.test(await p.textContent('[data-gl=bibel]')), 'lastDate heute');
+    assert(/Bibel ✓/.test(await p.textContent('#n-mehr .mtiles [data-m=bibel]')), 'lastDate heute');
     assert(!e.length, e.join(' | ')); await c.close();
   });
-  await test('P4 Mobility unverändert: Chips, Pfadzeile „Atmung & HRV · …“, Inhalt unter dem Kopf', async () => {
+  await test('P4 Mobility unverändert unter Training: Reiter „Atmung“, Chips, Inhalt unter dem Kopf', async () => {
     const c = await ctxFor(SMALL), p = await c.newPage(), e = watch(p);
-    await open(p, '#mobility/atmung/hrv');
-    const r = await p.evaluate(() => ({ path: document.getElementById('path').textContent, pathVis: !!document.getElementById('path').offsetParent, menu: !!document.getElementById('menu').offsetParent,
-      chips: document.querySelectorAll('#chips .chip').length, on: [...document.querySelectorAll('#chips .chip.on')].map(x => x.textContent).join('|'),
-      stTop: document.getElementById('stage').getBoundingClientRect().top, chipsBottom: document.getElementById('chips').getBoundingClientRect().bottom, topH: document.querySelector('.top').getBoundingClientRect().height }));
-    assert(r.path === 'Atmung & HRV · Üben & HRV messen' && r.pathVis && !r.menu, 'Pfadzeile ' + JSON.stringify(r));
-    assert(r.chips >= 7 && r.on === 'Atmung & HRV|Üben & HRV messen', 'Chips ' + r.on);
+    await open(p, '#training/atmung/hrv');
+    const r = await p.evaluate(() => ({ pathVis: !!document.getElementById('path').offsetParent, menu: !!document.getElementById('menu').offsetParent,
+      tab: (document.querySelector('#chips .tb.on') || {}).textContent, chips: document.querySelectorAll('#chips .crow.sub .chip').length, on: [...document.querySelectorAll('#chips .chip.on')].map(x => x.textContent).join('|'),
+      stTop: document.getElementById('stage').getBoundingClientRect().top, chipsBottom: document.getElementById('chips').getBoundingClientRect().bottom }));
+    assert(!r.pathVis && !r.menu && /Atmung/.test(r.tab), 'Kopf ' + JSON.stringify(r));
+    assert(r.chips >= 5 && r.on === 'Üben & HRV messen', 'Chips ' + r.on);
     assert(Math.abs(r.stTop - r.chipsBottom) <= 1, 'Abstand Kopf/Inhalt ' + JSON.stringify(r));
     assert(!e.length, e.join(' | ')); await c.close();
   });
   /* ---------- P5: Mehr neu geordnet ---------- */
   const ANDROID = Object.assign({ userAgent: 'Mozilla/5.0 (Linux; Android 14; SM-A546B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36' }, SMALL);
   const mehrCtx = async (init, opt) => { const c = await ctxFor(opt || SMALL); if (init) await c.addInitScript(init); const p = await c.newPage(); return { c, p, e: watch(p) }; };
-  const valOf = (p, m) => p.evaluate(m => { const r = document.querySelector('#n-mehr [data-m="' + m + '"] .val'); return r ? r.textContent : ''; }, m);
-  await test('P5 Mehr: fünf Gruppen nach Zweck, alles von früher erreichbar, höchstens zwei Bildschirmhöhen', async () => {
+  // Wert einer Zeile – direkt in Mehr oder in einer der Gruppen (Kalender verbinden, Sicherung, Einstellungen)
+  const valOf = (p, m) => p.evaluate(m => { const q = '[data-m="' + m + '"] .val'; let r = document.querySelector('#n-mehr ' + q);
+    if (!r) { const d = document.createElement('div'); d.innerHTML = Object.values(SGShell.mehr()).join(''); r = d.querySelector(q); } return r ? r.textContent : ''; }, m);
+  const mehrRow = async (p, m) => { if (await p.$('#n-mehr [data-m="' + m + '"]')) return p.click('#n-mehr [data-m="' + m + '"]');
+    const g = await p.evaluate(m => Object.keys(SGShell.mehr()).find(k => SGShell.mehr()[k].indexOf('data-m="' + m + '"') >= 0), m);
+    await p.click('#n-mehr [data-m="g:' + g + '"]'); await wait(p, 350); await p.click('#sheet [data-m="' + m + '"]'); };
+  await test('P5 Mehr (4.0): vier Kacheln, drei Gruppen, alles von früher erreichbar, eine Bildschirmhöhe', async () => {
     const { c, p, e } = await mehrCtx(); await open(p, '#mehr');
-    const r = await p.evaluate(() => ({ grp: [...document.querySelectorAll('#n-mehr .grp > header')].map(x => x.textContent).join('|'), ms: [...document.querySelectorAll('#n-mehr [data-m]')].map(x => x.dataset.m),
+    const r = await p.evaluate(() => ({ tiles: [...document.querySelectorAll('#n-mehr .mtiles [data-m]')].map(x => x.dataset.m).join(), ms: [...document.querySelectorAll('#n-mehr [data-m]')].map(x => x.dataset.m),
+      inGrp: Object.values(SGShell.mehr()).join('').match(/data-m="[^"]+"/g).map(x => x.slice(8, -1)),
       h: document.getElementById('n-mehr').scrollHeight, minRow: Math.min(...[...document.querySelectorAll('#n-mehr .row')].map(x => x.getBoundingClientRect().height)),
       links: [...document.querySelectorAll('#n-mehr .lnk-ic')].map(x => x.closest('[data-m]').dataset.m).join() }));
-    assert(r.grp === 'Planen|Lesen und Lernen|Abgleich und Sicherung|Darstellung und Einstellungen|Über die App', 'Gruppen ' + r.grp);
-    // 3.8.0 schlanker: Standardwoche in „Woche planen“, Einspielen in „Sicherung als Datei“
-    const fehlt = ['aufgaben', 'notizen', 'week', 'handy', 'abo', 'bibel', 'wissen', 'pause', 'design', 'sync', 'tset', 'update', 'umzug', 'backup', 'neu', 'diag', 'autodw'].filter(m => r.ms.indexOf(m) < 0);
+    assert(r.tiles === 'aufgaben,notizen,bibel,week', 'Kacheln ' + r.tiles);
+    const fehlt = ['aufgaben', 'notizen', 'week', 'handy', 'abo', 'bibel', 'wissen', 'pause', 'design', 'sync', 'tset', 'update', 'umzug', 'backup', 'neu', 'diag', 'g:conn', 'g:safe', 'g:set'].filter(m => r.ms.indexOf(m) < 0 && r.inGrp.indexOf(m) < 0);
     assert(!fehlt.length, 'fehlt ' + fehlt);
-    assert(r.links === 'wissen,tset', 'Verknüpfungen ' + r.links);
-    assert(r.h <= 2 * 800 && r.minRow >= 59.5, 'Höhe ' + r.h + ' Zeile ' + r.minRow);
+    assert(r.links === 'wissen', 'Verknüpfungen ' + r.links);
+    assert(r.h <= 800 && r.minRow >= 59.5, 'Höhe ' + r.h + ' Zeile ' + r.minRow);
+    // Gruppe als Blatt, Zeile darin führt aus; Zurück schließt das Blatt
+    await p.click('#n-mehr [data-m="g:conn"]'); await wait(p, 350);
+    assert(await p.$$eval('#sheet [data-m]', l => l.map(x => x.dataset.m).join()) === 'handy,abo', 'Kalender verbinden');
+    await p.goBack(); await wait(p, 300); assert(!await p.evaluate(() => document.getElementById('sheet').classList.contains('on')) && (await state(p)).hash === '#mehr', 'Zurück');
     // „Was ist neu“, Fehlerprotokoll (mit Leeren)
-    await p.click('#n-mehr [data-m=neu]'); await wait(p, 300); assert(/Version 3\.8\.0/.test(await p.textContent('#sheet')), 'Was ist neu'); await p.goBack(); await wait(p, 300);
+    await mehrRow(p, 'neu'); await wait(p, 400); assert(/Version 4\.0\.0/.test(await p.textContent('#sheet')), 'Was ist neu'); await p.goBack(); await wait(p, 300);
     await p.evaluate(() => localStorage.setItem('sg-diag-v1', JSON.stringify([{ at: Date.now(), t: 'Test-Eintrag', v: 'kalender', on: true }])));
     await p.evaluate(() => { location.hash = 'kalender'; }); await wait(p, 300); await p.evaluate(() => { location.hash = 'mehr'; }); await wait(p, 400);
-    await p.click('#n-mehr [data-m=diag]'); await wait(p, 300); assert(/Test-Eintrag/.test(await p.inputValue('#sheet textarea.diag')), 'Protokoll');
+    await mehrRow(p, 'diag'); await wait(p, 400); assert(/Test-Eintrag/.test(await p.inputValue('#sheet textarea.diag')), 'Protokoll');
     await p.click('#sheet [data-s=clear]'); await wait(p, 400); assert(await p.evaluate(() => !localStorage.getItem('sg-diag-v1')), 'Leeren');
     // Suchfeld öffnet die Suche; Einträge von „Mehr“ sind dort zu finden, Enter legt keine Aufgabe an
     await p.click('#mehrq'); await wait(p, 300);
@@ -564,14 +519,14 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     let { c, p, e } = await mehrCtx(() => localStorage.removeItem('sg-shared-calendar-sync'), ANDROID); await open(p, '#mehr');
     if (await valOf(p, 'sync') !== 'Aus' || await p.$('#nav [data-tab=mehr] .warn')) bad.push('aus: ' + await valOf(p, 'sync'));
     if (!(await p.$('#n-mehr .grp:first-of-type [data-m=umzug].big')) && !(await p.$('#n-mehr [data-m=umzug].big'))) bad.push('Umzug nicht groß');
-    if (!/\d+ offen/.test(await valOf(p, 'aufgaben'))) bad.push('Aufgaben-Zahl ' + await valOf(p, 'aufgaben'));
+    const at = await p.textContent('#n-mehr .mtiles [data-m=aufgaben]'); if (!/\d+ offen|alles erledigt/.test(at)) bad.push('Aufgaben-Zahl ' + at);
     await p.evaluate(() => window.dispatchEvent(new CustomEvent('sg-update', { detail: '9.9.9' }))); await wait(p, 200);
     if (!/Neu: 9\.9\.9/.test(await valOf(p, 'update'))) bad.push('neue Version ' + await valOf(p, 'update'));
     bad.push(...e); await c.close();
     ({ c, p, e } = await mehrCtx(() => { localStorage.setItem('sg-shared-calendar-sync', JSON.stringify({ token: 'x', user: 'u', last: Date.now() - 2 * 36e5 })); localStorage.setItem('sg-umzug-v1', '{"at":1}'); }, ANDROID));
     await c.route('https://api.github.com/**', r => r.abort()); await open(p, '#mehr');
     const v1 = await valOf(p, 'sync'); if (!/^vor 2 Std\.$/.test(v1) || await p.$('#nav [data-tab=mehr] .warn')) bad.push('frisch: ' + v1);
-    if (await p.$('#n-mehr [data-m=umzug].big') || !(await p.$('#n-mehr [data-m=umzug]'))) bad.push('Umzug erledigt, aber groß');
+    if (await p.$('#n-mehr [data-m=umzug].big') || !(await p.evaluate(() => SGShell.mehr().safe.indexOf('data-m="umzug"') >= 0))) bad.push('Umzug erledigt, aber groß');
     await c.close();
     ({ c, p, e } = await mehrCtx(() => localStorage.setItem('sg-shared-calendar-sync', JSON.stringify({ token: 'x', user: 'u', last: Date.now() - 9 * 864e5 }))));
     await c.route('https://api.github.com/**', r => r.abort()); await open(p, '#kalender');
@@ -603,15 +558,10 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     ({ c, p, e } = await mehrCtx()); await open(p, '#mehr'); if (await p.$('#n-mehr [data-m=umzug].big')) bad.push('große Umzugskarte ohne Android'); await c.close();
     assert(!bad.length, bad.join(' | '));
   });
-  await test('P5 Schalter: einheitlich, „Seitenmenü automatisch öffnen“ (Standard aus) wirkt und bleibt', async () => {
+  await test('P5 Schalter: einheitlich (Handykalender-Blatt), kein Seitenmenü mehr', async () => {
     const { c, p, e } = await mehrCtx(); await open(p, '#mehr');
-    assert(!(await p.isChecked('#n-mehr [data-m=autodw]')), 'Standard nicht aus');
-    await p.click('#n-mehr .row.tgl'); await wait(p, 200);
-    await p.click('#nav [data-tab=training]'); await wait(p, 900);
-    assert(await dwOpen(p), 'Menü geht nicht automatisch auf');
-    await p.reload(); await wait(p, 2000); await p.evaluate(() => { location.hash = 'mehr'; }); await wait(p, 500);
-    assert(await p.isChecked('#n-mehr [data-m=autodw]'), 'Einstellung nicht gemerkt');
-    await p.click('#n-mehr [data-m=handy]'); await wait(p, 400);
+    assert(!(await p.$('#n-mehr [data-m=autodw]')), 'Schalter Seitenmenü noch da');
+    await mehrRow(p, 'handy'); await wait(p, 500);
     assert(await p.evaluate(() => document.querySelectorAll('#sheet input.swi[role=switch]').length >= 2 && !document.querySelector('#sheet input[type=checkbox]:not(.swi)')), 'Handykalender-Blatt ohne einheitliche Schalter');
     assert(!e.length, e.join(' | ')); await c.close();
   });
@@ -768,22 +718,30 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(!bad.length, bad.join(' | '));
     assert(!e.filter(x => !/ERR_INTERNET_DISCONNECTED/.test(x)).length, e.join(' | ')); await c.close();
   });
-  await test('K Kalender: Reihenfolge Wochenleiste · Tagesplan · Monat, auf 360×800 ohne Scrollen sichtbar', async () => {
+  // Monat hinter dem Kalender-Symbol (4.0)
+  await test('K Startseite Heute: Wochenleiste · Als Nächstes · Heute · Demnächst, Monat hinter dem Symbol, 360×800 ohne Scrollen', async () => {
     const c = await ctxFor({ viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true }), p = await c.newPage(), e = watch(p);
     await open(p, '#kalender');
     const r = await p.evaluate(() => { const y = id => document.getElementById(id).getBoundingClientRect(), rows = [...document.querySelectorAll('#dayplan .ev')];
-      return { strip: y('cal-strip').top, day: y('cal-day').top, month: y('cal-month').top, glance: y('cal-glance').top, next: y('cal-next').top, rows: rows.length,
-        row2: rows[1] ? rows[1].getBoundingClientRect().bottom : 9999, nav: document.getElementById('nav').getBoundingClientRect().top,
-        hd: document.querySelector('.calhd b').textContent, over: document.documentElement.scrollWidth - innerWidth, mw: document.getElementById('mgrid').scrollWidth - document.getElementById('mgrid').clientWidth,
-        cells: document.querySelectorAll('#mgrid [data-mday]').length, ch: document.querySelector('#mgrid .mc').getBoundingClientRect().height }; });
-    assert(r.strip < r.day && r.day < r.month && r.month < r.glance && r.glance <= r.next, 'Reihenfolge ' + JSON.stringify(r));
+      return { strip: y('cal-strip').top, day: y('cal-day').top, next: y('cal-next').top, monVis: !!document.getElementById('cal-month').offsetParent, rows: rows.length,
+        row2: rows[1] ? rows[1].getBoundingClientRect().bottom : 9999, nav: document.getElementById('nav').getBoundingClientRect().top, title: document.getElementById('title').textContent,
+        hd: document.querySelector('.calhd b').textContent, over: document.documentElement.scrollWidth - innerWidth, glance: !!document.getElementById('cal-glance') }; });
+    assert(r.strip < r.day && r.day < r.next && !r.monVis && !r.glance, 'Reihenfolge ' + JSON.stringify(r));
     assert(r.rows >= 2 && r.row2 <= r.nav, 'Tagesplan mit 2 Einträgen ohne Scrollen ' + r.row2 + '/' + r.nav);
-    assert(/^KW \d+ · \S+/.test(r.hd), 'Kopf ' + r.hd);
-    assert(r.over <= 1 && r.mw <= 1 && r.cells === 42 && r.ch >= 64, 'Raster ' + JSON.stringify(r));
-    assert(!(await p.$('[data-c=monat]')), 'kein Woche/Monat-Schalter mehr');
+    assert(r.title === 'Heute' && /^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), \d+\. \S+$/.test(r.hd), 'Kopf ' + r.title + ' / ' + r.hd);
+    await mon(p);
+    const m = await p.evaluate(() => ({ title: document.getElementById('title').textContent, day: !!document.getElementById('cal-day').offsetParent, over: document.documentElement.scrollWidth - innerWidth,
+      mw: document.getElementById('mgrid').scrollWidth - document.getElementById('mgrid').clientWidth, cells: document.querySelectorAll('#mgrid [data-mday]').length,
+      ch: document.querySelector('#mgrid .mc').getBoundingClientRect().height, mon: history.state && history.state.mon }));
+    assert(m.title === 'Monat' && !m.day && m.over <= 1 && m.mw <= 1 && m.cells === 42 && m.ch >= 64 && m.mon, 'Monat ' + JSON.stringify(m));
+    await p.goBack(); await wait(p, 400);
+    assert(await p.evaluate(() => !document.querySelector('#n-kalender .wrap').classList.contains('mon') && location.hash === '#kalender' && !!document.getElementById('cal-day').offsetParent), 'Zurück zur Tagesansicht');
+    await p.click('#cal-next [data-c=mon]'); await wait(p, 350); assert(await p.evaluate(() => document.querySelector('#n-kalender .wrap').classList.contains('mon')), 'Monat ›');
+    await p.click('#nav [data-tab=training]'); await wait(p, 900); await p.goBack(); await wait(p, 600);
+    assert(await p.evaluate(() => location.hash === '#kalender' && !document.querySelector('#n-kalender .wrap').classList.contains('mon')), 'nach Training zurück: Tagesansicht');
     assert(!e.length, e.join(' | ')); await c.close();
   });
-  await test('K Kalender: Wochenleiste wischen, Tag tippen, Danach', async () => {
+  await test('K Kalender: Wochenleiste wischen, Tag tippen, Demnächst', async () => {
     const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
     await open(p, '#kalender');
     assert((await p.$$('#strip .wd')).length === 7, 'Woche');
@@ -794,7 +752,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(k2 > k1, 'Wischen zur nächsten Woche');
     await p.click('[data-c=today]'); await wait(p, 200);
     const rows = await p.$$('#cal-next .nd');
-    assert(rows.length >= 1 && rows.length <= 5, 'Danach höchstens 5: ' + rows.length);
+    assert(rows.length >= 1 && rows.length <= 4, 'Demnächst höchstens 4: ' + rows.length);
     const nk = await rows[0].evaluate(x => x.dataset.day);
     await rows[0].click(); await wait(p, 400);
     assert(await p.evaluate(k => document.querySelector('#strip .wd.s').dataset.day === k, nk), 'Danach-Tag gewählt');
@@ -803,18 +761,18 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
   });
   await test('K Monatskalender: tippen, langer Druck, wischen, Pfeile, Monat wählen, Legende, Bedienhilfe', async () => {
     const c = await ctxFor(Object.assign({ timezoneId: 'Europe/Berlin' }, PHONE)), p = await c.newPage(), e = watch(p);
-    await open(p, '#kalender');
-    // Tippen auf einen Tag: gewählt, Tagesplan zeigt ihn, weich nach oben
-    await p.evaluate(() => { document.getElementById('n-kalender').scrollTop = 500; });
+    await open(p, '#kalender'); await mon(p);
+    // Tippen auf einen Tag: gewählt, zurück in der Tagesansicht dieses Tages
     const cell = p.locator('#mgrid [data-mday]').nth(24); const k = await cell.getAttribute('data-mday');
     await cell.click(); await wait(p, 450);
     assert(await p.evaluate(k => document.querySelector('#strip .wd.s').dataset.day === k && document.querySelector('#mgrid .mc.s').dataset.mday === k, k), 'Tag gewählt');
-    const d = new Date(k + 'T12:00'); assert((await p.textContent('#dayplan header')).includes(d.getDate() + '.'), 'Tagesplan zeigt den Tag');
+    const d = new Date(k + 'T12:00'); assert((await p.textContent('.calhd b')).includes(d.getDate() + '.') && !!(await p.evaluate(() => document.getElementById('cal-day').offsetParent)), 'Tagesansicht zeigt den Tag');
     assert(await p.evaluate(() => document.getElementById('n-kalender').scrollTop) < 5, 'nach oben gescrollt');
     const lab = await p.getAttribute('#mgrid .mc.s', 'aria-label'), pr = await p.getAttribute('#mgrid .mc.s', 'aria-pressed');
     assert(/^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), \d+\. \S+, (keine|\d+) Eintr/.test(lab) && pr === 'true', 'Bedienhilfe ' + lab);
     assert(await p.$('#mgrid[role=grid] [role=gridcell] button'), 'role=grid');
     // Langer Druck: „Neu“ für genau diesen Tag
+    await mon(p);
     const lp = await p.locator('#mgrid [data-mday]').nth(30).getAttribute('data-mday');
     await touch(p, '#mgrid [data-mday="' + lp + '"]', 0, 0, 600); await wait(p, 300);
     const dd = new Date(lp + 'T12:00');
@@ -827,7 +785,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     while (!(await p.textContent('#sheet .mpy b')).includes('2026')) await p.click((await p.textContent('#sheet .mpy b')) > '2026' ? '#sheet [data-s=py]' : '#sheet [data-s=ny]');
     await p.click('#sheet [data-s=m9]'); await wait(p, 300);
     assert(/Oktober 2026/.test(await p.textContent('.mhd .mt')), 'Monat gewählt');
-    await p.evaluate(() => window.__pick('2026-10-31')); await wait(p, 400);
+    await p.evaluate(() => window.__pick('2026-10-31')); await wait(p, 400); await mon(p);
     await touch(p, '#mgrid', -200, 0); await wait(p, 400);
     assert(/November 2026/.test(await p.textContent('.mhd .mt')), 'gewischt: November');
     assert(await p.evaluate(() => document.querySelector('#strip .wd.s').dataset.day) === '2026-11-30', 'Tag bleibt (letzter im kürzeren Monat)');
@@ -850,7 +808,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     await s.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await s.detach(); };
   await test('K Prüfbefunde Phase 1: Serien weit weg, langer Druck, Doppeltipp, überfällig, Bedienhilfe, Breite, Maskierung', async () => {
     const c = await ctxFor(Object.assign({ timezoneId: 'Europe/Berlin' }, PHONE)), p = await c.newPage(), e = watch(p);
-    await open(p, '#kalender');
+    await open(p, '#kalender'); await mon(p);
     // F1: tägliche Serie auch 26 Monate weiter vollständig
     await p.evaluate(() => SharedCalendar.add({ title: 'Täglich dehnen', date: '2026-01-01', time: '07:00', app: 'Kalender' }).id).then(id => p.evaluate(id => SharedCalendar.update(id, { rep: { f: 'd' } }), id));
     await wait(p, 300);
@@ -870,6 +828,8 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     const cell = p.locator('#mgrid [data-mday]').nth(23), k = await cell.getAttribute('data-mday'), b2 = await cell.boundingBox();
     await cdpTouch(p, b2.x + b2.width / 2, b2.y + 15, 40); await wait(p, 80); await cdpTouch(p, b2.x + b2.width / 2, b2.y + 15, 40); await wait(p, 500);
     assert(await p.evaluate(() => document.querySelector('#strip .wd.s').dataset.day) === k, 'Doppeltipp');
+    assert(!(await p.evaluate(() => document.getElementById('sheet').classList.contains('on'))), 'zweiter Tipp öffnet etwas');
+    await mon(p);
     // S1: überfällige Aufgabe zählt heute in Leiste und Raster
     await p.evaluate(() => { const d = new Date(Date.now() - 2 * 864e5); SharedCalendar.tasks.add({ title: 'Überfällig', due: d.toISOString().slice(0, 10) }); });
     await p.click('[data-c=today]').catch(() => {}); await wait(p, 400);
@@ -896,9 +856,9 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     const c = await ctxFor(Object.assign({ timezoneId: 'Europe/Berlin' }, PHONE)), p = await c.newPage(), e = watch(p);
     await p.clock.install({ time: new Date('2026-10-20T23:59:20+02:00') });
     await open(p, '#kalender');
-    assert(/Heute · Dienstag, 20\./.test(await p.textContent('#dayplan header')), 'vorher');
+    assert(/^Dienstag, 20\./.test(await p.textContent('.calhd b')) && /^Heute/.test(await p.textContent('#dayplan header')), 'vorher');
     await p.clock.fastForward(75000); await wait(p, 300);
-    assert(/Heute · Mittwoch, 21\./.test(await p.textContent('#dayplan header')), 'nach Mitternacht: ' + await p.textContent('#dayplan header'));
+    assert(/^Mittwoch, 21\./.test(await p.textContent('.calhd b')), 'nach Mitternacht: ' + await p.textContent('.calhd b'));
     await c.close();
     const c2 = await ctxFor({ viewport: { width: 360, height: 800 }, isMobile: true, hasTouch: true }), q = await c2.newPage();
     await open(q, '#kalender'); await q.evaluate(() => { document.documentElement.style.zoom = '1.3'; }); await wait(q, 300);
@@ -909,14 +869,14 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
   await test('K Kalender: Schrift 130 %, Tablet, alle zehn Farbwelten lesbar', async () => {
     for (const vp of [{ width: 360, height: 640 }, { width: 800, height: 1280 }, { width: 1280, height: 800 }]) {
       const c = await ctxFor(Object.assign({}, PHONE, { viewport: vp })), p = await c.newPage(), e = watch(p);
-      await open(p, '#kalender');
+      await open(p, '#kalender'); await mon(p);
       await p.evaluate(() => { document.documentElement.style.zoom = '1.3'; }); await wait(p, 300);
       const over = await p.evaluate(() => [document.documentElement.scrollWidth - innerWidth, ...[...document.querySelectorAll('#mgrid .mc')].slice(0, 7).map(b => b.scrollWidth - b.clientWidth)]);
       assert(over.every(x => x <= 2), 'Überlauf ' + vp.width + ': ' + over);
       assert(!e.length, e.join(' | ')); await c.close();
     }
     const c = await ctxFor(PHONE), p = await c.newPage();
-    await open(p, '#kalender');
+    await open(p, '#kalender'); await mon(p);
     const ids = await p.evaluate(() => SGTheme.list.map(t => t.id)), bad = [];
     const lum = 'const L=c=>{const m=c.match(/\\d+(\\.\\d+)?/g).map(Number);const f=v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)};return .2126*f(m[0])+.7152*f(m[1])+.0722*f(m[2])};const K=(a,b)=>{const x=L(a),y=L(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)};';
     for (const id of ids) {
@@ -927,15 +887,20 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(!bad.length, 'Kontrast zu niedrig: ' + bad.join(', '));
     await c.close();
   });
+  // Starten (4.0): Knopf in „Als Nächstes“, sonst Eintrag antippen › „… öffnen“
+  const startEv = async (p, t) => {
+    if (await p.$('#cal-up [data-start]') && (await p.textContent('#cal-up')).includes(t)) return p.click('#cal-up [data-start]');
+    await p.locator('#dayplan .ev', { hasText: t }).locator('.tx').click(); await wait(p, 300); await p.click('#sheet [data-s=open]');
+  };
   await test('S Kalender verknüpft: Starten führt in Training und Atmung, Zurück-Geste zum Kalender', async () => {
     const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
     await open(p, '#kalender');
-    await p.locator('.ev', { hasText: 'Rodeltraining' }).locator('[data-start]').click(); await wait(p, 1500);
+    await startEv(p, 'Rodeltraining'); await wait(p, 1500);
     let s = await state(p); assert(s.tab === 'training' && s.hash === '#training/heute', 'Training ' + s.hash);
     await p.goBack(); await wait(p, 500); s = await state(p); assert(s.tab === 'kalender', 'zurück ' + s.hash);
     await p.evaluate(() => SharedCalendar.setCalShow('atmung', true)); await wait(p, 400);   // Atemübungen stehen standardmäßig nicht im Kalender
-    await p.locator('.ev', { hasText: 'Langsames Atmen' }).locator('[data-start]').click(); await wait(p, 2500);
-    s = await state(p); assert(s.hash === '#mobility/atmung/hrv', 'Atmung ' + s.hash);
+    await startEv(p, 'Langsames Atmen'); await wait(p, 2500);
+    s = await state(p); assert(s.hash === '#training/atmung/hrv', 'Atmung ' + s.hash);
     assert(await frameOf(p, 'training/atmung/').evaluate(() => document.querySelector("nav [data-go='train']").classList.contains('on')), 'Üben gewählt');
     await p.goBack(); await wait(p, 500); assert((await state(p)).tab === 'kalender', 'zurück 2');
     // Eintrag antippen → Details, „Bearbeiten“ öffnet das Formular
@@ -950,12 +915,12 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     await open(p, '#training/heute'); await wait(p, 1500);
     const f = frameOf(p, 'training/');
     await f.evaluate(() => { location.hash = '#mobility'; }); await wait(p, 1500);
-    let s = await state(p); assert(s.tab === 'mobility' && s.hash.indexOf('#mobility/mobility') === 0, 'Mobility ' + s.hash);
+    let s = await state(p); assert(s.tab === 'training' && s.hash.indexOf('#training/mobility') === 0, 'Mobility ' + s.hash);
     assert(await f.evaluate(() => document.querySelector('.tsmod').hidden), 'kein Fenster im Fenster');
     // Befehlsmenü: Atemübung starten
     await p.click('#acts [data-act=search]'); await wait(p, 300);
     await p.keyboard.type('Atemübung starten'); await wait(p, 200); await p.keyboard.press('Enter'); await wait(p, 1500);
-    s = await state(p); assert(s.hash === '#mobility/atmung/hrv', 'Befehl ' + s.hash);
+    s = await state(p); assert(s.hash === '#training/atmung/hrv', 'Befehl ' + s.hash);
     assert(!e.length, e.join(' | ')); await c.close();
   });
   await test('S Plus: Aufgabe, Notiz und Termin für den gewählten Tag', async () => {
@@ -997,7 +962,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
     await open(p, '#mehr');
     for (const [m, want, path] of [['aufgaben', '#aufgaben', ''], ['bibel', '#bibel', 'bibel/'], ['pause', '#pause', 'pause/'], ['tset', '#tset', 'training/']]) {
-      await p.click(`#n-mehr [data-m=${m}]`); await wait(p, 2200);
+      await mehrRow(p, m); await wait(p, 2200);
       const s = await state(p); assert(s.hash.indexOf(want) === 0 && s.frame === path, m + ' ' + s.hash + ' ' + s.frame);
       const f = frameOf(p, path); assert(f && (await f.evaluate(() => document.body.innerText.length)) > 100, m + ' leer');
       await p.goBack(); await wait(p, 400); assert((await state(p)).hash === '#mehr', 'zurück von ' + m);
@@ -1005,7 +970,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(/Aufgaben|Heute|Geplant/.test(await frameOf(p, '').evaluate(() => document.body.innerText)), 'Aufgabenliste');
     await p.click('#n-mehr [data-m=wissen]'); await wait(p, 1500); assert((await state(p)).hash.indexOf('#training/wissen') === 0, 'Wissen');
     await p.goto(APP + '#mehr'); await wait(p, 1500);
-    await p.click('#n-mehr [data-m=design]'); await wait(p, 400);
+    await mehrRow(p, 'design'); await wait(p, 400);
     assert(await p.evaluate(() => { const r = document.getElementById('sg-shared-calendar'); return /Farbwelt|Design/.test((r.shadowRoot || r).textContent); }), 'Design');
     assert(!e.length, e.join(' | ')); await c.close();
   });
@@ -1014,7 +979,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     await open(p, '#kalender');
     await p.click('#nav [data-tab=training]'); await wait(p, 800);
     await p.click('#nav [data-tab=schule]'); await wait(p, 800);
-    await p.click('#nav [data-tab=mobility]'); await wait(p, 800);
+    await p.click('#nav [data-tab=mehr]'); await wait(p, 800);
     await p.goBack(); await wait(p, 500);
     assert((await state(p)).tab === 'kalender', 'nicht zurück im Kalender: ' + (await state(p)).hash);
     await p.click('#nav [data-tab=mehr]'); await wait(p, 400); await p.click('#nav [data-tab=kalender]'); await wait(p, 400);
@@ -1035,11 +1000,13 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
   await test('S Design: Pillen mittig, Schnellkarten im Bildschirm, eine Akzentfarbe in allen Bereichen', async () => {
     const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
     await open(p, '#kalender');
-    const go = await p.evaluate(() => [...document.querySelectorAll('#n-kalender .go')].map(g => { const r = g.getBoundingClientRect(), x = document.createRange(); x.selectNodeContents(g); const t = x.getBoundingClientRect(), row = g.closest('.ev').getBoundingClientRect();
-      return [Math.abs((t.top + t.bottom) / 2 - (r.top + r.bottom) / 2), Math.abs((r.top + r.bottom) / 2 - (row.top + row.bottom) / 2)]; }));
-    assert(go.length && go.every(d => d[0] < 2 && d[1] < 3), 'Pille nicht mittig ' + JSON.stringify(go));
-    const gl = await p.evaluate(() => [...document.querySelectorAll('.gl')].every(g => { const r = g.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }));
-    assert(gl, 'Schnellkarte ragt aus dem Bildschirm');
+    // Knopf in „Als Nächstes“: Symbol und Text mittig, volle Breite der Karte
+    const go = await p.evaluate(() => { const b = document.querySelector('#cal-up .upb'); if (!b) return null; const r = b.getBoundingClientRect(), i = b.querySelector('svg').getBoundingClientRect(), c = b.closest('.upc').getBoundingClientRect();
+      return [Math.abs((i.top + i.bottom) / 2 - (r.top + r.bottom) / 2), r.height, c.right - r.right]; });
+    assert(!go || (go[0] < 2 && go[1] >= 44 && go[2] <= 17), 'Knopf ' + JSON.stringify(go));
+    await p.click('#nav [data-tab=mehr]'); await wait(p, 500);
+    const gl = await p.evaluate(() => [...document.querySelectorAll('#n-mehr .gl')].every(g => { const r = g.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.height >= 44; }));
+    assert(gl, 'Kachel ragt aus dem Bildschirm');
     const acc = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--acc').trim().toLowerCase());
     for (const [h, sel, v] of [['#training/lauf', 'training/', '--work'], ['#pause', 'pause/', '--zitate'], ['#mobility/atmung', 'training/atmung/', '--breath']]) {
       await p.evaluate(h => { location.hash = h; }, h); await wait(p, 1500);
@@ -1104,7 +1071,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(await p.evaluate(() => SGUpdate.check()) === 'aktuell', 'gleiche Version');
     await p.route('**/planer/sw.js?v=*', r => r.fulfill({ body: "const VERSION = 'planer-9.9.9';", contentType: 'text/javascript' }));
     const nav = p.waitForEvent('framenavigated', { timeout: 25000 });
-    await p.click('#n-mehr [data-m=update]'); await nav;
+    await mehrRow(p, 'update'); await nav;
     await p.unroute('**/planer/sw.js?v=*');
     assert(!e.length, e.join(' | ')); await c.close();
   });
@@ -1198,7 +1165,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(await p.evaluate(() => SharedCalendar.list().some(x => x.title === 'Geburtstag Müller' && x.app === 'Handy')), 'übernommen');
     assert(await p.evaluate(async () => !(await (await caches.open('sg-teilen')).match('geteilt.json'))), 'Ablage geleert');
     await p.goto(APP + '#mehr'); await wait(p, 1200);
-    await p.click('#n-mehr [data-m=handy]'); await wait(p, 300);
+    await mehrRow(p, 'handy'); await wait(p, 300);
     assert(/Handykalender/.test(await p.textContent('#sheet')), 'Blatt');
     const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#sheet [data-s=outall]')]);
     const txt = fs.readFileSync(await dl.path(), 'utf8');
@@ -1344,6 +1311,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(r.back2[0] === '18:00' && r.back2[1] === K0(r.fr, 1) && r.back2[2] === '14:00', 'Import mit Uhrzeit ' + r.back2);
     await p.evaluate(k => { location.hash = 'kalender'; }, r.fr); await wait(p, 200);
     // Tag 2 im Tagesplan
+    await mon(p);
     await p.evaluate(k => { const b = document.querySelector('#mgrid [data-mday="' + k + '"]'); if (!b) { document.querySelector('[data-c=mnext]').click(); } }, K0(r.fr, 1)); await wait(p, 300);
     await p.click('#mgrid [data-mday="' + K0(r.fr, 1) + '"]'); await wait(p, 400);
     assert(/Tag 2 von 4/.test(await p.textContent('#dayplan')), 'Tag 2 von 4 im Tagesplan');
@@ -1445,12 +1413,12 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     await p.click('#sheet [data-s="w:Wetter"]'); await p.click('#sheet [data-s=ok]'); await wait(p, 500);
     let x = await c1(); assert(x.status === 'skip' && x.why === 'Wetter', 'ausgelassen ' + JSON.stringify(x));
     assert(await p.evaluate(() => { const r = [...document.querySelectorAll('#dayplan .ev')].find(b => /Rodeltraining/.test(b.textContent)); return r.classList.contains('skip') && /ausgelassen \(Wetter\)/.test(r.textContent); }), 'gedämpft mit Grund');
-    assert(/ausgelassen/.test(await p.textContent('.calhd')), 'Wochenbilanz zählt ausgelassen: ' + await p.textContent('.calhd'));
+    assert(/ausgelassen/.test(await balOf(p)), 'Wochenbilanz zählt ausgelassen: ' + await balOf(p));
     await p.click('#snack button'); await wait(p, 400); x = await c1(); assert(!x.status && !x.why, 'Rückgängig auslassen');
     // Erledigt
     await row().click(); await wait(p, 300); await p.click('#sheet [data-s=done]'); await wait(p, 500);
     assert((await c1()).status === 'done' && await p.evaluate(() => /✓/.test([...document.querySelectorAll('#dayplan .ev')].find(b => /Rodeltraining/.test(b.textContent)).textContent)), '✓ sichtbar');
-    const bal = await p.textContent('.calhd .wbal'); assert(/^1 von \d+ Einheiten/.test(bal), 'Bilanz ' + bal);
+    const bal = await balOf(p); assert(/: 1 von \d+ Einheiten/.test(bal), 'Bilanz ' + bal);
     await p.click('#snack button'); await wait(p, 400); assert(!(await c1()).status, 'Rückgängig erledigt');
     // Heute später: neue Uhrzeit, Dauer bleibt
     await row().click(); await wait(p, 300); await p.click('#sheet [data-s=later]'); await wait(p, 200);
@@ -1481,7 +1449,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     const r = await p.evaluate(LOC + `SharedCalendar.allItems(K(0), K(0)).filter(x => /Rodeltraining|Abendlauf|erledigt/.test(x.title)).map(x => x.title + ':' + (x.st || '-') + (x.auto ? '*' : ''))`);
     assert(r.join() === 'Rodeltraining:done*,Abendlauf:-', 'Zuordnung ' + r);
     assert(!(await p.textContent('#dayplan')).includes('Training erledigt'), 'Extra-Zeile weg');
-    assert(/^1 von 2 Einheiten/.test(await p.textContent('.calhd .wbal')), 'Bilanz ' + await p.textContent('.calhd .wbal'));
+    assert(/: 1 von 2 Einheiten/.test(await balOf(p)), 'Bilanz ' + await balOf(p));
     // „Wieder offen“ übersteuert den Automatismus
     await p.locator('#dayplan .ev', { hasText: 'Rodeltraining' }).click(); await wait(p, 300); await p.click('#sheet [data-s=open1]'); await wait(p, 500);
     const r2 = await p.evaluate(LOC + `SharedCalendar.allItems(K(0), K(0)).filter(x => /Rodeltraining|Abendlauf/.test(x.title)).map(x => x.title + ':' + (x.st || '-'))`);
@@ -1513,17 +1481,17 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(!(await p.textContent('.ovl')), 'keine Warnung, wenn es anschließt');
     assert(!e.length, e.join(' | ')); await c.close();
   });
-  await test('P7 Wichtig: Stern im Blatt, Kachel „Nächster wichtiger Termin“ mit Countdown, Prüfungen zählen', async () => {
+  await test('P7 Wichtig: Stern im Blatt, nächster wichtiger Termin in „Demnächst“ mit Countdown, Prüfungen zählen', async () => {
     const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
     await open(p, '#kalender');
-    let gl = await p.textContent('#cal-glance');
-    assert(/in 3 Tagen/.test(gl) && /Mathematik|Schulaufgabe/.test(gl), 'Prüfung aus dem Seed: ' + gl);
+    let gl = await p.textContent('#cal-next');
+    assert(/in 3 Tagen/.test(gl) && /★[^★]*(Mathematik|Schulaufgabe)/.test(gl), 'Prüfung aus dem Seed: ' + gl);
     await p.evaluate(LOC + 'SharedCalendar.newEvent(K(2))'); await wait(p, 400);
     await p.fill('[name=title]', 'Landesmeisterschaft'); await p.check('[name=star]'); await p.click('[data-a=save]'); await wait(p, 600);
-    gl = await p.textContent('#cal-glance');
-    assert(/in 2 Tagen/.test(gl) && /Landesmeisterschaft/.test(gl), 'Stern-Termin: ' + gl);
-    await p.click('#cal-glance [data-gl^="imp:"]'); await wait(p, 400);
-    assert(/★/.test(await p.textContent('#dayplan')) && /Landesmeisterschaft/.test(await p.textContent('#dayplan')), 'Kachel führt zum Tag, Stern sichtbar');
+    gl = await p.textContent('#cal-next');
+    assert(/★ Landesmeisterschaft/.test(gl) && /in 2 Tagen/.test(gl), 'Stern-Termin: ' + gl);
+    await p.locator('#cal-next .nd', { hasText: 'Landesmeisterschaft' }).click(); await wait(p, 400);
+    assert(/★/.test(await p.textContent('#dayplan')) && /Landesmeisterschaft/.test(await p.textContent('#dayplan')), 'Zeile führt zum Tag, Stern sichtbar');
     assert(!e.length, e.join(' | ')); await c.close();
   });
   await test('P7 Cloud-Abgleich: Gerät mit neuen Feldern und Gerät ohne – beide behalten alles', async () => {
@@ -1567,7 +1535,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     let hits = 0;
     await c.route('https://kalender.example.org/**', r => { hits++; r.fulfill({ status: 200, headers: { 'content-type': 'text/calendar', 'access-control-allow-origin': '*' }, body: ICS }); });
     await open(p, '#mehr');
-    await p.click('#n-mehr [data-m=abo]'); await wait(p, 300); await p.click('#sheet [data-s=add]'); await wait(p, 200);
+    await mehrRow(p, 'abo'); await wait(p, 300); await p.click('#sheet [data-s=add]'); await wait(p, 200);
     await p.fill('#abu', 'webcal://kalender.example.org/verein.ics'); await p.click('#sheet [data-s=ok]'); await wait(p, 1200);
     assert(/Rodelverein/.test(await p.textContent('#sheet')) && /Termine übernommen/.test(await p.textContent('#snack')), 'hinzugefügt: ' + await p.textContent('#sheet'));
     const r = await p.evaluate(() => { const pad = n => String(n).padStart(2, '0'), k = n => { const d = new Date(); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
@@ -1597,7 +1565,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     assert(await frameOf(p, 'training/').evaluate(() => { const r = document.querySelector('.hero .alt-row'); return r && getComputedStyle(r).display === 'flex'; }), 'Nebenaktionen nebeneinander');
     // Blatt wegziehen
     await p.click('#nav [data-tab=kalender]'); await wait(p, 500);
-    await p.click('[data-c=new]'); await wait(p, 400);
+    await p.click('#fab'); await wait(p, 400);
     const pn = await p.locator('#sheet .pn').boundingBox();
     const s = await p.context().newCDPSession(p), x = pn.x + pn.width / 2, y = pn.y + 14;
     await s.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
@@ -1605,7 +1573,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     await s.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await s.detach(); await wait(p, 500);
     assert(!(await p.evaluate(() => document.getElementById('sheet').classList.contains('on'))), 'Blatt nach unten weggezogen');
     // Mobility: Chips bleiben (Wunsch), in M3-Form
-    await p.click('#nav [data-tab=mobility]'); await wait(p, 1500);
+    await p.evaluate(() => SGShell.go('training', 'mobility')); await wait(p, 1500);
     assert(await p.evaluate(() => document.querySelectorAll('.chip').length >= 4 && getComputedStyle(document.querySelector('.chip')).borderRadius === '8px'), 'Mobility-Chips');
     // Schule: Schrift auf dem hellen Akzent nicht weiß (Kontrast)
     await p.click('#nav [data-tab=schule]'); await wait(p, 1800);

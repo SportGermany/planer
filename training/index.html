@@ -439,6 +439,19 @@
     .ov-ring{ width:min(42vw,160px); height:min(42vw,160px); }
     .ov-name{ font-size:20px; } .ov-time{ font-size:34px; }
   }
+/* 4.0 aufgeräumt (in der App): Kopf mit Begrüßung entfällt (Titel und Reiter stehen in der Hülle), Kennzahlen als kleine Chips,
+   Muskel-Schlagwörter weg; Serie und Kalorien (früher 🔥/▲ oben rechts) stehen jetzt bei den Chips */
+.kpi.embed-only { display: none; }
+html.sg-embed #s-heute > .top, html.sg-embed #s-heute > .brand { display: none; }
+html.sg-embed .hero .chips, html.sg-embed #s-heute [data-sec="stats"] { display: none; }
+html.sg-embed .hero { margin-top: 4px; }
+html.sg-embed .kpi-row[data-sec="kpis"] { display: flex !important; flex-wrap: wrap; gap: 8px; }
+html.sg-embed .kpi-row[data-sec="kpis"] .kpi { flex: none; min-height: 36px; height: auto; padding: 6px 12px; border-radius: 8px; display: inline-flex; flex-direction: row; align-items: center; gap: 6px; text-align: left; }
+html.sg-embed .kpi-row[data-sec="kpis"] .kpi[hidden] { display: none; }
+html.sg-embed .kpi-row[data-sec="kpis"] .kpi b { font-size: 13.5px; margin: 0; }
+html.sg-embed .kpi-row[data-sec="kpis"] .kpi span { font-size: 13px; margin: 0; }
+html.sg-embed .kpi-row[data-sec="kpis"] .kpi .dots { margin: 0; }
+html.sg-embed .kpi.embed-only { display: inline-flex; }
 .hero .alt-row .btn.accent { flex: 1 1 140px; min-height: 44px; }
 .hero .alt-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .hero .alt-row .btn:not(.accent) { flex: 1 1 140px; min-height: 44px; background: none; border: 0; color: var(--text-dim); font-weight: 600; }
@@ -1168,7 +1181,7 @@ html.m3 .streak-chip { border-radius: 8px; }
   }
 </style>
 <!-- verbund-design:start -->
-<script data-design="panel" data-sync="training" src="../sg/design.js?v=3.9.1"></script>
+<script data-design="panel" data-sync="training" src="../sg/design.js?v=4.0.0"></script>
 <!-- verbund-design:end -->
 </head>
 <body>
@@ -1272,6 +1285,8 @@ html.m3 .streak-chip { border-radius: 8px; }
     <button class="kpi" id="kpiReady" data-acc-open="readiness"><b>–</b><span>Bereitschaft</span></button>
     <button class="kpi" id="kpiWeather" data-acc-open="weathertoday"><b>–</b><span>Wetter</span></button>
     <button class="kpi" id="kpiWeek" data-acc-open="weekbar"><i class="dots"></i><span>Woche</span></button>
+    <button class="kpi embed-only" id="kpiStreak" data-acc-open="weekbar"><b>0</b><span>Serie</span></button>
+    <button class="kpi embed-only" id="kpiBurn"><b>0</b><span>kcal</span></button>
   </div>
 
   <div class="stat-row" data-sec="stats">
@@ -2568,25 +2583,25 @@ html.m3 .streak-chip { border-radius: 8px; }
   </div>
   <button class="btn accent block sm" id="btnWrappedShare" style="margin-top:16px">📤 Teilen</button>
 </div></dialog>
-<script id="coreScript" src="js/1-core.js?v=3.9.1"></script>
-<script id="poolsScript" src="js/2-pools.js?v=3.9.1"></script>
-<script id="sportsScript" src="js/3-sports.js?v=3.9.1"></script>
-<script id="stretchScript" src="js/4-stretch.js?v=3.9.1"></script>
-<script id="rodelnScript" src="js/5-rodeln.js?v=3.9.1"></script>
-<script id="gymScript" src="js/6-gym.js?v=3.9.1"></script>
-<script id="weatherScript" src="js/7-weather.js?v=3.9.1"></script>
-<script id="githubScript" src="js/8-github.js?v=3.9.1"></script>
-<script id="analysisScript" src="js/9-analysis.js?v=3.9.1"></script>
-<script src="js/10-app.js?v=3.9.1"></script>
-<script src="js/11-app.js?v=3.9.1"></script>
-<script src="js/12-app.js?v=3.9.1"></script>
-<script src="js/13-app.js?v=3.9.1"></script>
-<script src="js/14-app.js?v=3.9.1"></script>
+<script id="coreScript" src="js/1-core.js?v=4.0.0"></script>
+<script id="poolsScript" src="js/2-pools.js?v=4.0.0"></script>
+<script id="sportsScript" src="js/3-sports.js?v=4.0.0"></script>
+<script id="stretchScript" src="js/4-stretch.js?v=4.0.0"></script>
+<script id="rodelnScript" src="js/5-rodeln.js?v=4.0.0"></script>
+<script id="gymScript" src="js/6-gym.js?v=4.0.0"></script>
+<script id="weatherScript" src="js/7-weather.js?v=4.0.0"></script>
+<script id="githubScript" src="js/8-github.js?v=4.0.0"></script>
+<script id="analysisScript" src="js/9-analysis.js?v=4.0.0"></script>
+<script src="js/10-app.js?v=4.0.0"></script>
+<script src="js/11-app.js?v=4.0.0"></script>
+<script src="js/12-app.js?v=4.0.0"></script>
+<script src="js/13-app.js?v=4.0.0"></script>
+<script src="js/14-app.js?v=4.0.0"></script>
 <!-- training-suite:start -->
-<script src="../sg/training-suite.js?v=3.9.1"></script>
+<script src="../sg/training-suite.js?v=4.0.0"></script>
 <!-- training-suite:end -->
 <!-- gemeinsamer-kalender:start -->
-<script data-app="training" src="../sg/verbund.js?v=3.9.1"></script>
+<script data-app="training" src="../sg/verbund.js?v=4.0.0"></script>
 <!-- gemeinsamer-kalender:end -->
 </body>
 </html>

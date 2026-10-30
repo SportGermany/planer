@@ -25,8 +25,9 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
   await wp.evaluate(() => new Promise(res => { const r = indexedDB.open('lernplan-dateien', 1); r.onupgradeneeded = () => { r.result.createObjectStore('files'); r.result.createObjectStore('inbox'); };
     r.onsuccess = () => { const t = r.result.transaction('files', 'readwrite'); t.objectStore('files').put(new File(['%PDF-1.4 test'], 'Arbeitsblatt.pdf', { type: 'application/pdf' }), 'doc1'); t.oncomplete = res; }; }));
   await wp.evaluate(() => SharedCalendar.notes.add({ text: 'Notiz vor dem Umzug' }));
-  ok(await wp.isVisible('#n-mehr [data-m=umzug]'), 'Web: Mehr › In die Android-App umziehen');
-  await wp.click('#n-mehr [data-m=umzug]'); await wp.waitForSelector('#sheet [data-s=save]');
+  await wp.click('#n-mehr [data-m="g:safe"]'); await wp.waitForTimeout(350);
+  ok(await wp.isVisible('#sheet [data-m=umzug]'), 'Web: Mehr › Sicherung › In die Android-App umziehen');
+  await wp.click('#sheet [data-m=umzug]'); await wp.waitForSelector('#sheet [data-s=save]');
   const [dl] = await Promise.all([wp.waitForEvent('download'), wp.click('#sheet [data-s=save]')]);
   const file = require('os').tmpdir() + '/planer-umzug-test.json'; await dl.saveAs(file); const mv = JSON.parse(fs.readFileSync(file, 'utf8'));
   ok(mv.format === 'planer-umzug' && mv.ls['sg-shared-calendar-v1'] && mv.idb['bahnplan/img'] && mv.idb['lernplan-dateien/files'] && !mv.ls['sg-diag-v1'], 'Umzugsdatei mit allen Daten, Bildern und Dateien (' + Object.keys(mv.ls).length + ' Bereiche)');
@@ -60,7 +61,7 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
   ok(await p.evaluate(() => /Mathematik|Schulaufgabe|Vokabeln/.test(document.querySelector('#stage iframe.on').contentDocument.body.innerText)), 'Schule zeigt die übernommenen Daten');
   // 3) Speichern/Teilen statt Herunterladen
   await p.evaluate(() => { window.__cap.length = 0; location.hash = 'mehr'; }); await p.waitForTimeout(800);
-  await p.click('#n-mehr [data-m=handy]'); await p.click('#sheet [data-s=outall]'); await p.waitForTimeout(800);
+  await p.click('#n-mehr [data-m="g:conn"]'); await p.waitForTimeout(350); await p.click('#sheet [data-m=handy]'); await p.click('#sheet [data-s=outall]'); await p.waitForTimeout(800);
   const cap = await p.evaluate(() => window.__cap);
   ok(cap.some(x => x[0] === 'write' && /\.ics$/.test(x[1]) && x[3] === 'CACHE') && cap.some(x => x[0] === 'share' && /\.ics$/.test(x[1])), 'Datei aus der Hülle: gespeichert und Android-Teilen geöffnet ' + JSON.stringify(cap));
   await p.evaluate(() => { window.__cap.length = 0; location.hash = 'training/wissen'; }); await p.waitForTimeout(2000);
@@ -75,10 +76,10 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
   ok(dialogs.some(d => /Drucken geht in der Android-App nicht/.test(d)), 'Drucken: verständlicher Hinweis');
   // 5) Update: GitHub-Release 9.9.9 → Download der APK
   await p.goto(APP + '#mehr'); await p.waitForTimeout(1500); nav.length = 0;
-  await p.click('#n-mehr [data-m=update]'); await p.waitForTimeout(1500);
+  await p.click('#n-mehr [data-m="g:set"]'); await p.waitForTimeout(350); await p.click('#sheet [data-m=update]'); await p.waitForTimeout(1500);
   const sn = await p.textContent('#snack');
   ok(/9\.9\.9|Download/.test(sn) && nav.some(u => /planer-9\.9\.9\.apk$/.test(u)), 'Update: neue Version auf GitHub gefunden, APK-Download geöffnet (' + sn.slice(0, 60) + ' | ' + nav.join(',') + ')');
-  ok(await p.isVisible('#n-mehr [data-m=umzugin]') && !(await p.isVisible('#n-mehr [data-m=umzug]')), 'APK: Mehr › Daten aus Chrome übernehmen');
+  ok(await p.evaluate(() => { const all = document.getElementById('n-mehr').innerHTML + Object.values(SGShell.mehr()).join(''); return all.indexOf('data-m="umzugin"') >= 0 && all.indexOf('data-m="umzug"') < 0; }), 'APK: Mehr › Daten aus Chrome übernehmen');
   ok(!errs.length, 'Keine Fehler ' + errs.join(' | '));
 
   // 6) Handykalender und Erinnerungen (Android-Schnittstellen nachgestellt): „Neu anfangen“ → „Beides einschalten“
@@ -175,7 +176,7 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
   ok(p7.urlaub.length === 3 && p7.urlaub[0] === p7.K10 + ':1/3', 'Aus dem Handy: mehrtägiger Termin je Tag 1/3, 2/3, 3/3 ' + p7.urlaub);
   // Mehr: Handykalender-Blatt in der APK
   await q.evaluate(() => { location.hash = 'mehr'; }); await q.waitForTimeout(600);
-  await q.click('#n-mehr [data-m=handy]'); await q.waitForTimeout(300);
+  await q.click('#n-mehr [data-m="g:conn"]'); await q.waitForTimeout(350); await q.click('#sheet [data-m=handy]'); await q.waitForTimeout(300);
   ok(/Mein Kalender/.test(await q.textContent('#sheet')) && await q.isVisible('#sheet [data-h=stunden]'), 'Mehr › Handykalender: Auswahl und Kalenderliste');
   // per Link eingebundener Google-Kalender, auf dem Handy nicht synchronisiert: Hinweis und Einschalten
   ok(/nicht synchronisiert/.test(await q.textContent('#sheet')), 'Nicht synchronisierter Kalender wird angezeigt');
