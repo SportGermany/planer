@@ -25,6 +25,10 @@ Fehler beim Umbau:
 - Klick-Handler für Gruppenblätter lief vor `var sheetEl = …` → `undefined.addEventListener`. Ursache: Reihenfolge im Skript. Lösung: `$("sheet")` direkt.
 - Komma fehlte nach dem verschobenen Atmung-Eintrag (`] }` statt `] },`) → Syntaxfehler, leere Hülle. Lösung: Komma; `node --check` vor jedem Test.
 - Doppeltipp im Monat: erster Tipp schließt den Monat, zweiter hätte die Tagesansicht darunter getroffen. Lösung: 400 ms Tippsperre (`scrollBusy`).
+- Unterpunkte von Rodeln (4 Chips) scrollten bei 360 px seitlich. Lösung: Unterpunkt-Reihen brechen um (`.crow.sub.w`), nur Mobility/Atmung behalten ihre Leiste.
+- Unterpunkt-Chips hatten in Material You 10 statt 8 px Rundung (`.crow.sub .chip` stärker als `html.m3 .chip`). Lösung: eigene Regel.
+- Tests: Seitenmenü-Tests durch Reiter-Tests ersetzt (jeder Pfad, „Mehr ▾“, Größen 360–1280, 130 % Schrift); Kalender-Tests öffnen den Monat über das Symbol (`mon`),
+  Wochenbilanz über `balOf`, Mehr-Zeilen über `mehrRow`. Ergebnis: suite3 91/91, offline3 58/58, apk, upd, schnell 68/68, suche-kern 74/74, bahnplan grün.
 
 ## 4.0.0 (Vorarbeit) – Umbau nach `werkzeuge/UMBAU-4.md`
 

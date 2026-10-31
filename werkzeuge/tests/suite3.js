@@ -832,7 +832,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     await mon(p);
     // S1: überfällige Aufgabe zählt heute in Leiste und Raster
     await p.evaluate(() => { const d = new Date(Date.now() - 2 * 864e5); SharedCalendar.tasks.add({ title: 'Überfällig', due: d.toISOString().slice(0, 10) }); });
-    await p.click('[data-c=today]').catch(() => {}); await wait(p, 400);
+    await p.evaluate(() => ['[data-c=today]', '[data-c=mtoday]'].forEach(q => { const b = document.querySelector(q); if (b) b.click(); })); await wait(p, 400);
     const s1 = await p.evaluate(() => { const t = document.querySelector('#strip .wd.t'), m = document.querySelector('#mgrid .mc.t'); return [t.getAttribute('aria-label'), m.getAttribute('aria-label'), document.querySelectorAll('#dayplan .ev').length]; });
     const n = +((s1[1].match(/(\d+) Eintr/) || [])[1] || 0);
     assert(n === s1[2] && s1[0] === s1[1], 'Zählung heute ' + JSON.stringify(s1));
@@ -1460,7 +1460,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
     await open(p, '#kalender');
     await p.evaluate(LOC + `SharedCalendar.add({ title: 'Schwimmen', date: K(2), time: '10:00', end: '11:00', app: 'Training' }); SharedCalendar.add({ title: 'Physio', date: K(2), time: '13:00', end: '14:00', app: 'Kalender' }); SharedCalendar.add({ title: 'Kurz', date: K(2), time: '13:30', end: '15:00', app: 'Kalender' });`);
-    await p.click('#strip [data-day="' + await p.evaluate(LOC + 'K(2)') + '"]').catch(async () => { await p.evaluate(LOC + `document.querySelector('[data-mday="' + K(2) + '"]').click()`); });
+    await p.click('#strip [data-day="' + await p.evaluate(LOC + 'K(2)') + '"]').catch(async () => { await mon(p); await p.evaluate(LOC + `(document.querySelector('[data-mday="' + K(2) + '"]') || (document.querySelector('[data-c=mnext]').click(), document.querySelector('[data-mday="' + K(2) + '"]'))).click()`); await wait(p, 500); });
     await wait(p, 400);
     assert(/Frei 11:00 bis 13:00/.test(await p.textContent('#dayplan')), 'Frei-Zeile: ' + await p.textContent('#dayplan'));
     assert(!(await p.$('#dayplan .nowl')), 'keine Jetzt-Linie an anderen Tagen');
