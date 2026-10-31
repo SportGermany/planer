@@ -29,6 +29,7 @@ Fehler beim Umbau:
 - Unterpunkt-Chips hatten in Material You 10 statt 8 px Rundung (`.crow.sub .chip` stärker als `html.m3 .chip`). Lösung: eigene Regel.
 - Tests: Seitenmenü-Tests durch Reiter-Tests ersetzt (jeder Pfad, „Mehr ▾“, Größen 360–1280, 130 % Schrift); Kalender-Tests öffnen den Monat über das Symbol (`mon`),
   Wochenbilanz über `balOf`, Mehr-Zeilen über `mehrRow`. Ergebnis: suite3 91/91, offline3 58/58, apk, upd, schnell 68/68, suche-kern 74/74, bahnplan grün.
+- Release: GitHub-Lauf 41196007559 – APK gebaut und signiert, Emulator-Test grün, Release v4.0.0 veröffentlicht.
 
 ## 4.0.0 (Vorarbeit) – Umbau nach `werkzeuge/UMBAU-4.md`
 
