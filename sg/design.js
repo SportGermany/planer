@@ -71,7 +71,7 @@
       var reload = false;
       if (h.daten) {
         var d = null; try { d = JSON.parse(h.daten); } catch (e) {}
-        var keys = d && d.keys || {}, list = Object.keys(keys).filter(function (k) { return /^(zweiminutenbibel|sg-|wk_|lernplan|pause|ablenk)/.test(k); });
+        var keys = d && d.keys || {}, list = Object.keys(keys).filter(function (k) { return !/^sg-(uebergabe|uebernommen)/.test(k); });   // was der Planer für diese App auswählt
         // erste Übergabe: ohne Frage (die App legt beim ersten Start schon leere Grundwerte an); später nur nach Rückfrage
         var first = !localStorage.getItem("sg-uebernommen-v1");
         var mine = first ? [] : list.filter(function (k) { var v = localStorage.getItem(k); return v != null && v !== keys[k] && !/^sg-(design|monet)/.test(k); });
@@ -93,13 +93,14 @@
  * Die Web-Installation (#sgInstallSec) entfällt in der Android-App. */
 (function () {
   if (!window.SGApp || window.SGApp === "planer") return;
+  window.SGAppInfo = function () { fill(); };   // für Seiten, die ihre Einstellungen erst später zeichnen
   function fill() {
     var el = document.getElementById("sgAppInfo"), ins = document.getElementById("sgInstallSec");
     if (ins && window.SGNative) ins.hidden = true;
     if (!el) return;
     el.hidden = false;
     el.innerHTML = "<h3>App</h3><p class='info-text'>Version " + window.SGVersion + " · eigene App, gehört zum Planer.</p>" +
-      "<div class='btn-row'><button type='button' id='sgUpd'>Version aktualisieren</button>" + (window.SGNative ? "<button type='button' id='sgToPlaner'>Planer öffnen</button>" : "") + "</div><p class='info-text' id='sgUpdMsg' style='margin-top:8px'></p>";
+      "<div class='btn-row'><button type='button' class='btn' id='sgUpd'>Version aktualisieren</button>" + (window.SGNative ? "<button type='button' class='btn' id='sgToPlaner'>Planer öffnen</button>" : "") + "</div><p class='info-text' id='sgUpdMsg' style='margin-top:8px'></p>";
     var msg = function (t) { document.getElementById("sgUpdMsg").textContent = t; };
     document.getElementById("sgUpd").onclick = function () { if (window.SGUpdate) window.SGUpdate.check(msg); };
     var tp = document.getElementById("sgToPlaner");

@@ -5,6 +5,10 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Schritt 3 Pause – entfällt
+Nutzerwunsch: „Ablenken nicht mehr weiterentwickeln“. Vorbereitete Pause-App wieder herausgenommen (apps.json, EXT, pause/ unverändert).
+Bleibt aus der Vorbereitung: `SGAppInfo()` für spät gezeichnete Einstellungen, Übergabe-Filter „alles, was der Planer schickt“.
+
 ## 4.2.0 + Bibel 1.0.0 – erste eigene App (Schritt 2)
 - Bibel als eigene APK (`de.sportgermany.bibel`, nur `bibel/` + `sg/`). design.js leitet in Einzel-Apps nicht in die Hülle um
   (`window.SGApp` steht dafür ganz oben in der kopierten design.js – vorher wurde es erst nach der Umleitung gesetzt).

@@ -87,6 +87,8 @@
   /* ---------- Eigene Apps (werkzeuge/PLAN-APPS.md, Pakete wie in werkzeuge/apps.json) ----------
    * Ist die eigene App eines Bereichs installiert, öffnet der Planer diese statt der eingebauten Seite. Beim ersten Mal
    * gehen die Daten des Bereichs mit (danach führt jede App ihre Daten selbst). Ohne App bleibt alles wie bisher. */
+  // keys: Daten des Bereichs; der Zugang zur Cloud-Sicherung (sg-shared-calendar-sync) geht mit, damit die App ihren Teil
+  // in denselben Gist sichert (je Bereich eine eigene Datei, siehe DATA in verbund.js)
   var EXT = { bibel: { pkg: "de.sportgermany.bibel", keys: /^zweiminutenbibel_/ } }, extOn = {};
   function sysP() { try { var Cp = window.Capacitor; return Cp && Cp.isNativePlatform && Cp.isNativePlatform() && Cp.Plugins.PlanerSystem || null; } catch (e) { return null; } }
   function extCheck() {

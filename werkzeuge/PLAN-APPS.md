@@ -7,6 +7,7 @@ veröffentlichten App. Die bestehende Planer-App bleibt bis zum Schluss voll nut
 ## Entscheidungen des Nutzers
 - Plan B (ein Repo, mehrere APKs, gemeinsamer Code nur in `werkzeuge/quellen/`), eingeführt Schritt für Schritt (Plan D).
 - Termine aller Apps erscheinen im **Google-Kalender** (Zielkalender wählbar). Aufgaben: optional (Schalter, Standard aus).
+- **Pause/Ablenken** wird nicht weiterentwickelt (keine eigene App, bleibt unverändert im Planer).
 - **Rodeln** wird nicht als eigene App entwickelt; der Bahnplan bleibt unverändert, wo er ist (Training), keine Weiterentwicklung.
 - Alle 7 Verbesserungen umsetzen – **erst nach der Abnahme (Schritt 8)**.
 - Geplante Aufgabe weckt die Sitzung alle 5 Stunden: „weiter laut PLAN-APPS.md“. Stoppen, wenn alles erledigt ist.
@@ -28,7 +29,7 @@ veröffentlichten App. Die bestehende Planer-App bleibt bis zum Schluss voll nut
 - [x] **2 App Bibel** – eigene APK, Import aus Planer, Vergleichstest alt/neu, Planer-Kachel öffnet die App; Release `bibel-v1.0.0`.
   Übergabe: Planer `openApp` (Daten nur beim 1. Mal, `sg-uebergabe-v1`), App `takeHandover` (1. Mal ohne Frage), Abschnitt `#sgAppInfo`.
   Neue App = Eintrag in apps.json (+ `probe`), `EXT` in app/js/1-app.js, Platzhalter `#sgAppInfo` in den Einstellungen der Seite.
-- [ ] **3 App Pause** – wie 2.
+- [–] **3 App Pause** – entfällt (Wunsch 01.11.: „Ablenken nicht mehr weiterentwickeln“). Pause bleibt unverändert im Planer.
 - [ ] **4 App Schule** – Stundenplan, Aufgaben/Prüfungen, Lernplan, Ferien; Prüfungen/Lernblöcke in Google.
 - [ ] **5 App Training** – Training, Mobility, Atmung, Auswertung, Sportwissenschaft, Bahnplan (unverändert); Trainings in Google.
 - [ ] **6 Planer schlank** – nur Kalender, Aufgaben, Notizen, Woche planen, Web-/Handykalender; Bereiche als Kacheln zu den Apps.
