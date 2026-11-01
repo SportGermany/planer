@@ -30,7 +30,9 @@ veröffentlichten App. Die bestehende Planer-App bleibt bis zum Schluss voll nut
   Übergabe: Planer `openApp` (Daten nur beim 1. Mal, `sg-uebergabe-v1`), App `takeHandover` (1. Mal ohne Frage), Abschnitt `#sgAppInfo`.
   Neue App = Eintrag in apps.json (+ `probe`), `EXT` in app/js/1-app.js, Platzhalter `#sgAppInfo` in den Einstellungen der Seite.
 - [–] **3 App Pause** – entfällt (Wunsch 01.11.: „Ablenken nicht mehr weiterentwickeln“). Pause bleibt unverändert im Planer.
-- [ ] **4 App Schule** – Stundenplan, Aufgaben/Prüfungen, Lernplan, Ferien; Prüfungen/Lernblöcke in Google.
+- [x] **4 App Schule** – Stundenplan, Aufgaben/Prüfungen, Lernplan, Ferien; Prüfungen/Lernblöcke in Google.
+  Übergabe als Datei (FileProvider, bis 64 MB) inkl. Ablage (IndexedDB) und Handy-Einstellung; Planer setzt `sg-ausgelagert-v1`
+  → verbund.js liest/exportiert die alte Schulkopie nicht mehr; Einträge anderer Apps kommen über `fromApp` aus Google zurück.
 - [ ] **5 App Training** – Training, Mobility, Atmung, Auswertung, Sportwissenschaft, Bahnplan (unverändert); Trainings in Google.
 - [ ] **6 Planer schlank** – nur Kalender, Aufgaben, Notizen, Woche planen, Web-/Handykalender; Bereiche als Kacheln zu den Apps.
 - [ ] **7 Abnahme** – je App alt/neu-Vergleich, offline, Emulator; Bericht an den Nutzer.

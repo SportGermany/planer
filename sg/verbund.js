@@ -199,9 +199,15 @@
   }
   function addMin(t, m) { var p = t.split(":"), x = Math.min(1439, +p[0] * 60 + +p[1] + m); return pad(Math.floor(x / 60)) + ":" + pad(x % 60); }
   function where(appId, hash) { var a = APPS.find(function (x) { return x.id === appId; }); return { link: appUrl(a) + hash, linkApp: appId, linkHash: hash }; }
+  /* Ausgelagerte Bereiche (werkzeuge/PLAN-APPS.md): Läuft ein Bereich als eigene App, liest der Planer dessen alte Kopie nicht
+   * mehr und schreibt sie nicht mehr ins Handy – die eigene App trägt ihre Termine selbst in den (Google-)Kalender ein,
+   * von dort kommen sie zurück in den Planer. Gesetzt vom Planer (sg-ausgelagert-v1 = { schule: true, … }). */
+  function outsourced(a) { var o = jkey("sg-ausgelagert-v1") || {}; return !!o[a]; }
+  // Einzel-App: welche Teile sie selbst ins Handy schreibt (der Rest gehört anderen Apps)
+  var SOLO = window.SGApp && window.SGApp !== "planer" ? window.SGApp : "";
   function externalItems(from, to, noPhone) {
     var out = (noPhone ? [] : phoneItems(from, to)).concat(aboItems(from, to));
-    var db = jkey("schulkalender-bayern-v1");
+    var db = outsourced("schule") ? null : jkey("schulkalender-bayern-v1");
     if (db) {
       var subj = function (id) { return (db.subjects || []).find(function (x) { return x.id === id; }) || {}; };
       (db.events || []).forEach(function (e) {
@@ -2385,6 +2391,8 @@
   function strHash(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
   // Was die App ins Handy schreibt (einzelne Vorkommen im Zeitraum)
   function hOut(opt) {
+    if (SOLO) opt = Object.assign({}, opt, { termine: false, aufgaben: false, atmung: SOLO === "training" && opt.atmung, schule: SOLO === "schule" && opt.schule, stunden: SOLO === "schule" && opt.stunden });
+    if (outsourced("schule")) opt = Object.assign({}, opt, { schule: false, stunden: false });
     var from = iso(new Date(Date.now() + HDAYS[0] * 864e5)), to = iso(new Date(Date.now() + HDAYS[1] * 864e5)), out = [];
     function add(x, desc) {
       // mehrtägig: ein Termin über den ganzen Zeitraum (nicht je Tag einer)
@@ -2533,6 +2541,9 @@
           var ed = iso(en), et = pad(en.getHours()) + ":" + pad(en.getMinutes());
           if (ed === date) end = et; else if (et === "00:00" && plusDays(ed, -1) === date) end = "23:59"; else { endDate = et === "00:00" ? plusDays(ed, -1) : ed; end = et === "00:00" ? "" : et; }
         }
+        // Einträge einer anderen Planer-App (z. B. Prüfungen aus der Schul-App): wie deren Bereich, nur lesbar (bearbeitet wird in der App)
+        if (e.fromApp) return { id: "ap-" + e.fromApp + "-" + e.eventId + "-" + e.begin, fromApp: e.fromApp, title: e.title || "(ohne Titel)", date: date, endDate: endDate, time: time, end: end,
+          app: e.fromApp === "schule" ? "Lernplan" : e.fromApp === "training" ? "Training" : e.fromApp === "bibel" ? "Bibel" : "Handy", note: e.description || "", ro: { schule: "Schul-App", training: "Training-App", bibel: "Bibel-App" }[e.fromApp] || "andere App" };
         return { id: "hd-" + e.eventId + "-" + e.begin, fromApp: e.fromApp || "", title: e.title || "(ohne Titel)", date: date, endDate: endDate, time: time, end: end, app: "Handy", color: e.color, cal: String(e.calendarId), calName: e.calendar,
           note: [e.location ? "Ort: " + e.location : "", e.description || ""].filter(Boolean).join("\n"), ro: "Handykalender", phone: { eventId: e.eventId, recurring: !!e.recurring, begin: e.begin, end: e.end, allDay: !!e.allDay } };
       });
@@ -2588,6 +2599,14 @@
     document.addEventListener("visibilitychange", function () { if (!document.hidden) setTimeout(function () { hSync(); }, 800); });
     var hT = null; api.onChange(function () { clearTimeout(hT); hT = setTimeout(function () { hSync(); }, 3000); });
     window.addEventListener("storage", function (e) { if (e.key === "sg-stundenplan-v1" || e.key === "schulkalender-bayern-v1" || e.key === "pulsplan.v1") { clearTimeout(hT); hT = setTimeout(function () { hSync(); }, 3000); } });
+    if (SOLO) {
+      // Einzel-App: die Seite ändert ihre Daten im selben Fenster (kein storage-Ereignis) – jede Minute vergleichen (hSync schreibt nur bei Änderung)
+      setInterval(function () { if (!document.hidden) hSync(); }, 60000);
+      // vom Planer übernommene Einstellung „Abgleich an“: diese App braucht einmal selbst die Kalender-Berechtigung
+      if (hState().on && !localStorage.getItem("sg-solo-handy-ok")) setTimeout(function () {
+        api.handy.enable().then(function (r) { if (r && !r.error) try { localStorage.setItem("sg-solo-handy-ok", "1"); } catch (e) {} });
+      }, 1500);
+    }
   }
   /* ---------- Erinnerungen in der Android-App (echte Benachrichtigungen, auch bei geschlossener App) ----------
    * Plugin LocalNotifications. Geplant werden die nächsten 14 Tage neu, sobald sich etwas ändert:

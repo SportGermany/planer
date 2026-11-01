@@ -110,7 +110,7 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
         // „Öffnen mit Planer“: Android legt die Datei ab, die App holt sie (Ereignis fileOpened)
         takeFile: () => { const f = st.file || {}; st.file = null; return Promise.resolve(f); },
         // eigene Apps (PLAN-APPS.md): Bibel-App ist installiert, openApp merkt sich den Aufruf
-        installed: o => Promise.resolve({ installed: o.pkgs.filter(x => x === 'de.sportgermany.bibel') }),
+        installed: o => Promise.resolve({ installed: o.pkgs.filter(x => x === 'de.sportgermany.bibel' || (st.schuleApp && x === 'de.sportgermany.schule')) }),
         openApp: o => { (st.opened = st.opened || []).push(o); return Promise.resolve({ opened: true }); },
         takeHandover: () => Promise.resolve({}),
         addListener: (ev, fn) => { (st.ls = st.ls || {})[ev] = fn; return Promise.resolve({ remove() {} }); } },
@@ -164,6 +164,18 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
     SGShell.go('bibel', 'bibliothek', null, { push: true }); await new Promise(r => setTimeout(r, 300)); return { o: window.__sim.opened || [], hash: location.hash }; });
   ok(ex.o.length === 2 && ex.o[0].pkg === 'de.sportgermany.bibel' && ex.o[0].ziel === 'lesen' && /zweiminutenbibel_v2/.test(ex.o[0].daten) && !ex.o[1].daten && ex.o[1].ziel === 'bibliothek' && !/bibel/.test(ex.hash),
     'Bibel-App installiert: Planer öffnet sie (Daten einmal, dann nur Ziel) ' + JSON.stringify(ex).slice(0, 200));
+  // Schul-App installiert: Planer zeigt/exportiert seine alte Schulkopie nicht mehr (kommt über Google aus der Schul-App), Schule öffnet die App mit Daten
+  const sc = await q.evaluate(async () => {
+    const k0 = new Date(), k = k0.getFullYear() + '-' + String(k0.getMonth() + 1).padStart(2, '0') + '-' + String(k0.getDate()).padStart(2, '0'), far = '2099-01-01';
+    const before = SharedCalendar.allItems(k, far).filter(x => /^lp-/.test(x.id)).length, outB = SharedCalendar.handy.out().filter(e => /Stundenplan|Schule/.test(e.description || '')).length;
+    window.__sim.schuleApp = true; document.dispatchEvent(new Event('visibilitychange')); await new Promise(r => setTimeout(r, 300));
+    const after = SharedCalendar.allItems(k, far).filter(x => /^lp-/.test(x.id)).length, outA = SharedCalendar.handy.out().filter(e => /Stundenplan|Schule/.test(e.description || '')).length;
+    window.__sim.opened = []; SGShell.go('schule', 'plan'); await new Promise(r => setTimeout(r, 600));
+    const o = window.__sim.opened[0] || {}; window.__sim.schuleApp = false; document.dispatchEvent(new Event('visibilitychange')); await new Promise(r => setTimeout(r, 300));
+    return { before, after, outB, outA, pkg: o.pkg, ziel: o.ziel, keys: o.daten ? Object.keys(JSON.parse(o.daten).keys) : [], back: SharedCalendar.allItems(k, far).filter(x => /^lp-/.test(x.id)).length };
+  });
+  ok(sc.before > 0 && sc.after === 0 && sc.outB > 0 && sc.outA === 0 && sc.pkg === 'de.sportgermany.schule' && sc.ziel === 'plan' && sc.keys.includes('schulkalender-bayern-v1') && sc.back === sc.before,
+    'Schul-App installiert: Planer ohne alte Schulkopie, öffnet die App mit Daten, ohne App wieder wie vorher ' + JSON.stringify(sc).slice(0, 220));
   // Kalenderdatei direkt öffnen („Öffnen mit Planer“)
   await q.evaluate(() => { const s = window.__sim; s.file = { name: 'Quali-Lehrgang.ics', text: 'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:q1@x\r\nDTSTART;TZID=Europe/Berlin:20991023T160000\r\nDTEND;TZID=Europe/Berlin:20991023T173000\r\nSUMMARY:Training G1\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:q2@x\r\nDTSTART;VALUE=DATE:20991023\r\nDTEND;VALUE=DATE:20991029\r\nSUMMARY:Quali-Lehrgang\r\nEND:VEVENT\r\nEND:VCALENDAR' }; s.ls.fileOpened(); });
   await q.waitForTimeout(900);

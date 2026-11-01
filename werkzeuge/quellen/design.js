@@ -68,7 +68,6 @@
   function take() {
     P.takeHandover().then(function (h) {
       if (!h) return;
-      var reload = false;
       if (h.daten) {
         var d = null; try { d = JSON.parse(h.daten); } catch (e) {}
         var keys = d && d.keys || {}, list = Object.keys(keys).filter(function (k) { return !/^sg-(uebergabe|uebernommen)/.test(k); });   // was der Planer für diese App auswählt
@@ -76,15 +75,41 @@
         var first = !localStorage.getItem("sg-uebernommen-v1");
         var mine = first ? [] : list.filter(function (k) { var v = localStorage.getItem(k); return v != null && v !== keys[k] && !/^sg-(design|monet)/.test(k); });
         var diff = list.some(function (k) { return localStorage.getItem(k) !== keys[k]; });   // schon gleich: nichts zu tun (kein Neuladen)
-        if (list.length && diff && (!mine.length || window.confirm("Daten aus der Planer-App übernehmen? Was du in dieser App schon eingetragen hast, wird dabei ersetzt."))) {
+        var dbs = d && d.idb ? Object.keys(d.idb) : [];
+        if ((list.length || dbs.length) && (diff || dbs.length) && (!mine.length || window.confirm("Daten aus der Planer-App übernehmen? Was du in dieser App schon eingetragen hast, wird dabei ersetzt."))) {
           list.forEach(function (k) { try { localStorage.setItem(k, keys[k]); } catch (e) {} });
-          try { localStorage.setItem("sg-uebernommen-v1", JSON.stringify({ at: Date.now(), n: list.length })); } catch (e) {}
-          reload = true;
+          try { localStorage.setItem("sg-uebernommen-v1", JSON.stringify({ at: Date.now(), n: list.length, dateien: dbs.length })); } catch (e) {}
+          return Promise.all(dbs.map(function (key) { return idbPut(key, d.idb[key], (d.stores || {})[key.split("/")[0]]); })).then(function () { return h; });
         }
       }
-      if (h.ziel) { var u = location.pathname + "#" + h.ziel; if (reload) location.replace(u); else location.hash = h.ziel; }
-      if (reload) location.reload();
+      return h;
+    }).then(function (h) {
+      if (!h || (!h.ziel && !h.daten)) return;
+      if (h.ziel) { var u = location.pathname + "#" + h.ziel; if (h.daten) location.replace(u); else location.hash = h.ziel; }
+      if (h.daten && localStorage.getItem("sg-uebernommen-v1")) location.reload();
     }).catch(function () {});
+  }
+  // Dateien der Ablagen (wie beim Umzug: { __blob: data:-Adresse, type, name }) in die Datenbank dieser App schreiben
+  function dec(v) {
+    if (!v || !v.__blob) return v;
+    var p = v.__blob.split(","), bin = atob(p[1] || ""), a = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
+    return v.name ? new File([a], v.name, { type: v.type }) : new Blob([a], { type: v.type });
+  }
+  function idbPut(key, rows, stores) {
+    var p = key.split("/");
+    return new Promise(function (ok) {
+      var r = indexedDB.open(p[0]);
+      r.onupgradeneeded = function () { (stores || [p[1]]).forEach(function (n) { if (!r.result.objectStoreNames.contains(n)) r.result.createObjectStore(n); }); };
+      r.onerror = function () { ok(); };
+      r.onsuccess = function () {
+        var db = r.result;
+        if (!db.objectStoreNames.contains(p[1])) { db.close(); return ok(); }
+        var t = db.transaction(p[1], "readwrite"), st = t.objectStore(p[1]);
+        rows.forEach(function (row) { st.put(dec(row[1]), row[0]); });
+        t.oncomplete = function () { db.close(); ok(); }; t.onerror = function () { db.close(); ok(); };
+      };
+    });
   }
   take();
   try { P.addListener("handover", take); } catch (e) {}

@@ -71,9 +71,15 @@ public class MainActivity extends BridgeActivity {
     private void takeCalendarIntent(Intent in) {
         if (in == null || in.getBooleanExtra("planerTaken", false)) return;
         // Aufruf aus einer anderen Planer-App (werkzeuge/PLAN-APPS.md): Ziel-Adresse und einmalig übergebene Daten
-        if (in.hasExtra(PlanerSystemPlugin.EXTRA_ZIEL) || in.hasExtra(PlanerSystemPlugin.EXTRA_DATEN)) {
+        if (in.hasExtra(PlanerSystemPlugin.EXTRA_ZIEL) || in.hasExtra(PlanerSystemPlugin.EXTRA_DATEN) || in.hasExtra(PlanerSystemPlugin.EXTRA_DATEI)) {
             in.putExtra("planerTaken", true);
-            PlanerSystemPlugin.offerHandover(in.getStringExtra(PlanerSystemPlugin.EXTRA_ZIEL), in.getStringExtra(PlanerSystemPlugin.EXTRA_DATEN));
+            final String ziel = in.getStringExtra(PlanerSystemPlugin.EXTRA_ZIEL), klein = in.getStringExtra(PlanerSystemPlugin.EXTRA_DATEN);
+            final Uri datei = in.hasExtra(PlanerSystemPlugin.EXTRA_DATEI) ? in.getParcelableExtra(Intent.EXTRA_STREAM) : null;
+            new Thread(() -> {
+                String t = klein;
+                try { if (datei != null) t = readText(datei, 64 * 1024 * 1024); } catch (Exception e) {}
+                PlanerSystemPlugin.offerHandover(ziel, t);
+            }).start();
             return;
         }
         String act = in.getAction();
@@ -113,12 +119,16 @@ public class MainActivity extends BridgeActivity {
     }
 
     private String readText(Uri u) throws Exception {
+        return readText(u, 8 * 1024 * 1024);
+    }
+
+    private String readText(Uri u, int max) throws Exception {
         try (InputStream is = getContentResolver().openInputStream(u)) {
             if (is == null) return "";
             ByteArrayOutputStream bo = new ByteArrayOutputStream();
             byte[] buf = new byte[16384];
             int n, total = 0;
-            while ((n = is.read(buf)) > 0 && total < 8 * 1024 * 1024) {
+            while ((n = is.read(buf)) > 0 && total < max) {
                 bo.write(buf, 0, n);
                 total += n;
             }

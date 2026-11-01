@@ -37,7 +37,8 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
     const extra = path.join(__dirname, 'app-' + KEY + '.js');
     if (fs.existsSync(extra) && vp.width < 600) await require(extra)(p, ok, wait, null, null);
     // offline: Server weg, Seite neu laden aus dem Speicher ist im Browser nicht möglich – geprüft wird, dass nichts aus dem Netz nachgeladen wird
-    const ext = []; p.on('request', r => { if (!/^http:\/\/localhost:8766|^data:|^blob:/.test(r.url()) && !/api\.github\.com/.test(r.url())) ext.push(r.url()); });
+    // erlaubt: Update-Suche (GitHub) und je App freiwillige Online-Extras (apps.json „net“, z. B. Ferien-Aktualisierung) – ohne Netz läuft alles weiter
+    const ext = []; p.on('request', r => { const u = r.url(); if (!/^http:\/\/localhost:8766|^data:|^blob:/.test(u) && !/api\.github\.com/.test(u) && !(A.net || []).some(h => u.indexOf(h) >= 0)) ext.push(u); });
     await p.reload(); await wait(1500);
     ok(!ext.length, vp.width + ': lädt nichts aus dem Internet ' + ext.join(' '));
     ok(!errs.length, vp.width + ': keine Fehler ' + errs.join(' | '));
@@ -49,14 +50,21 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
     p.on('pageerror', e => errs.push(e.message));
     await c.addInitScript(pr => {
       // wie Android: die Übergabe wird genau einmal abgeholt (auch über ein Neuladen hinweg)
-      const sys = { takeHandover: () => { if (sessionStorage.getItem('__ho')) return Promise.resolve({}); sessionStorage.setItem('__ho', 1); return Promise.resolve({ ziel: pr.ziel, daten: JSON.stringify({ von: 'planer', keys: pr.keys }) }); }, colors: () => Promise.resolve({ dynamic: false }), openApp: o => { window.__open = o; return Promise.resolve({ opened: true }); } };
+      const sys = { takeHandover: () => { if (sessionStorage.getItem('__ho')) return Promise.resolve({}); sessionStorage.setItem('__ho', 1); return Promise.resolve({ ziel: pr.ziel, daten: JSON.stringify({ von: 'planer', keys: pr.keys, idb: pr.idb || {}, stores: pr.stores || {} }) }); }, colors: () => Promise.resolve({ dynamic: false }), openApp: o => { window.__open = o; return Promise.resolve({ opened: true }); } };
       const plug = name => new Proxy(name === 'PlanerSystem' ? sys : {}, { get: (t, k) => k in t ? t[k] : (k === 'addListener' ? () => Promise.resolve({ remove() {} }) : () => Promise.resolve({})) });
       window.Capacitor = { isNativePlatform: () => true, getPlatform: () => 'android', Plugins: new Proxy({}, { get: (t, k) => plug(k) }) };
     }, A.probe);
     await p.goto('http://localhost:8766/'); await wait(3500);
     const r = await p.evaluate(([keys, chk]) => ({ keys: Object.keys(keys).every(k => Object.entries(JSON.parse(keys[k])).every(([a, v]) => JSON.stringify(JSON.parse(localStorage.getItem(k) || '{}')[a]) === JSON.stringify(v))), mark: !!localStorage.getItem('sg-uebernommen-v1'), ziel: !!eval(chk) }), [A.probe.keys, A.probe.check]);
     ok(r.keys && r.mark, 'Übergabe: Daten aus dem Planer übernommen');
+    if (A.probe.idb) for (const key of Object.keys(A.probe.idb)) {
+      const got = await p.evaluate(([key, stores]) => new Promise(res => { const [db, st] = key.split('/'), q = indexedDB.open(db); q.onsuccess = () => { const d = q.result;
+        const all = stores.every(n => d.objectStoreNames.contains(n)); if (!d.objectStoreNames.contains(st)) return res('fehlt ' + st);
+        const g = d.transaction(st).objectStore(st).getAll(); g.onsuccess = () => res((all ? '' : 'Ablagen unvollständig ') + g.result.map(f => (f && f.name) + ':' + (f && f.size)).join()); }; q.onerror = () => res('Fehler'); }), [key, (A.probe.stores || {})[key.split('/')[0]] || []]);
+      ok(/^Arbeitsblatt\.pdf:\d+/.test(got) || /\.\w+:\d+$/.test(got), 'Übergabe: Dateien in ' + key + ' (' + got + ')');
+    }
     ok(r.ziel, 'Übergabe: Ziel „' + A.probe.ziel + '“ geöffnet');
+    if (A.probe.open) { await p.evaluate(x => eval(x), A.probe.open); await wait(500); }
     const info = await p.evaluate(() => { const el = document.getElementById('sgAppInfo'); return el ? [el.hidden, el.textContent, !!document.getElementById('sgToPlaner')] : null; });
     ok(info && !info[0] && info[1].indexOf('Version ' + A.ver) >= 0 && info[2], 'Abschnitt „App“ mit Version und „Planer öffnen“ ' + JSON.stringify(info));
     ok(!errs.length, 'Übergabe ohne Fehler ' + errs.join(' | '));

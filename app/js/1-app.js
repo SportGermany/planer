@@ -89,12 +89,18 @@
    * gehen die Daten des Bereichs mit (danach führt jede App ihre Daten selbst). Ohne App bleibt alles wie bisher. */
   // keys: Daten des Bereichs; der Zugang zur Cloud-Sicherung (sg-shared-calendar-sync) geht mit, damit die App ihren Teil
   // in denselben Gist sichert (je Bereich eine eigene Datei, siehe DATA in verbund.js)
-  var EXT = { bibel: { pkg: "de.sportgermany.bibel", keys: /^zweiminutenbibel_/ } }, extOn = {};
+  // idb: Datenbanken/Ablagen, die mitgehen (Dateien der Schul-Ablage); sg-handy-v1: Handy-/Google-Kalender gleich eingerichtet
+  var EXT = { bibel: { pkg: "de.sportgermany.bibel", keys: /^zweiminutenbibel_/ },
+    schule: { pkg: "de.sportgermany.schule", keys: /^(schulkalender-bayern-v1|schulplaner-lokal-v1|sg-stundenplan-v1|sg-shared-calendar-sync|sg-handy-v1)$/, idb: [["lernplan-dateien", "files"], ["lernplan-dateien", "inbox"]] } }, extOn = {};
   function sysP() { try { var Cp = window.Capacitor; return Cp && Cp.isNativePlatform && Cp.isNativePlatform() && Cp.Plugins.PlanerSystem || null; } catch (e) { return null; } }
   function extCheck() {
     var P = sysP(); if (!P || !P.installed) return;
     P.installed({ pkgs: Object.keys(EXT).map(function (k) { return EXT[k].pkg; }) }).then(function (r) {
+      var before = JSON.stringify(extOn);
       extOn = {}; (r.installed || []).forEach(function (pk) { Object.keys(EXT).forEach(function (k) { if (EXT[k].pkg === pk) extOn[k] = 1; }); });
+      // verbund.js liest das: Daten ausgelagerter Bereiche nicht mehr selbst zeigen/ins Handy schreiben (kommen aus deren App)
+      try { localStorage.setItem("sg-ausgelagert-v1", JSON.stringify(extOn)); } catch (e) {}
+      if (JSON.stringify(extOn) !== before && cur.v === "kalender") renderCal();
     }).catch(function () {});
   }
   extCheck();
@@ -103,12 +109,19 @@
     var P = sysP(), E = EXT[v], sec = secOf(V[v], s), done = {};
     try { done = JSON.parse(localStorage.getItem("sg-uebergabe-v1") || "{}") || {}; } catch (e) {}
     var o = { pkg: E.pkg, ziel: opt.sub || (sec && (sec.h || sec.s)) || "" };
+    var prep = Promise.resolve();
     if (!done[v]) {
       var keys = {};
       for (var i = 0; i < localStorage.length; i++) { var key = localStorage.key(i); if (E.keys.test(key) || key === "sg-design-v3" || key === "sg-monet-v1") keys[key] = localStorage.getItem(key); }
-      o.daten = JSON.stringify({ von: "planer", at: Date.now(), keys: keys });
+      var pay = { von: "planer", at: Date.now(), keys: keys, idb: {}, stores: {} };
+      // Ablagen wie beim Umzug (Dateien als data:-Adresse); stores = Aufbau der Datenbank, damit die Seite ihn wiederfindet
+      prep = Promise.all((E.idb || []).map(function (x) {
+        pay.stores[x[0]] = MOVE_STORES[x[0]] || [x[1]];
+        return idbAll(x[0], x[1]).then(function (rows) { return Promise.all(rows.map(function (rw) { return enc(rw[1]).then(function (val) { return [rw[0], val]; }); })); })
+          .then(function (rows) { if (rows.length) pay.idb[x[0] + "/" + x[1]] = rows; });
+      })).then(function () { o.daten = JSON.stringify(pay); });
     }
-    P.openApp(o).then(function (r) {
+    prep.then(function () { return P.openApp(o); }).then(function (r) {
       if (r && r.opened) { if (o.daten) { done[v] = Date.now(); try { localStorage.setItem("sg-uebergabe-v1", JSON.stringify(done)); } catch (e) {} } }
       else { delete extOn[v]; go(v, s, null, Object.assign({}, opt, { intern: true })); }
     }).catch(function () { delete extOn[v]; go(v, s, null, Object.assign({}, opt, { intern: true })); });
@@ -1366,6 +1379,8 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["4.3.0", ["Neu: eigene Schul-App (Release „Schule 1.0.0“). Ist sie installiert, öffnet der Planer sie – beim ersten Mal mit Stundenplan, Prüfungen, Aufgaben und den Dateien der Ablage",
+      "Prüfungen, Lernblöcke und Stundenplan trägt dann die Schul-App selbst in deinen (Google-)Kalender ein; der Planer zeigt sie von dort an"]],
     ["4.2.0", ["Neu: eigene Bibel-App (Release „Bibel 1.0.0“ auf GitHub). Ist sie installiert, öffnet der Planer beim Tippen auf Bibel die App – beim ersten Mal mit deinem Lesestand"]],
     ["4.1.0", ["Termine im Google-Kalender: Mehr › Kalender verbinden › Handykalender › Ziel – deinen Google-Kalender wählen. Android lädt die Termine zu Google hoch (auch später, wenn wieder Netz da ist)",
       "Aufgaben mit Datum können auf Wunsch mit in den Kalender (Schalter „Aufgaben“, Standard aus)", "Update-Suche findet nur noch Versionen dieser App (Vorbereitung für die getrennten Apps)"]],

@@ -2336,7 +2336,7 @@ async function showDueReminders() { // beim Öffnen: heutige Erinnerungen als Be
 
 // ---------- Einstellungen ----------
 function refreshSettings() { if (sheetOpen && sheetMode === 'settings') openSheet(settingsHTML(), 'settings'); }
-function openSettings() { sheetReturn = null; openSheet(settingsHTML(), 'settings'); }
+function openSettings() { sheetReturn = null; openSheet(settingsHTML(), 'settings'); if (window.SGAppInfo) window.SGAppInfo(); }
 function settingsHTML() {
   const s = db.settings, k = klasse();
   const sel = (key, opts) => `<select class="inp" data-s="${key}" style="width:auto;padding:8px 10px">${opts.map(([v, l]) => `<option value="${v}"${String(s[key]) === String(v) ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
@@ -2411,6 +2411,7 @@ function settingsHTML() {
     <div class="small muted" style="margin-top:6px">.ics-Dateien lassen sich in Google Kalender importieren (am PC: Einstellungen → Importieren).</div>
     <div class="actions"><button class="btn danger" data-a="reset">Alle Daten löschen</button></div>
     <div class="sh">Info</div><div class="small muted">Lernplan · Version 5.0 · Ferien: BayMBl. 2022 Nr. 747 und OpenHolidays · Alle Angaben ohne Gewähr.<br><br>Am PC: <b>N</b> neu · <b>T</b> heute · <b>1–5</b> Bereiche · <b>← →</b> blättern</div>`;
+  h += `<div id="sgAppInfo" hidden></div>`;   // eigene Schul-App: Version, Aktualisieren, Planer öffnen (sg/design.js)
   return h;
 }
 function setWpfg(g) { setSetting('wpfg', g); }
@@ -2888,6 +2889,8 @@ if (vParam === 'ablage' || vParam === 'lernzeit') { ui.view = 'aufgaben'; ui.auf
 window.addEventListener('hashchange', () => {
   const h = location.hash.slice(1);
   if (h === 'ablage' || h === 'lernzeit') { if (sheetOpen) { sheetReturn = null; closeSheet(); } ui.view = 'aufgaben'; ui.auf = h; render(); window.scrollTo(0, 0); }
+  // eigene Schul-App: Sprungziel aus dem Planer (#plan, #aufgaben …)
+  else if (['heute', 'kalender', 'plan', 'aufgaben', 'lehrgang'].includes(h)) { if (sheetOpen) { sheetReturn = null; closeSheet(); } ui.view = h; render(); window.scrollTo(0, 0); }
 });
 document.addEventListener('toggle', e => { if (e.target.matches && e.target.matches('details.more-today')) { local.homeMore = e.target.open; saveLocal(); } }, true);
 if (local.timer) { /* laufender Timer bleibt erhalten */ }

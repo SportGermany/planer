@@ -5,6 +5,16 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## 4.3.0 + Schule 1.0.0 (Schritt 4)
+- Schule als eigene APK. Übergabe jetzt als Datei (FileProvider + Leserecht nur für die Ziel-App): im Startaufruf erlaubt Android
+  nur etwa 1 MB, die Ablage mit PDFs ist größer. Ablagen (IndexedDB) wie beim Umzug kodiert, `stores` = Aufbau der Datenbank.
+- Sync: Planer merkt installierte Apps in `sg-ausgelagert-v1`; verbund.js nimmt dann die alte Schulkopie weder in den Kalender
+  noch in den Handy-Export (sonst doppelt). Die Schul-App schreibt Schule + Stundenplan selbst (SOLO-Filter in hOut), fragt einmal
+  die Kalender-Berechtigung, gleicht jede Minute ab. Einträge mit fremdem Paketnamen kommen als `fromApp` (nur lesbar) zurück.
+- Fehler Emulator-Test Bibel: „Daten bleiben nach Neustart“ – App hart beendet direkt nach dem Speichern, WebView hatte noch nicht
+  auf die Platte geschrieben. Ursache Test, nicht App. Lösung: 4 s warten und App wie ein Mensch verlassen.
+- Schule-Test erlaubt die freiwillige Ferien-Aktualisierung (openholidaysapi.org, apps.json „net“); offline gelten eingebaute Ferien.
+
 ## Schritt 3 Pause – entfällt
 Nutzerwunsch: „Ablenken nicht mehr weiterentwickeln“. Vorbereitete Pause-App wieder herausgenommen (apps.json, EXT, pause/ unverändert).
 Bleibt aus der Vorbereitung: `SGAppInfo()` für spät gezeichnete Einstellungen, Übergabe-Filter „alles, was der Planer schickt“.

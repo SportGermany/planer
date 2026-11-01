@@ -21,5 +21,44 @@
       "ziel": "bibliothek",
       "check": "document.getElementById('view-bibliothek').classList.contains('active')"
     }
+  },
+  "schule": {
+    "id": "de.sportgermany.schule",
+    "name": "Schule",
+    "start": "schule/",
+    "dirs": [
+      "schule",
+      "sg"
+    ],
+    "ver": "1.0.0",
+    "probe": {
+      "keys": {
+        "schulplaner-lokal-v1": "{\"homeMore\":true}"
+      },
+      "ziel": "plan",
+      "check": "document.querySelector('.tab[data-v=plan]').classList.contains('on')",
+      "open": "openSettings()",
+      "idb": {
+        "lernplan-dateien/files": [
+          [
+            "doc1",
+            {
+              "__blob": "data:application/pdf;base64,JVBERi0xLjQgdGVzdA==",
+              "type": "application/pdf",
+              "name": "Arbeitsblatt.pdf"
+            }
+          ]
+        ]
+      },
+      "stores": {
+        "lernplan-dateien": [
+          "files",
+          "inbox"
+        ]
+      }
+    },
+    "net": [
+      "openholidaysapi.org"
+    ]
   }
 }

@@ -35,7 +35,8 @@ public class PlanerSystemPlugin extends Plugin {
 
     /* Zwischen den Planer-Apps: openApp startet eine andere App (falls installiert) mit Ziel-Adresse und – nur beim ersten Mal –
      * ihren Daten aus dem Planer. Die gestartete App holt beides mit takeHandover() ab (beim Start) bzw. per Ereignis „handover“. */
-    static final String EXTRA_ZIEL = "de.sportgermany.ziel", EXTRA_DATEN = "de.sportgermany.daten";
+    // Daten gehen als Datei (FileProvider, nur die Ziel-App darf lesen) – im Startaufruf selbst erlaubt Android nur etwa 1 MB
+    static final String EXTRA_ZIEL = "de.sportgermany.ziel", EXTRA_DATEN = "de.sportgermany.daten", EXTRA_DATEI = "de.sportgermany.datei";
     private static JSObject pendingHandover = null;
 
     static void offerHandover(String ziel, String daten) {
@@ -86,7 +87,22 @@ public class PlanerSystemPlugin extends Plugin {
         }
         it.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
         if (call.getString("ziel") != null) it.putExtra(EXTRA_ZIEL, call.getString("ziel"));
-        if (call.getString("daten") != null) it.putExtra(EXTRA_DATEN, call.getString("daten"));
+        String daten = call.getString("daten");
+        if (daten != null) {
+            try {
+                java.io.File f = new java.io.File(getContext().getCacheDir(), "uebergabe-" + call.getString("pkg", "app") + ".json");
+                try (java.io.FileOutputStream o = new java.io.FileOutputStream(f)) {
+                    o.write(daten.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                }
+                android.net.Uri u = androidx.core.content.FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", f);
+                it.putExtra(EXTRA_DATEI, true);
+                it.putExtra(android.content.Intent.EXTRA_STREAM, u);
+                it.setClipData(android.content.ClipData.newRawUri("", u));
+                it.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            } catch (Exception e) {
+                if (daten.length() < 400000) it.putExtra(EXTRA_DATEN, daten);   // Rückfall für kleine Daten
+            }
+        }
         getContext().startActivity(it);
         r.put("opened", true);
         call.resolve(r);

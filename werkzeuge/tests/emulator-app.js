@@ -32,7 +32,9 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   ok(info.txt > 50 && info.over <= 1, 'Inhalt sichtbar (' + info.txt + ' Zeichen), kein waagrechtes Scrollen');
   await dev.screenshot({ path: OUT + '/1-start.png' });
   // Daten bleiben nach Neustart
-  await page.evaluate(() => localStorage.setItem('sg-emu-test', 'da'));
+  // WebView schreibt den Speicher verzögert auf die Platte – vor dem harten Beenden kurz warten (wie ein Mensch, der die App wechselt)
+  await page.evaluate(() => localStorage.setItem('sg-emu-test', 'da')); await wait(4000);
+  await dev.shell('input keyevent KEYCODE_HOME'); await wait(1500);
   page = await start(); await wait(1500);
   ok(await page.evaluate(() => localStorage.getItem('sg-emu-test')) === 'da', 'Daten bleiben nach Neustart');
   const extra = path.join(__dirname, 'app-' + KEY + '.js');
