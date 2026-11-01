@@ -5,6 +5,10 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Abnahme (Schritt 7) – Umbau in mehrere Apps abgeschlossen
+- Releases: v5.1.0 (Planer, 3,7 MB), bibel-v1.1.0, schule-v1.1.0, training-v1.1.0 – alle mit Emulator-Test grün.
+- Fehler, die erst der Emulator fand: siehe drei Einträge unter 5.1.0 (Play-Dienste, Vorladen in der Hülle und in /planer/).
+
 ## 5.1.0 + Apps 1.1.0 – Verbesserungen (Schritt 8)
 - Widget (PlanerWidget.java, ein Baustein für alle Apps, Material-You-Farben ab Android 12): Inhalt setzt die Seite über
   `SGWidget` (design.js → PlanerSystem.setWidget). Planer: Als Nächstes/Demnächst · Training: Training heute · Schule: nächste Stunde/Prüfung · Bibel: Vers des Tages.

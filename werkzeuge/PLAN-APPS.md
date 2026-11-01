@@ -1,4 +1,4 @@
-# Plan: aus einer App mehrere kleine Apps (freigegeben am 01.11.2026)
+# Plan: aus einer App mehrere kleine Apps (freigegeben am 01.11.2026) – ABGESCHLOSSEN 01.11.2026
 
 **Jede Sitzung liest zuerst diese Datei und macht beim ersten offenen Punkt weiter.** Erledigtes abhaken (`[x]`),
 Fehler mit Ursache/Lösung in `VERLAUF.md`. Immer nur eine App gleichzeitig; jede Stufe endet mit einer funktionierenden,
@@ -10,7 +10,7 @@ veröffentlichten App. Die bestehende Planer-App bleibt bis zum Schluss voll nut
 - **Pause/Ablenken** wird nicht weiterentwickelt (keine eigene App, bleibt unverändert im Planer).
 - **Rodeln** wird nicht als eigene App entwickelt; der Bahnplan bleibt unverändert, wo er ist (Training), keine Weiterentwicklung.
 - Alle 7 Verbesserungen umsetzen – **erst nach der Abnahme (Schritt 8)**.
-- Geplante Aufgabe weckt die Sitzung alle 5 Stunden: „weiter laut PLAN-APPS.md“. Stoppen, wenn alles erledigt ist.
+- Geplante Aufgabe weckte die Sitzung stündlich: „weiter laut PLAN-APPS.md“ – am 01.11. nach Abschluss gestoppt.
 - 100 % offline bleibt Grundregel jeder App. Mobility inhaltlich unverändert.
 
 ## Technik (gilt für alle Apps)
@@ -38,7 +38,8 @@ veröffentlichten App. Die bestehende Planer-App bleibt bis zum Schluss voll nut
 - [x] **6 Planer schlank** – nur Kalender, Aufgaben, Notizen, Woche planen, Web-/Handykalender; Bereiche als Kacheln zu den Apps.
   apps.json `ohne` → www.js lässt die Ordner weg und setzt `window.SGOhne`; `ohne()`/`viaApp()`/`appMissing()` in 1-app.js (Download über `SGUpdate.apkFor`).
   Im Browser/den Tests (ohne SGOhne) bleibt der volle Planer – die große Suite prüft weiter alle Bereiche. Planer-APK 6,7 → 0,9 MB.
-- [ ] **7 Abnahme** – je App alt/neu-Vergleich, offline, Emulator; Bericht an den Nutzer.
+- [x] **7 Abnahme** (01.11.) – Planer 5.1.0, Bibel/Schule/Training 1.1.0 auf GitHub gebaut, Emulator grün, veröffentlicht.
+  Lokal: große Suite 91/91 (nach Sonntags-Fix), offline3 58/58, schnell-app je App grün, apk.js grün (inkl. „keine Anfrage an fehlende Ordner“).
 - [x] **8 Verbesserungen** (5.1.0 / Apps 1.1.0) – Widgets; App-Verknüpfungen (langer Druck); Benachrichtigungen je App; Trainingsergebnis im
   Google-Termin; Stundenplan als eigener Google-Unterkalender; Google-Termine im Planer bearbeiten + Wochenraster über alle Apps;
   gemeinsames Design zentral halten. Danach geplante Aufgabe stoppen.
