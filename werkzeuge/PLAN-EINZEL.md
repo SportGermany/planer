@@ -51,6 +51,19 @@ die Vorschau reicht `top.SGShell/SharedCalendar/…` an die gezeigte App weiter.
 - [ ] **0 Basis** – App-Rahmen + Bausteine in `design.js`, Symbolsatz, Einstellungs-Baukasten, Cloud nur eigene Gruppen,
   Bibel-Datengruppe, Token-Übergabe. Tests: „nichts unter der Leiste“, „4 Reiter“, „keine Emojis in Bedienelementen“,
   „Cloud gleicht nur eigene Gruppen ab“ (je App, schnell-app).
+- [ ] **0b Selbsttest in jeder App** (Wunsch 01.11.: „automatischer Fehlerfinder auf meinem Handy“) – gemeinsames Modul
+  `werkzeuge/quellen/selbsttest.js` (→ `sg/`), Einstellungen › „Selbsttest“ in jeder App:
+  - prüft auf dem echten Gerät **alles**: jeder Reiter/jede Ansicht öffnet ohne Fehler, Knöpfe bedienbar (Größe ≥ 44 px, nicht
+    verdeckt, nicht unter der Leiste), kein seitliches Überlaufen, Speicher lesen/schreiben, Cloud erreichbar + Token gültig,
+    Android-Teile (Kalenderrecht, Handykalender, Benachrichtigungen, Widget, Übergabe an/aus Planer), Update-Prüfung, offline;
+  - misst **Leistung**: Startzeit, Wechselzeit je Reiter, lange Aufgaben (> 50 ms), Speicherbedarf, Bildwiederholung beim Scrollen;
+  - jede App meldet eigene Prüfungen an (`SGSelbsttest.add(name, fn)`), z. B. Bibel: Abschnitt öffnen, Suche „Joh 3,16“, Favorit
+    setzen/entfernen; Training: Plan, Mobility, Atmung öffnen; Schule: Stundenplan, Aufgabe anlegen/löschen (Testdaten werden danach
+    wieder entfernt – Nutzerdaten bleiben unverändert);
+  - **Bericht**: ✓ klappt · ⚠ langsam/auffällig · ✗ geht nicht – mit Details, Gerät (Modell, Android, WebView, Bildschirm),
+    App-Version; Knöpfe „Teilen“ (Android-Teilen → in den Chat einfügen), „Kopieren“, „Als Datei speichern“; zusätzlich in der
+    Cloud-Datei `selbsttest-<app>.json`, falls die Cloud eingerichtet ist;
+  - derselbe Selbsttest läuft in `schnell-app.js` und im Emulator mit → gleiche Prüfungen lokal, auf GitHub und auf dem Handy.
 - [ ] **1 Bibel** (Bibel 2.0.0)
   - Reiter: **Heute · Lesen · Meine Bibel · Einstellungen**.
   - Heute: Lesekarte (nächster Abschnitt, „Heute lesen“), Serie kompakt (Zahl + 14-Tage-Leiste), Vers des Tages.
