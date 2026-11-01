@@ -255,6 +255,11 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
   ok(ab[0].n === 1 && ab[1][0] === 'https://kalender.example.org/v.ics' && ab[2].includes('Silvesterlauf'), 'Webkalender in der APK über CapacitorHttp ' + JSON.stringify(ab));
   await q.click('#sheet [data-s=now]').catch(() => {}); await q.waitForTimeout(300);
   ok(!e2.length, 'Keine Fehler ' + e2.join(' | '));
+  // schlanker Planer von Anfang an: im Leerlauf keine Seiten der eigenen Apps vorladen (fehlen in der APK → 404, Emulator 5.1.0)
+  const sp = await n2.newPage(); await sp.addInitScript(() => { window.SGOhne = ['training', 'schule', 'bibel', 'wissen']; });
+  await sp.goto(APP + '#kalender'); await sp.waitForTimeout(12000);
+  const spf = await sp.evaluate(() => [...document.querySelectorAll('#stage iframe')].map(f => f.dataset.p).filter(p => /^(training|schule|bibel|wissen)\//.test(p)));
+  ok(!spf.length, 'Schlanker Planer lädt keine fehlenden Bereiche vor ' + spf.join());
   await b.close();
   console.log(bad ? bad + ' FEHLER' : 'APK-Modus grün'); process.exit(bad ? 1 : 0);
 })();

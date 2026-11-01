@@ -14,6 +14,9 @@ async function ctxFor(opt, seed = true) {
   const c = await browser.newContext(opt || PHONE);
   if (seed) await c.addInitScript(SEED);
   await c.addInitScript(() => { try { localStorage.setItem('sg-update-check', String(Date.now())); } catch (e) {} });
+  // Hinweis „Zeit für die Wochenplanung“ kommt nur Sa/So abends und liegt dann über Knöpfen – Tests unabhängig vom Wochentag halten
+  await c.addInitScript(() => { try { if (!localStorage.getItem('sg-wochenplan-v1')) { const d = new Date(), z = n => String(n).padStart(2, '0');
+    localStorage.setItem('sg-wochenplan-v1', JSON.stringify({ later: d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) })); } } catch (e) {} });
   return c;
 }
 // Fehler der Hülle UND aller eingebetteten Seiten

@@ -2113,7 +2113,8 @@
     if (window.SGNative && !localStorage.getItem("sg-umzug-v1")) setTimeout(function () { moveInSheet(true); }, 600);
     else if (window.SGNative && !localStorage.getItem("sg-apk-setup")) setTimeout(setupSheet, 900);
     // im Leerlauf die wichtigsten Bereiche vorladen – dann wechseln sie sofort
-    var pre = ["training/", "training/mobility/", "training/atmung/", "schule/"], i = 0;
+    // (im schlanken Planer fehlen die Seiten der eigenen Apps – die nicht vorladen, sonst 404)
+    var pre = ["training/", "training/mobility/", "training/atmung/", "schule/"].filter(function (p) { return (window.SGOhne || []).indexOf(p.split("/")[0]) < 0; }), i = 0;
     (function next() {
       if (i >= pre.length) return;
       setTimeout(function () { if (!document.hidden && !frames[pre[i]]) frame(pre[i]); i++; next(); }, i ? 2500 : 3500);
