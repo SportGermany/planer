@@ -109,6 +109,10 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
         haptic: o => { st.haptic = (st.haptic || []).concat([o.kind]); return Promise.resolve(); },
         // „Öffnen mit Planer“: Android legt die Datei ab, die App holt sie (Ereignis fileOpened)
         takeFile: () => { const f = st.file || {}; st.file = null; return Promise.resolve(f); },
+        // eigene Apps (PLAN-APPS.md): Bibel-App ist installiert, openApp merkt sich den Aufruf
+        installed: o => Promise.resolve({ installed: o.pkgs.filter(x => x === 'de.sportgermany.bibel') }),
+        openApp: o => { (st.opened = st.opened || []).push(o); return Promise.resolve({ opened: true }); },
+        takeHandover: () => Promise.resolve({}),
         addListener: (ev, fn) => { (st.ls = st.ls || {})[ev] = fn; return Promise.resolve({ remove() {} }); } },
       CapacitorHttp: { get: o => { st.http = (st.http || []).concat([o.url]); return Promise.resolve({ status: 200, data: 'BEGIN:VCALENDAR\r\nX-WR-CALNAME:Verein\r\nBEGIN:VEVENT\r\nUID:a@b\r\nDTSTART;VALUE=DATE:20991231\r\nSUMMARY:Silvesterlauf\r\nEND:VEVENT\r\nEND:VCALENDAR' }); } },
       LocalNotifications: {
@@ -155,6 +159,11 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
   await q.evaluate(() => { location.hash = 'kalender'; }); await q.waitForTimeout(600);
   const ckb = await q.$('#dayplan [data-ck]'); if (ckb) { await ckb.click(); await q.waitForTimeout(300); }
   ok((await q.evaluate(() => window.__sim.haptic || [])).includes('done'), 'Vibration beim Abhaken');
+  // Eigene Bibel-App installiert: Planer öffnet sie; Daten gehen nur beim ersten Mal mit, danach nur das Ziel
+  const ex = await q.evaluate(async () => { localStorage.setItem('zweiminutenbibel_v2', '{"streak":3}'); SGShell.go('bibel', 'lesen', null, { push: true }); await new Promise(r => setTimeout(r, 300));
+    SGShell.go('bibel', 'bibliothek', null, { push: true }); await new Promise(r => setTimeout(r, 300)); return { o: window.__sim.opened || [], hash: location.hash }; });
+  ok(ex.o.length === 2 && ex.o[0].pkg === 'de.sportgermany.bibel' && ex.o[0].ziel === 'lesen' && /zweiminutenbibel_v2/.test(ex.o[0].daten) && !ex.o[1].daten && ex.o[1].ziel === 'bibliothek' && !/bibel/.test(ex.hash),
+    'Bibel-App installiert: Planer öffnet sie (Daten einmal, dann nur Ziel) ' + JSON.stringify(ex).slice(0, 200));
   // Kalenderdatei direkt öffnen („Öffnen mit Planer“)
   await q.evaluate(() => { const s = window.__sim; s.file = { name: 'Quali-Lehrgang.ics', text: 'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:q1@x\r\nDTSTART;TZID=Europe/Berlin:20991023T160000\r\nDTEND;TZID=Europe/Berlin:20991023T173000\r\nSUMMARY:Training G1\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:q2@x\r\nDTSTART;VALUE=DATE:20991023\r\nDTEND;VALUE=DATE:20991029\r\nSUMMARY:Quali-Lehrgang\r\nEND:VEVENT\r\nEND:VCALENDAR' }; s.ls.fileOpened(); });
   await q.waitForTimeout(900);

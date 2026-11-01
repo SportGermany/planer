@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.Window;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
+import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -30,6 +31,65 @@ public class PlanerSystemPlugin extends Plugin {
     @Override
     public void load() {
         instance = this;
+    }
+
+    /* Zwischen den Planer-Apps: openApp startet eine andere App (falls installiert) mit Ziel-Adresse und – nur beim ersten Mal –
+     * ihren Daten aus dem Planer. Die gestartete App holt beides mit takeHandover() ab (beim Start) bzw. per Ereignis „handover“. */
+    static final String EXTRA_ZIEL = "de.sportgermany.ziel", EXTRA_DATEN = "de.sportgermany.daten";
+    private static JSObject pendingHandover = null;
+
+    static void offerHandover(String ziel, String daten) {
+        JSObject h = new JSObject();
+        h.put("ziel", ziel == null ? "" : ziel);
+        h.put("daten", daten == null ? "" : daten);
+        synchronized (PlanerSystemPlugin.class) {
+            pendingHandover = h;
+        }
+        if (instance != null) instance.notifyListeners("handover", new JSObject(), true);
+    }
+
+    @PluginMethod
+    public void takeHandover(PluginCall call) {
+        JSObject h;
+        synchronized (PlanerSystemPlugin.class) {
+            h = pendingHandover;
+            pendingHandover = null;
+        }
+        call.resolve(h != null ? h : new JSObject());
+    }
+
+    /** Welche der Pakete sind installiert? pkgs: ["de.sportgermany.bibel", …] → { installed: [...] } */
+    @PluginMethod
+    public void installed(PluginCall call) {
+        JSArray out = new JSArray();
+        try {
+            JSArray in = call.getArray("pkgs", new JSArray());
+            for (int i = 0; i < in.length(); i++) {
+                String p = in.getString(i);
+                if (getContext().getPackageManager().getLaunchIntentForPackage(p) != null) out.put(p);
+            }
+        } catch (Exception e) {}
+        JSObject r = new JSObject();
+        r.put("installed", out);
+        call.resolve(r);
+    }
+
+    /** Andere App öffnen: pkg, ziel (Adresse in der App), daten (Text, optional). opened = false, wenn nicht installiert. */
+    @PluginMethod
+    public void openApp(PluginCall call) {
+        android.content.Intent it = getContext().getPackageManager().getLaunchIntentForPackage(call.getString("pkg", ""));
+        JSObject r = new JSObject();
+        if (it == null) {
+            r.put("opened", false);
+            call.resolve(r);
+            return;
+        }
+        it.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+        if (call.getString("ziel") != null) it.putExtra(EXTRA_ZIEL, call.getString("ziel"));
+        if (call.getString("daten") != null) it.putExtra(EXTRA_DATEN, call.getString("daten"));
+        getContext().startActivity(it);
+        r.put("opened", true);
+        call.resolve(r);
     }
 
     static void offerFile(String name, String text) {

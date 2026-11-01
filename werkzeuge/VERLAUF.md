@@ -5,6 +5,15 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## 4.2.0 + Bibel 1.0.0 – erste eigene App (Schritt 2)
+- Bibel als eigene APK (`de.sportgermany.bibel`, nur `bibel/` + `sg/`). design.js leitet in Einzel-Apps nicht in die Hülle um
+  (`window.SGApp` steht dafür ganz oben in der kopierten design.js – vorher wurde es erst nach der Umleitung gesetzt).
+- Übergabe Planer → App: `PlanerSystem.openApp/installed/takeHandover`, MainActivity reicht Ziel + Daten (Intent-Extras) weiter,
+  Manifest `<queries>` für die Planer-Pakete (Android 11+). Erste Übernahme ohne Frage, weil die Bibel beim ersten Start schon
+  Grundwerte speichert (sonst hätte die App fälschlich „eigene Daten“ gemeldet und gefragt).
+- Fehler: Testserver-Aufräumen mit `pkill -f` beendete die eigene Shell (Muster stand in der eigenen Befehlszeile) – jetzt über /proc.
+- Schnelltest Bibel 13 s (Start, Version, Inhalt, offline, Übergabe, Abschnitt „App“).
+
 ## 4.1.0 – Termine im Google-Kalender (Schritt 1 des App-Plans)
 - Handykalender › Ziel: beliebiger beschreibbarer Kalender, Google-Konten zuerst. In den eigenen lokalen „Planer“ schreibt die App
   weiter als Sync-Adapter (SYNC_DATA1/2); in fremde (Google-)Kalender als normale App – unsere Einträge tragen

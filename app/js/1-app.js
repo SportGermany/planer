@@ -84,6 +84,35 @@
   // frühere Adressen #mobility/… (Lesezeichen, Erinnerungen, Verknüpfungen) landen jetzt unter Training
   function alias(v, s) { return v === "mobility" ? ["training", s || "mobility"] : [v, s]; }
 
+  /* ---------- Eigene Apps (werkzeuge/PLAN-APPS.md, Pakete wie in werkzeuge/apps.json) ----------
+   * Ist die eigene App eines Bereichs installiert, öffnet der Planer diese statt der eingebauten Seite. Beim ersten Mal
+   * gehen die Daten des Bereichs mit (danach führt jede App ihre Daten selbst). Ohne App bleibt alles wie bisher. */
+  var EXT = { bibel: { pkg: "de.sportgermany.bibel", keys: /^zweiminutenbibel_/ } }, extOn = {};
+  function sysP() { try { var Cp = window.Capacitor; return Cp && Cp.isNativePlatform && Cp.isNativePlatform() && Cp.Plugins.PlanerSystem || null; } catch (e) { return null; } }
+  function extCheck() {
+    var P = sysP(); if (!P || !P.installed) return;
+    P.installed({ pkgs: Object.keys(EXT).map(function (k) { return EXT[k].pkg; }) }).then(function (r) {
+      extOn = {}; (r.installed || []).forEach(function (pk) { Object.keys(EXT).forEach(function (k) { if (EXT[k].pkg === pk) extOn[k] = 1; }); });
+    }).catch(function () {});
+  }
+  extCheck();
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) extCheck(); });
+  function openExt(v, s, opt) {
+    var P = sysP(), E = EXT[v], sec = secOf(V[v], s), done = {};
+    try { done = JSON.parse(localStorage.getItem("sg-uebergabe-v1") || "{}") || {}; } catch (e) {}
+    var o = { pkg: E.pkg, ziel: opt.sub || (sec && (sec.h || sec.s)) || "" };
+    if (!done[v]) {
+      var keys = {};
+      for (var i = 0; i < localStorage.length; i++) { var key = localStorage.key(i); if (E.keys.test(key) || key === "sg-design-v3" || key === "sg-monet-v1") keys[key] = localStorage.getItem(key); }
+      o.daten = JSON.stringify({ von: "planer", at: Date.now(), keys: keys });
+    }
+    P.openApp(o).then(function (r) {
+      if (r && r.opened) { if (o.daten) { done[v] = Date.now(); try { localStorage.setItem("sg-uebergabe-v1", JSON.stringify(done)); } catch (e) {} } }
+      else { delete extOn[v]; go(v, s, null, Object.assign({}, opt, { intern: true })); }
+    }).catch(function () { delete extOn[v]; go(v, s, null, Object.assign({}, opt, { intern: true })); });
+    return true;
+  }
+
   /* ---------- gemerkte Auswahl ---------- */
   var M = {}; try { M = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) {}
   M.sec = M.sec || {}; M.kid = M.kid || {};
@@ -219,6 +248,7 @@
     opt = opt || {};
     if (drawerOpen) return closeDrawer(function () { go(v, s, k, opt); });
     var al = alias(v, s); v = al[0]; s = al[1];
+    if (extOn[v] && !opt.intern && openExt(v, s, opt)) return;
     if (!V[v]) v = "kalender";
     var push = opt.push != null ? opt.push : (cur.v === "kalender" && v !== "kalender") || (V[v].up === cur.v);
     if (calMon && v !== "kalender") { calMon = false; calModeCls(); if (history.state && history.state.mon) history.replaceState({ app: 1, from: history.state.from }, "", location.hash); }
@@ -1334,6 +1364,7 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["4.2.0", ["Neu: eigene Bibel-App (Release „Bibel 1.0.0“ auf GitHub). Ist sie installiert, öffnet der Planer beim Tippen auf Bibel die App – beim ersten Mal mit deinem Lesestand"]],
     ["4.1.0", ["Termine im Google-Kalender: Mehr › Kalender verbinden › Handykalender › Ziel – deinen Google-Kalender wählen. Android lädt die Termine zu Google hoch (auch später, wenn wieder Netz da ist)",
       "Aufgaben mit Datum können auf Wunsch mit in den Kalender (Schalter „Aufgaben“, Standard aus)", "Update-Suche findet nur noch Versionen dieser App (Vorbereitung für die getrennten Apps)"]],
     ["4.0.0", ["Aufgeräumt: unten nur noch Heute · Training · Schule · Mehr – Mobility und Atmung stehen jetzt unter Training",

@@ -70,6 +70,12 @@ public class MainActivity extends BridgeActivity {
     /** Kalenderdatei oder geteilten Termintext aus dem Intent lesen und an die App geben (einmal je Intent). */
     private void takeCalendarIntent(Intent in) {
         if (in == null || in.getBooleanExtra("planerTaken", false)) return;
+        // Aufruf aus einer anderen Planer-App (werkzeuge/PLAN-APPS.md): Ziel-Adresse und einmalig übergebene Daten
+        if (in.hasExtra(PlanerSystemPlugin.EXTRA_ZIEL) || in.hasExtra(PlanerSystemPlugin.EXTRA_DATEN)) {
+            in.putExtra("planerTaken", true);
+            PlanerSystemPlugin.offerHandover(in.getStringExtra(PlanerSystemPlugin.EXTRA_ZIEL), in.getStringExtra(PlanerSystemPlugin.EXTRA_DATEN));
+            return;
+        }
         String act = in.getAction();
         if (!Intent.ACTION_VIEW.equals(act) && !Intent.ACTION_SEND.equals(act) && !Intent.ACTION_SEND_MULTIPLE.equals(act)) return;
         in.putExtra("planerTaken", true);

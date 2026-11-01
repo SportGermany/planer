@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Android 11+: die anderen Planer-Apps sehen und öffnen dürfen (werkzeuge/PLAN-APPS.md) -->
+    <queries>
+        <package android:name="de.sportgermany.planer" />
+        <package android:name="de.sportgermany.bibel" />
+        <package android:name="de.sportgermany.pause" />
+        <package android:name="de.sportgermany.schule" />
+        <package android:name="de.sportgermany.training" />
+    </queries>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"

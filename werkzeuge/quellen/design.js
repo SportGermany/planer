@@ -58,6 +58,55 @@
   window.print = function () { alert("Drucken geht in der Android-App nicht. Zum Drucken die Seite in Chrome öffnen: sportgermany.github.io/planer"); };
   window.SGNative = { save: save, external: external, plugins: P, platform: "android" };
 })();
+/* Einzel-App (werkzeuge/PLAN-APPS.md): Übergabe vom Planer. Beim ersten Öffnen aus dem Planer kommen die Daten dieses
+ * Bereichs mit ({ von, keys: { Schlüssel: Wert } }) – beim ersten Mal ohne Frage übernommen, später nur nach Rückfrage.
+ * ziel = Adresse in der App (z. B. „lesen“ oder „stelle=Joh 3,16“). */
+(function () {
+  var C = window.Capacitor;
+  if (!window.SGApp || window.SGApp === "planer" || window.top !== window || !C || !C.isNativePlatform || !C.isNativePlatform() || !C.Plugins.PlanerSystem) return;
+  var P = C.Plugins.PlanerSystem;
+  function take() {
+    P.takeHandover().then(function (h) {
+      if (!h) return;
+      var reload = false;
+      if (h.daten) {
+        var d = null; try { d = JSON.parse(h.daten); } catch (e) {}
+        var keys = d && d.keys || {}, list = Object.keys(keys).filter(function (k) { return /^(zweiminutenbibel|sg-|wk_|lernplan|pause|ablenk)/.test(k); });
+        // erste Übergabe: ohne Frage (die App legt beim ersten Start schon leere Grundwerte an); später nur nach Rückfrage
+        var first = !localStorage.getItem("sg-uebernommen-v1");
+        var mine = first ? [] : list.filter(function (k) { var v = localStorage.getItem(k); return v != null && v !== keys[k] && !/^sg-(design|monet)/.test(k); });
+        var diff = list.some(function (k) { return localStorage.getItem(k) !== keys[k]; });   // schon gleich: nichts zu tun (kein Neuladen)
+        if (list.length && diff && (!mine.length || window.confirm("Daten aus der Planer-App übernehmen? Was du in dieser App schon eingetragen hast, wird dabei ersetzt."))) {
+          list.forEach(function (k) { try { localStorage.setItem(k, keys[k]); } catch (e) {} });
+          try { localStorage.setItem("sg-uebernommen-v1", JSON.stringify({ at: Date.now(), n: list.length })); } catch (e) {}
+          reload = true;
+        }
+      }
+      if (h.ziel) { var u = location.pathname + "#" + h.ziel; if (reload) location.replace(u); else location.hash = h.ziel; }
+      if (reload) location.reload();
+    }).catch(function () {});
+  }
+  take();
+  try { P.addListener("handover", take); } catch (e) {}
+})();
+/* Einzel-App: Abschnitt „App“ in den Einstellungen der Seite (Platzhalter #sgAppInfo) – Version, Aktualisieren, Planer öffnen.
+ * Die Web-Installation (#sgInstallSec) entfällt in der Android-App. */
+(function () {
+  if (!window.SGApp || window.SGApp === "planer") return;
+  function fill() {
+    var el = document.getElementById("sgAppInfo"), ins = document.getElementById("sgInstallSec");
+    if (ins && window.SGNative) ins.hidden = true;
+    if (!el) return;
+    el.hidden = false;
+    el.innerHTML = "<h3>App</h3><p class='info-text'>Version " + window.SGVersion + " · eigene App, gehört zum Planer.</p>" +
+      "<div class='btn-row'><button type='button' id='sgUpd'>Version aktualisieren</button>" + (window.SGNative ? "<button type='button' id='sgToPlaner'>Planer öffnen</button>" : "") + "</div><p class='info-text' id='sgUpdMsg' style='margin-top:8px'></p>";
+    var msg = function (t) { document.getElementById("sgUpdMsg").textContent = t; };
+    document.getElementById("sgUpd").onclick = function () { if (window.SGUpdate) window.SGUpdate.check(msg); };
+    var tp = document.getElementById("sgToPlaner");
+    if (tp) tp.onclick = function () { window.Capacitor.Plugins.PlanerSystem.openApp({ pkg: "de.sportgermany.planer" }).then(function (r) { if (!r || !r.opened) msg("Die Planer-App ist auf diesem Handy nicht installiert."); }); };
+  }
+  if (document.readyState !== "loading") fill(); else document.addEventListener("DOMContentLoaded", fill);
+})();
 /* SportGermany-Design: 10 dunkle Farbwelten für alle Apps. Läuft im <head>, damit beim Laden nichts aufblitzt.
  * Die Wahl liegt im gemeinsamen Speicher (gilt sofort für alle Apps) und wird vom Verbund-Sync mit abgeglichen.
  * data-design nennt, welche CSS-Variablen die jeweilige App benutzt. */

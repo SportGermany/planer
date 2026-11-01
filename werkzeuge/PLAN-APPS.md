@@ -25,7 +25,9 @@ veröffentlichten App. Die bestehende Planer-App bleibt bis zum Schluss voll nut
   (baut nur Apps ohne Release, Emulator `emulator-app.js`, Release `--latest=false`), Update-Prüfung sucht nur das eigene Release.
 - [x] **1 Google-Kalender-Ziel im Planer** – Zielkalender wählbar (Google-Konto statt lokal), Aufgaben-Schalter; Release 4.1.0.
   Fremde Kalender: Einträge mit CUSTOM_APP_PACKAGE/URI (kein Sync-Adapter nötig); Rücklesen überspringt eigene, meldet `fromApp`.
-- [ ] **2 App Bibel** – eigene APK, Import aus Planer, Vergleichstest alt/neu, Planer-Kachel öffnet die App; Release `bibel-v1.0.0`.
+- [x] **2 App Bibel** – eigene APK, Import aus Planer, Vergleichstest alt/neu, Planer-Kachel öffnet die App; Release `bibel-v1.0.0`.
+  Übergabe: Planer `openApp` (Daten nur beim 1. Mal, `sg-uebergabe-v1`), App `takeHandover` (1. Mal ohne Frage), Abschnitt `#sgAppInfo`.
+  Neue App = Eintrag in apps.json (+ `probe`), `EXT` in app/js/1-app.js, Platzhalter `#sgAppInfo` in den Einstellungen der Seite.
 - [ ] **3 App Pause** – wie 2.
 - [ ] **4 App Schule** – Stundenplan, Aufgaben/Prüfungen, Lernplan, Ferien; Prüfungen/Lernblöcke in Google.
 - [ ] **5 App Training** – Training, Mobility, Atmung, Auswertung, Sportwissenschaft, Bahnplan (unverändert); Trainings in Google.

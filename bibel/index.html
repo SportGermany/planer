@@ -414,7 +414,7 @@
 .v.jump{ background:color-mix(in srgb, var(--accent, #c9a227) 22%, transparent); border-radius:6px; box-shadow:0 0 0 3px color-mix(in srgb, var(--accent, #c9a227) 22%, transparent); }
 </style>
 <!-- verbund-design:start -->
-<script data-design="bibel" data-sync="" src="../sg/design.js?v=4.1.0"></script>
+<script data-design="bibel" data-sync="" src="../sg/design.js?v=4.2.0"></script>
 <!-- verbund-design:end -->
 </head>
 <body data-fontsize="md" data-fontstyle="serif">
@@ -556,7 +556,9 @@
       </div>
     </div>
 
-    <div class="settings-section">
+    <div class="settings-section" id="sgAppInfo" hidden></div>
+
+    <div class="settings-section" id="sgInstallSec">
       <h3>Als App installieren</h3>
       <p class="info-text" style="margin-bottom:10px;">Öffne <b style="color:var(--ink);">sportgermany.github.io/planer/bibel/</b> in Chrome oder Samsung Internet und wähle im Menü <b style="color:var(--ink);">„App installieren“</b> bzw. <b style="color:var(--ink);">„Zum Startbildschirm hinzufügen“</b>. Danach startet die Bibel wie eine eigene App und funktioniert auch offline.</p>
       <button class="go-button" type="button" id="sgInstallBtn" style="padding:12px" onclick="window.SGInstall&&SGInstall.prompt()">Bibel als App installieren</button>
@@ -597,7 +599,7 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/1-app.js?v=4.1.0"></script>
+<script src="js/1-app.js?v=4.2.0"></script>
 <script>
   if("serviceWorker" in navigator && window.isSecureContext){
     window.addEventListener("load", () => {
@@ -606,7 +608,7 @@
   }
 </script>
 <!-- gemeinsamer-kalender:start -->
-<script src="../sg/install.js?v=4.1.0"></script>
+<script src="../sg/install.js?v=4.2.0"></script>
 <!-- gemeinsamer-kalender:end -->
 </body>
 </html>
