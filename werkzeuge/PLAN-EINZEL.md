@@ -84,6 +84,17 @@ die Vorschau reicht `top.SGShell/SharedCalendar/…` an die gezeigte App weiter.
 - [~] **4 Training** (Training 2.0.0) – Leiste/Fortschritt/Zahnrad fertig in der Vorschau; offen: Cloud, Selbsttest, Skripte nach Bedarf – Reiter: **Heute · Training · Fortschritt · Kalender**, Einstellungen über Zahnrad;
   Analyse + Fitness → Fortschritt; gemeinsame Karten/Knöpfe; Mobility/Atmung inhaltlich unverändert; Skripte nach Bedarf laden;
   8-github-Sync → gemeinsamer Cloud-Abgleich.
+- [ ] **6 Neue Funktionen** (Auswahl der Nutzerin, 01.11.) – je Funktion: Vorschau-Push, Selbsttest-Prüfung, VERLAUF.
+  - Planer: [ ] wiederkehrende Aufgaben (täglich/wöchentlich/monatlich) · [ ] aus anderen Apps teilen → Termin/Aufgabe
+    (Text mit „morgen 17 Uhr“ über SGSchnell erkennen; heute endet geteilter Text in „Nichts gefunden“) · [ ] Abend-Rückblick
+    (erledigt/offen, offen mit einem Tipp auf morgen) · [ ] freie Zeit finden (Lücken zwischen Schule/Training/Terminen, Aufgabe
+    hineinlegen) · [ ] neue Termine direkt in den Google-Kalender (Zielkalender beim Anlegen, Standard = gewählter Google-Kalender).
+  - Bibel: [ ] Lesepläne (Bibel in 1 Jahr, NT in 90 Tagen, Psalmen & Sprüche, Evangelien) mit Fortschritt, Tagesabschnitt auf „Heute“.
+  - Schule: [ ] Lernkarten je Fach (Wiederholung 1/3/7 Tage, aus Prüfungsthemen) · [ ] Dateien (PDF, Fotos) direkt an Aufgaben,
+    Prüfungen und Fächer hängen (Ablage-Speicher mitnutzen).
+  - Training: [ ] Wettkampf-Countdown (Wettkampf eintragen, Countdown auf Heute, Tapering der letzten Tage, Checkliste Wettkampftag).
+- [ ] **7 Code schneller** – je App nur ihre Skripte; Selten-Genutztes nach Bedarf laden; Altlasten (alte Hülle-Teile, PWA, Wechsler)
+  aus den Einzel-APKs; Ladezeit vorher/nachher messen (Selbsttest „Start“).
 - [ ] **5 Abschluss** – Sync-Test über alle Apps (zwei Geräte nachgestellt + Emulator), Ladezeiten vorher/nachher, Bericht.
 
 ## Arbeitsweise je App
