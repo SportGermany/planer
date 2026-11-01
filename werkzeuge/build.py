@@ -12,7 +12,7 @@ R=os.path.dirname(HERE)+'/'  # Wurzel des Repositorys
 SHARED={'design.js':open(SP+'design.js').read().replace('__SGVERSION__',VERSION),'verbund.js':open(SP+'verbund.js').read(),
   'training-suite.js':open(SP+'training_suite.js').read(),'install.js':open(SP+'install.js').read(),
   # Suche der Hülle: Schnelleingabe, Such-Kern, Bibelstellen (reine Bausteine, mit Node getestet)
-  'schnell.js':open(SP+'schnell.js').read(),'suche.js':open(SP+'suche.js').read(),'bibelstelle.js':open(SP+'bibelstelle.js').read()}
+  'basis.css':open(SP+'basis.css').read(),'schnell.js':open(SP+'schnell.js').read(),'suche.js':open(SP+'suche.js').read(),'bibelstelle.js':open(SP+'bibelstelle.js').read()}
 if os.path.exists(R+'sg/uebersicht.js'): os.remove(R+'sg/uebersicht.js')  # frühere Übersicht, ersetzt durch die Hülle
 # Sportwissenschaft: Buchinhalt aus wissen/buch.md neu erzeugen
 import subprocess; subprocess.run(['python3', SP+'gen_wissen.py'], check=True, stdout=subprocess.DEVNULL)
@@ -29,7 +29,7 @@ PAGES={
   'training/mobility/index.html': ('rodeln',   'rodeln',   'rodeln',    ''),
   'training/atmung/index.html':   ('puls',     'puls',     'puls',      ''),
   'training/bahnplan/index.html': ('bahnplan', 'bahn',     'bahnplan',  ''),
-  'bibel/index.html':             ('bibel',    'bibel',    '',          ''),
+  'bibel/index.html':             ('bibel',    'basis',    '',          ''),
   'wissen/index.html':            ('wissen',   'bahn',     '',          ''),
   'app/index.html':               ('planer',   'bahn',     '',          ' data-fab="off"'),
 }
@@ -43,13 +43,13 @@ for path,(aid,dm,sid,extra) in PAGES.items():
     src=lambda f: up+'sg/'+f+'?v='+VERSION
     s=re.sub(r'<link rel="preconnect" href="https://fonts\.g[^>]*>\n|<link rel="stylesheet" href="https://fonts\.googleapis[^>]*>\n','',s)
     MAIN=path=='app/index.html'  # die Hülle: eine Navigation für alles (ersetzt die frühere Übersicht)
-    block='<!-- verbund-design:start -->\n<script data-design="'+dm+'" data-sync="'+sid+'"'+(' data-dir="1"' if MAIN else '')+' src="'+src('design.js')+'"></script>\n<!-- verbund-design:end -->\n'
+    block='<!-- verbund-design:start -->\n'+('<link rel="stylesheet" href="'+src('basis.css')+'">\n' if dm=='basis' else '')+'<script data-design="'+dm+'" data-sync="'+sid+'"'+(' data-dir="1"' if MAIN else '')+' src="'+src('design.js')+'"></script>\n<!-- verbund-design:end -->\n'
     if MAIN: block+='<!-- suche:start -->\n'+''.join('<script src="'+src(f)+'"></script>\n' for f in ['schnell.js','suche.js','bibelstelle.js','suche-daten.js'])+'<!-- suche:end -->\n'
     i=s.index('</head>'); s=s[:i]+block+s[i:]
     tail=''
     if aid=='training': tail+='<!-- training-suite:start -->\n<script src="'+src('training-suite.js')+'"></script>\n<!-- training-suite:end -->\n'
     if aid=='wissen': pass  # eigenständige Seite: nur Design, kein Kalender-Knopf
-    elif aid=='bibel': tail+='<!-- gemeinsamer-kalender:start -->\n<script src="'+src('install.js')+'"></script>\n<!-- gemeinsamer-kalender:end -->\n'
+    elif aid=='bibel': pass  # Einzel-App: kein PWA-Installieren, kein alter App-Wechsler (install.js) – nur Design + Basis
     else: tail+=f'<!-- gemeinsamer-kalender:start -->\n<script data-app="{aid}"{extra} src="{src("verbund.js")}"></script>\n<!-- gemeinsamer-kalender:end -->\n'
     i=s.rindex('</body>'); s=s[:i]+tail+s[i:]
     # eigene ausgelagerte Skripte der Seite: Version anhängen (neue Fassung umgeht alte Zwischenspeicher)

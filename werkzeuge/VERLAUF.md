@@ -5,6 +5,17 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Bibel neu (Schritt 1, Vorschau) + gemeinsame Basis (Schritt 0, Teil 1)
+- Nutzerin: „Leiste verrutscht, nicht mathematisch gleich, kein Unterschied zur alten Bibel.“ Ursache: Leiste als Flex mit
+  `space-around` und Emojis unterschiedlicher Breite; Einstellungen standen als 4 Umschaltreihen auf „Heute“.
+- Lösung: `werkzeuge/quellen/basis.css` (→ sg/basis.css): Leiste als Raster mit 4 gleich breiten Spalten (gemessen 4 × 99 px,
+  Symbol-Mitte 0 px Abweichung), Kopf, Karten, Zeilen, Knöpfe 40 px, Umschalter mit gleich breiten Feldern, Schalter, Suche.
+  design.js: Farbrollen `data-design="basis"`, Symbolsatz `SGIcon(name)` / `<i data-ic>` (keine Emojis mehr).
+- Bibel: Reiter Heute · Lesen · Meine Bibel · Einstellungen; Leseplan/Lesemodus/Schrift in den Einstellungen; Lese-Werkzeuge mit
+  Symbolen; Lese-Blatt bildschirmfüllend; kein scrollIntoView mehr.
+- Fehler: oben rechts lag der alte App-Wechsler (install.js) über der Suche. Ursache: Altlast aus der Web-App-Zeit.
+  Lösung: Bibel lädt install.js nicht mehr (PWA-Installieren und alter Wechsler sind in der APK sinnlos).
+
 ## Vorschau der Einzel-Apps (PLAN-EINZEL.md)
 - Wunsch: keine gezeichneten Entwürfe, sondern eine HTML-Vorschau, die 1:1 der App entspricht. Lösung: /planer/vorschau/ lädt die
   echten App-Dateien im Handyrahmen; design.js erkennt den Rahmen (`sgapp:<app>`) bzw. `?app=` und verhält sich wie die APK-App.

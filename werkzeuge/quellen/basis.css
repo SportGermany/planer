@@ -1,0 +1,111 @@
+/* Gemeinsame Bausteine aller Einzel-Apps (werkzeuge/PLAN-EINZEL.md, Schritt 0) – build.py kopiert nach sg/basis.css.
+ * Farben kommen aus der Farbwelt (design.js, data-design="basis" setzt --bg --s1 --s2 --s3 --line --ink --muted --faint --acc --accfg --accsoft).
+ * Regeln: Leiste genau 4 gleich breite Reiter, Tippflächen ≥ 48 px, Schrift ≥ 12 px, nichts liegt unter der Leiste. */
+:root {
+  --bg: #141218; --s1: #1d1b20; --s2: #211f26; --s3: #2b2930; --line: #36343b;
+  --ink: #e6e0e9; --muted: #cac4d0; --faint: #938f99; --acc: #d0bcff; --accfg: #381e72; --accsoft: rgba(208,188,255,.16);
+  --sg-nav-h: 80px; --sg-safe-b: env(safe-area-inset-bottom, 0px); --sg-safe-t: env(safe-area-inset-top, 0px);
+  --sg-r: 16px; --sg-gap: 12px; --sg-pad: 16px;
+  --sg-font: Roboto, "Roboto Flex", "Google Sans Text", "Noto Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body { font: 400 15px/1.45 var(--sg-font); -webkit-tap-highlight-color: transparent; }
+button, input, select, textarea { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+
+/* ---------- App-Rahmen ---------- */
+.sg-app { max-width: 640px; margin: 0 auto; padding: 0 var(--sg-pad) calc(var(--sg-nav-h) + var(--sg-safe-b) + 24px); }
+.sg-app.has-fab { padding-bottom: calc(var(--sg-nav-h) + var(--sg-safe-b) + 96px); }
+.sg-top { display: flex; align-items: center; gap: 4px; min-height: 64px; padding: calc(var(--sg-safe-t) + 8px) 0 8px; }
+.sg-top .t { flex: 1; min-width: 0; }
+.sg-top h1 { margin: 0; font-size: 22px; font-weight: 500; line-height: 1.25; }
+.sg-top p { margin: 2px 0 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sg-ib { flex: none; width: 48px; height: 48px; border: 0; border-radius: 24px; background: transparent; color: var(--ink);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.sg-ib:active { background: var(--s3); }
+.sg-ic { width: 24px; height: 24px; flex: none; display: block; }
+
+/* ---------- Untere Leiste: 4 gleich breite Reiter ---------- */
+.sg-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; height: calc(var(--sg-nav-h) + var(--sg-safe-b));
+  padding: 0 max(8px, calc(50vw - 320px)) var(--sg-safe-b); background: var(--s1);
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: center; }
+.sg-nav > button { height: 64px; border: 0; background: none; color: var(--muted); cursor: pointer; padding: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 0; }
+.sg-nav .pill { width: 64px; height: 32px; border-radius: 16px; display: flex; align-items: center; justify-content: center; transition: background .2s; }
+.sg-nav .lbl { font-size: 12px; font-weight: 500; line-height: 16px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sg-nav > button.active { color: var(--ink); }
+.sg-nav > button.active .pill { background: var(--accsoft); color: var(--acc); }
+.sg-nav > button.active .lbl { font-weight: 700; }
+
+/* ---------- Abschnitte, Karten, Zeilen ---------- */
+.sg-view { display: none; }
+.sg-view.active { display: flex; flex-direction: column; gap: var(--sg-gap); }
+.sg-h { margin: 8px 4px 0; font-size: 14px; font-weight: 500; color: var(--muted); }
+.sg-card { background: var(--s2); border-radius: var(--sg-r); padding: var(--sg-pad); display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.sg-card > h2, .sg-card > h3 { margin: 0; font-size: 16px; font-weight: 500; }
+.sg-kicker { font-size: 12px; font-weight: 500; color: var(--acc); letter-spacing: .2px; }
+.sg-note { margin: 0; font-size: 13px; color: var(--muted); }
+.sg-list { background: var(--s2); border-radius: var(--sg-r); overflow: hidden; }
+.sg-row { width: 100%; display: flex; align-items: center; gap: 16px; min-height: 56px; padding: 8px 16px; border: 0; background: none;
+  color: var(--ink); text-align: left; text-decoration: none; cursor: pointer; }
+.sg-row + .sg-row { border-top: 1px solid var(--line); }
+.sg-row .ico { width: 40px; height: 40px; border-radius: 20px; background: var(--s3); color: var(--acc); flex: none; display: flex; align-items: center; justify-content: center; }
+.sg-row .tx { flex: 1; min-width: 0; }
+.sg-row .tx b { display: block; font-size: 15px; font-weight: 400; }
+.sg-row .tx small { display: block; font-size: 13px; color: var(--muted); }
+.sg-row .end { flex: none; color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 4px; }
+
+/* ---------- Knöpfe (alle 40 px hoch, Tippfläche 48 px) ---------- */
+.sg-btn { height: 40px; padding: 0 20px; border-radius: 20px; border: 1px solid var(--faint); background: transparent; color: var(--acc);
+  font-size: 14px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  white-space: nowrap; position: relative; }
+.sg-btn::after { content: ""; position: absolute; inset: -4px 0; }
+.sg-btn.p { background: var(--acc); color: var(--accfg); border-color: var(--acc); }
+.sg-btn.t { background: var(--s3); color: var(--ink); border-color: var(--s3); }
+.sg-btn.big { height: 52px; border-radius: 26px; font-size: 16px; width: 100%; }
+.sg-btn.w { width: 100%; }
+.sg-btn.danger { color: #ffb4ab; border-color: #93000a; }
+.sg-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.sg-btns > .sg-btn { flex: 1 1 0; min-width: 0; }
+
+/* ---------- Umschalter: gleich breite Felder auf einer Linie ---------- */
+.sg-seg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); border: 1px solid var(--faint); border-radius: 20px; overflow: hidden; }
+.sg-seg > button { height: 40px; border: 0; background: none; color: var(--ink); font-size: 14px; font-weight: 500; cursor: pointer; padding: 0 6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; }
+.sg-seg > button + button { border-left: 1px solid var(--faint); }
+.sg-seg > button.active { background: var(--accsoft); color: var(--acc); }
+.sg-field { display: flex; flex-direction: column; gap: 8px; }
+.sg-field > span { font-size: 13px; color: var(--muted); }
+
+/* ---------- Schalterzeile ---------- */
+.sg-switch { display: flex; align-items: center; gap: 16px; min-height: 48px; cursor: pointer; }
+.sg-switch .tx { flex: 1; min-width: 0; }
+.sg-switch .tx b { display: block; font-weight: 400; }
+.sg-switch .tx small { display: block; font-size: 13px; color: var(--muted); }
+.sg-switch input { appearance: none; -webkit-appearance: none; flex: none; width: 52px; height: 32px; border-radius: 16px; margin: 0;
+  background: var(--s3); border: 2px solid var(--faint); position: relative; cursor: pointer; transition: background .2s; }
+.sg-switch input::after { content: ""; position: absolute; top: 6px; left: 6px; width: 16px; height: 16px; border-radius: 8px; background: var(--faint); transition: all .2s; }
+.sg-switch input:checked { background: var(--acc); border-color: var(--acc); }
+.sg-switch input:checked::after { left: 24px; top: 2px; width: 24px; height: 24px; border-radius: 12px; background: var(--accfg); }
+
+/* ---------- Eingabe, Kennzahlen, Wischleiste ---------- */
+.sg-input { width: 100%; height: 52px; border-radius: 26px; border: 0; background: var(--s3); color: var(--ink); padding: 0 20px 0 48px; font-size: 16px; }
+.sg-search { position: relative; }
+.sg-search .sg-ic { position: absolute; left: 16px; top: 14px; color: var(--muted); pointer-events: none; }
+.sg-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.sg-kpi { background: var(--s3); border-radius: 12px; padding: 12px; min-width: 0; }
+.sg-kpi .n { font-size: 22px; font-weight: 500; line-height: 1.2; }
+.sg-kpi .l { font-size: 12px; color: var(--muted); }
+.sg-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--sg-pad)); padding: 0 var(--sg-pad); }
+.sg-chips::-webkit-scrollbar { display: none; }
+.sg-chips > button { flex: none; height: 32px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--faint); background: none; color: var(--ink); font-size: 14px; cursor: pointer; position: relative; }
+.sg-chips > button::after { content: ""; position: absolute; inset: -8px 0; }
+.sg-chips > button.active { background: var(--accsoft); border-color: transparent; color: var(--acc); }
+.sg-empty { text-align: center; color: var(--muted); padding: 24px 8px; font-size: 14px; }
+
+/* ---------- Meldung ---------- */
+.sg-toast { position: fixed; left: 50%; bottom: calc(var(--sg-nav-h) + var(--sg-safe-b) + 16px); transform: translate(-50%, 20px); z-index: 90;
+  background: var(--ink); color: var(--bg); font-size: 14px; padding: 12px 16px; border-radius: 8px; opacity: 0; pointer-events: none;
+  transition: opacity .2s, transform .2s; max-width: calc(100vw - 32px); }
+.sg-toast.show { opacity: 1; transform: translate(-50%, 0); }

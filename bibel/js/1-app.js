@@ -291,11 +291,11 @@ function makePassageComponent(rootEl, isHeute){
       <div class="verse-text" id="vt-${rootEl.id}">${verseHtml(r)}</div>
       <div class="meta"><span>${r.words} Wörter · ca. ${minutesFor(r.words)} Min.</span><span>${isHeute ? "Heute " + Math.min(todayCount(), state.dailyGoal || 1) + " / " + (state.dailyGoal || 1) : escapeHtml(BOOKS[r.book].label) + " · Kapitel " + CH_BY_REF[r.chapterRef].num + " von " + BOOKS[r.book].count}</span></div>
       <div class="toolbar">
-        <button data-act="fav-mode" class="${highlightMode?'':''}" title="Verse antippen markiert/entmarkiert Favorit">★ Favorit</button>
-        <button data-act="hl-mode" class="${highlightMode?'on':''}" title="Verse antippen zum Farbmarkieren">🖍 Markieren</button>
-        <button data-act="speak">🔊 Vorlesen</button>
-        <button data-act="copy">⧉ Kopieren</button>
-        <button data-act="share">↗ Teilen</button>
+        <button data-act="fav-mode" title="Versnummer antippen markiert/entmarkiert Favorit">${SGIcon("stern")}Favorit</button>
+        <button data-act="hl-mode" class="${highlightMode?'on':''}" title="Verse antippen zum Farbmarkieren">${SGIcon("markieren")}Markieren</button>
+        <button data-act="speak">${SGIcon("vorlesen")}Vorlesen</button>
+        <button data-act="copy">${SGIcon("kopieren")}Kopieren</button>
+        <button data-act="share">${SGIcon("teilen")}Teilen</button>
       </div>
       <div class="note-box">
         <label>Notiz zu diesem Abschnitt</label>
@@ -360,12 +360,12 @@ function makePassageComponent(rootEl, isHeute){
 
   function speakCurrent(btn){
     if(!("speechSynthesis" in window)){ showToast("Vorlesen wird von diesem Browser nicht unterstützt."); return; }
-    if(speechSynthesis.speaking){ speechSynthesis.cancel(); btn.classList.remove("speaking"); btn.textContent="🔊 Vorlesen"; return; }
+    if(speechSynthesis.speaking){ speechSynthesis.cancel(); btn.classList.remove("speaking"); btn.innerHTML=SGIcon("vorlesen")+"Vorlesen"; return; }
     const r = current();
     const text = r.verses.map(v=>v[1]).join(" ");
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "de-DE";
-    u.onend = () => { btn.classList.remove("speaking"); btn.textContent="🔊 Vorlesen"; };
+    u.onend = () => { btn.classList.remove("speaking"); btn.innerHTML=SGIcon("vorlesen")+"Vorlesen"; };
     speechSynthesis.cancel();
     speechSynthesis.speak(u);
     btn.classList.add("speaking");
@@ -411,7 +411,9 @@ function makePassageComponent(rootEl, isHeute){
     }
     render();
     if(isHeute) renderToggle();
-    rootEl.scrollIntoView({ behavior: "smooth", block: "start" });
+    // zum Anfang des Abschnitts (ohne scrollIntoView): im Lese-Blatt dessen Fläche, sonst die Seite
+    const ov = rootEl.closest(".overlay");
+    if(ov) ov.scrollTop = 0; else window.scrollBy(0, rootEl.getBoundingClientRect().top - 72);
   }
   function goPrev(){
     if(!curPool.length || idx===0) return;
@@ -598,7 +600,7 @@ function renderBookTree(){
   el.innerHTML = html;
   el.onclick = (e) => {
     const bh = e.target.closest("[data-book]");
-    if(bh){ const bi = +bh.dataset.book; openBook = openBook === bi ? null : bi; renderBookTree(); if(openBook !== null) el.querySelector(".book.open").scrollIntoView({ block: "nearest" }); return; }
+    if(bh){ const bi = +bh.dataset.book; openBook = openBook === bi ? null : bi; renderBookTree(); if(openBook !== null){ const ob = el.querySelector(".book.open"), r = ob.getBoundingClientRect(); if(r.top < 70 || r.top > innerHeight - 160) window.scrollBy(0, r.top - 80); } return; }
     const cn = e.target.closest("[data-chapterref]");
     if(cn){ const p = poolForChapter(cn.dataset.chapterref); if(p.length) openOverlay(p[0]); }
   };
@@ -858,7 +860,7 @@ const views = { heute: document.getElementById("view-heute"), bibliothek: docume
 tabButtons.forEach(b => {
   b.addEventListener("click", () => {
     tabButtons.forEach(x => x.classList.toggle("active", x===b));
-    Object.keys(views).forEach(k => views[k].classList.toggle("active", k===b.dataset.tab));
+    Object.keys(views).forEach(k => views[k].classList.toggle("active", k===b.dataset.tab)); window.scrollTo(0, 0);
     if(b.dataset.tab === "bibliothek") renderLibrary();
     if(b.dataset.tab === "meinebibel"){ renderFavorites(); renderNotesList(); renderHistoryList(); }
     if(b.dataset.tab === "mehr") refreshAllStats();
@@ -892,7 +894,7 @@ function bibleHash(){
   if(!h) return;
   history.replaceState(null, "", location.pathname);
   const tab = t => { const b = document.querySelector('.tabbar [data-tab="' + t + '"]'); if(b) b.click(); };
-  if(h === "lesen"){ tab("heute"); readToday(); document.getElementById("passageHeute").scrollIntoView({ behavior: "smooth" }); }
+  if(h === "lesen"){ tab("heute"); readToday(); const ph = document.getElementById("passageHeute"); window.scrollBy(0, ph.getBoundingClientRect().top - 72); }
   else if(h === "zufall"){ tab("meinebibel"); document.getElementById("randomVerseBtn").click(); }
   else if(["heute", "bibliothek", "meinebibel", "mehr"].indexOf(h) > -1) tab(h);
   else if(/^stelle=/.test(h)){
@@ -923,7 +925,7 @@ bibleHash();
   const host = document.getElementById("sgAppInfo");
   if (!L || window.top !== window || !host) return;
   const KEY = "bibel-erinnern-v1", get = () => { try { return JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch(e) { return {}; } };
-  const box = document.createElement("div"); box.className = "settings-section";
+  const box = document.createElement("div"); box.className = "sg-card";
   host.parentNode.insertBefore(box, host);
   function plan(){
     const st = get(), ids = [0,1,2,3,4,5,6].map(i => ({ id: 7000 + i }));
@@ -940,7 +942,7 @@ bibleHash();
   }
   function draw(){
     const st = get();
-    box.innerHTML = '<h3>Erinnerung</h3><label style="display:flex;align-items:center;gap:12px;min-height:44px;cursor:pointer"><input type="checkbox" id="bibRem"' + (st.on ? " checked" : "") + ' style="width:22px;height:22px"><span>Täglich um ' + (st.time || "19:00") + ' Uhr ans Lesen erinnern<br><small style="color:var(--muted)">nur, wenn du an dem Tag noch nicht gelesen hast</small></span></label>';
+    box.innerHTML = '<h3>Erinnerung</h3><label class="sg-switch"><span class="tx"><b>Täglich um ' + (st.time || "19:00") + ' Uhr erinnern</b><small>nur, wenn du an dem Tag noch nicht gelesen hast</small></span><input type="checkbox" id="bibRem"' + (st.on ? " checked" : "") + '></label>';
     box.querySelector("#bibRem").onchange = e => {
       const on = e.target.checked;
       (on ? L.requestPermissions() : Promise.resolve({ display: "granted" })).then(p => {

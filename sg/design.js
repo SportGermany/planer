@@ -150,8 +150,8 @@
     if (ins && window.SGNative) ins.hidden = true;
     if (!el) return;
     el.hidden = false;
-    el.innerHTML = "<h3>App</h3><p class='info-text'>Version " + window.SGVersion + " · eigene App, gehört zum Planer.</p>" +
-      "<div class='btn-row'><button type='button' class='btn' id='sgUpd'>Version aktualisieren</button>" + (window.SGNative ? "<button type='button' class='btn' id='sgToPlaner'>Planer öffnen</button>" : "") + "</div><p class='info-text' id='sgUpdMsg' style='margin-top:8px'></p>";
+    el.innerHTML = "<h3>App</h3><p class='info-text sg-note'>Version " + window.SGVersion + " · eigene App, gehört zum Planer.</p>" +
+      "<div class='btn-row sg-btns'><button type='button' class='btn sg-btn t' id='sgUpd'>Version aktualisieren</button>" + (window.SGNative ? "<button type='button' class='btn sg-btn t' id='sgToPlaner'>Planer öffnen</button>" : "") + "</div><p class='info-text' id='sgUpdMsg' style='margin-top:8px'></p>";
     var msg = function (t) { document.getElementById("sgUpdMsg").textContent = t; };
     document.getElementById("sgUpd").onclick = function () { if (window.SGUpdate) window.SGUpdate.check(msg); };
     var tp = document.getElementById("sgToPlaner");
@@ -194,7 +194,9 @@
     lernplan: { bg: "bg", surface: "s1", surface2: "s2", text: "ink", muted: "muted", line: "line", weekend: "bg", grid: "line", accent: "acc", "accent-soft": "accsoft", "accent-ink": "accfg" },
     puls: { bg: "bg", surface: "s1", ink: "ink", muted: "muted", line: "line", breath: "acc", "breath-soft": "accsoft" },
     kalender: { bg: "bg", s1: "s1", s2: "s2", s3: "s3", line: "line", line2: "s2", ink: "ink", muted: "muted", faint: "faint", acc: "acc", accfg: "accfg" },
-    bahn: { bg: "bg", s1: "s1", s2: "s2", s3: "s3", line: "line", ink: "ink", muted: "muted", faint: "faint", acc: "acc", accfg: "accfg" }
+    bahn: { bg: "bg", s1: "s1", s2: "s2", s3: "s3", line: "line", ink: "ink", muted: "muted", faint: "faint", acc: "acc", accfg: "accfg" },
+    // Einzel-Apps auf den gemeinsamen Bausteinen (sg/basis.css)
+    basis: { bg: "bg", s1: "s1", s2: "s2", s3: "s3", line: "line", ink: "ink", muted: "muted", faint: "faint", acc: "acc", accfg: "accfg", accsoft: "accsoft" }
   };
   // Laptop-Anpassungen: schmale Handy-Spalten verbreitern, zu breite Seiten mittig begrenzen
   // Doppelte Design-Schalter der einzelnen Apps ausblenden: Farben kommen für alle aus dem Bereich „Design“.
@@ -302,7 +304,7 @@
     }
     return css;
   }
-  var FONTVARS = { rodeln: ["fd", "fb"], puls: ["font-display", "font-body", "font-data"], bibel: ["sans"] };
+  var FONTVARS = { rodeln: ["fd", "fb"], puls: ["font-display", "font-body", "font-data"], bibel: ["sans"], basis: ["sg-font"] };
   var script = document.currentScript;
   var MODE = (script && script.getAttribute("data-design")) || "panel";
   // Als Modul in einer anderen App eingebettet? Dann übernimmt die äußere App Offline-Speicher und Installation.
@@ -368,7 +370,7 @@
     vars += ";" + (FONTVARS[MODE] || []).map(function (v) { return "--" + v + ":" + FONT; }).join(";") + ";--sg-acc:" + t.acc + ";--sg-line:" + t.line + ";color-scheme:dark";
     // :not(#sg) hebt die Regel über alle Hell/Dunkel-Regeln der Apps – alle Apps bleiben dunkel.
     // In der Bibel bleiben Sepia- und Nachtmodus als Lesemodi erhalten.
-    var sel = MODE === "bibel" ? "html:root:not(#sg):not([data-theme=\"sepia\"]):not([data-theme=\"night\"])" : "html:root:not(#sg)";
+    var sel = MODE === "bibel" || MODE === "basis" ? "html:root:not(#sg):not([data-theme=\"sepia\"]):not([data-theme=\"night\"])" : "html:root:not(#sg)";
     return "@font-face{font-family:'Inter SG';src:url(" + FONTURL + ") format('woff2');font-weight:100 900;font-display:swap}" +
       sel + "{" + vars + "}html:not(#sg) body{background-color:var(--bg)}body,button,input,select,textarea{font-family:" + FONT + (t.m3 ? "" : ";font-feature-settings:'cv11','ss01'") + "}" + PLAIN + glassCSS(t) + (LAYOUT[MODE] || "") + (DIRPARENT ? unifyCSS(t, roles) : "") + (t.m3 ? M3CSS : "");
     } finally { FONT = FONT0; }
@@ -563,4 +565,49 @@
       check(null, true).then(function (v) { if (v && /^\d/.test(v)) window.dispatchEvent(new CustomEvent("sg-update", { detail: v })); });
     }, 4000);
   });
+})();
+
+/* Gemeinsamer Symbolsatz aller Apps (Liniensymbole 24 px, keine Emojis): SGIcon("buch") liefert ein <svg>. */
+(function () {
+  var P = {
+    heute: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
+    buch: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/>',
+    lesen: '<path d="M2.5 5.5c3-1.5 6.5-1.5 9.5.5v14c-3-2-6.5-2-9.5-.5zM21.5 5.5c-3-1.5-6.5-1.5-9.5.5v14c3-2 6.5-2 9.5-.5z"/>',
+    stern: '<path d="M12 3.5l2.6 5.3 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.3-4.1 5.9-.8z"/>',
+    einst: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+    suche: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    weiter: '<path d="M9 6l6 6-6 6"/>',
+    zurueck: '<path d="M15 6l-6 6 6 6"/>',
+    zu: '<path d="M6 6l12 12M18 6L6 18"/>',
+    kalender: '<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+    haken: '<circle cx="12" cy="12" r="8.5"/><path d="M8 12.5l2.8 2.8L16 9.8"/>',
+    glocke: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
+    cloud: '<path d="M7 18a5 5 0 1 1 .8-9.9A6 6 0 0 1 19 10a4 4 0 0 1-1 7.9z"/>',
+    sync: '<path d="M19.5 12a7.5 7.5 0 0 1-13 5.1M4.5 12a7.5 7.5 0 0 1 13-5.1"/><path d="M17.5 3v4h-4M6.5 21v-4h4"/>',
+    teilen: '<circle cx="18" cy="5.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="M8.2 10.8l7.6-4.1M8.2 13.2l7.6 4.1"/>',
+    kopieren: '<rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2.5"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/>',
+    vorlesen: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
+    markieren: '<path d="M14.5 4.5l5 5-9 9H5.5v-5z"/><path d="M12.5 6.5l5 5M4 21h16"/>',
+    zufall: '<path d="M3 7h3.5c2 0 3.2 1 4.3 2.7l2.4 4.6c1.1 1.7 2.3 2.7 4.3 2.7H21M3 17h3.5c1.5 0 2.5-.6 3.3-1.6M14.2 8.6c.8-1 1.8-1.6 3.3-1.6H21M18.5 4.5L21 7l-2.5 2.5M18.5 14.5L21 17l-2.5 2.5"/>',
+    notiz: '<path d="M6 3.5h9l4 4v13H6z"/><path d="M9 11h7M9 15h7"/>',
+    verlauf: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    sichern: '<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/>',
+    laden: '<path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 19.5h14"/>',
+    farbe: '<path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.4 0 2-1 1.6-2.1-.5-1.3.4-2.4 1.8-2.4H18a2.5 2.5 0 0 0 2.5-2.5c0-5.5-3.8-10-8.5-10z"/><circle cx="7.5" cy="11.5" r="1.2"/><circle cx="10.5" cy="7.5" r="1.2"/><circle cx="15" cy="8" r="1.2"/>',
+    info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6v.4"/>',
+    test: '<path d="M9 3.5h6M10 3.5v6L4.8 18.3A1.5 1.5 0 0 0 6.1 20.5h11.8a1.5 1.5 0 0 0 1.3-2.2L14 9.5v-6"/><path d="M7.5 14.5h9"/>',
+    mond: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+    schrift: '<path d="M4 19L9.5 5h1L16 19M6.2 14h7.6M17 19l2.2-5.5h.6L22 19"/>',
+    app: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>',
+    loeschen: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13"/>'
+  };
+  window.SGIcon = function (n, cls) {
+    return '<svg class="sg-ic' + (cls ? " " + cls : "") + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (P[n] || P.info) + "</svg>";
+  };
+  window.SGIcon.names = Object.keys(P);
+  // <i data-ic="buch"></i> in einer Seite wird durch das Symbol ersetzt
+  function fill(root) { Array.prototype.forEach.call((root || document).querySelectorAll("i[data-ic]"), function (el) { el.outerHTML = window.SGIcon(el.getAttribute("data-ic"), el.className); }); }
+  window.SGIcon.fill = fill;
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { fill(); }); else fill();
 })();
