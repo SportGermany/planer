@@ -1198,7 +1198,7 @@ html.m3 .streak-chip { border-radius: 8px; }
   }
 </style>
 <!-- verbund-design:start -->
-<script data-design="panel" data-sync="training" src="../sg/design.js?v=5.1.0.3a2451"></script>
+<script data-design="panel" data-sync="training" src="../sg/design.js?v=5.1.0.c8e52f"></script>
 <!-- verbund-design:end -->
 </head>
 <body>
@@ -1216,7 +1216,7 @@ html.m3 .streak-chip { border-radius: 8px; }
       <p id="todayLine">–</p>
     </div>
     <div style="display:flex;gap:7px;flex:none">
-      <button class="streak-chip" id="btnBurn" style="border:none;cursor:pointer">🔥 <span id="burnVal">0</span></button>
+      <button class="streak-chip" id="btnBurn" style="border:none;cursor:pointer;min-height:36px" aria-label="Kalorien"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px"><path d="M12 21c-4 0-6.5-2.6-6.5-6 0-3.5 3-5.5 3.5-9 2 1.5 3 3.5 3 5.5 1-1 1.5-2 1.5-3.5 2.5 2 5 4.5 5 7.5 0 3.3-2.5 5.5-6.5 5.5z"/></svg> <span id="burnVal">0</span></button>
       <div class="streak-chip" id="streakChip" style="background:var(--panel-2);color:var(--text-dim)">▲ <span id="streakVal">0</span></div>
     </div>
   </div>
@@ -1292,7 +1292,7 @@ html.m3 .streak-chip { border-radius: 8px; }
     <div class="chips" id="heroChips"></div>
     <div class="btn-row" style="margin-bottom:9px">
       <button class="btn accent" id="btnStartToday">Training starten</button>
-      <button class="btn secondary" style="flex:0 0 52px" id="btnToggleDone" title="Als erledigt markieren">✓</button>
+      <button class="btn secondary" style="flex:0 0 52px" id="btnToggleDone" title="Als erledigt markieren" aria-label="Als erledigt markieren"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
     </div>
     <!-- schlanker: Nebenaktionen nebeneinander als Textknöpfe, die Hauptaktion bleibt allein groß -->
     <div class="alt-row"><button class="btn ghost sm rest-toggle" id="btnRest">Heute als Ruhetag</button><button class="btn ghost sm" id="btnTrainedElsewhere">Heute schon trainiert</button></div>
@@ -1443,7 +1443,7 @@ html.m3 .streak-chip { border-radius: 8px; }
   <div class="card" data-sec="runtrack">
     <div class="card-h"><h2>Lauf live tracken</h2><span>GPS + Herzfrequenz</span></div>
     <p class="muted" style="margin-bottom:12px">Echtes GPS-Tracking während des Laufens: Distanz, Tempo, Kalorien und Zeit live, plus Herzfrequenz, falls dein Brustgurt gekoppelt ist. Am Ende wird der Lauf wie eine importierte Aktivität gespeichert.</p>
-    <button class="btn accent block" id="btnRunTrackStart">🏃 Lauf starten</button>
+    <button class="btn accent block" id="btnRunTrackStart">Lauf starten</button>
   </div>
 
   <div class="sec-label manual grp" style="order:4">Manuell erfassen</div>
@@ -1703,7 +1703,7 @@ html.m3 .streak-chip { border-radius: 8px; }
     <button class="btn ghost sm block" id="btnShareProgress" style="margin-top:12px">📤 Fortschritt teilen</button>
   </div>
 
-  <button class="btn accent block" id="btnYearWrap" style="margin-bottom:14px;order:3">🎉 Jahresrückblick ansehen</button>
+  <button class="btn accent block" id="btnYearWrap" style="margin-bottom:14px;order:3">Jahresrückblick ansehen</button>
 
   <div class="card" data-sec="fitreadiness">
     <div class="card-h"><h2>Readiness &amp; Recovery</h2><span id="rdLabel">–</span></div>
@@ -2607,25 +2607,25 @@ html.m3 .streak-chip { border-radius: 8px; }
   </div>
   <button class="btn accent block sm" id="btnWrappedShare" style="margin-top:16px">📤 Teilen</button>
 </div></dialog>
-<script id="coreScript" src="js/1-core.js?v=5.1.0.3a2451"></script>
-<script id="poolsScript" src="js/2-pools.js?v=5.1.0.3a2451"></script>
-<script id="sportsScript" src="js/3-sports.js?v=5.1.0.3a2451"></script>
-<script id="stretchScript" src="js/4-stretch.js?v=5.1.0.3a2451"></script>
-<script id="rodelnScript" src="js/5-rodeln.js?v=5.1.0.3a2451"></script>
-<script id="gymScript" src="js/6-gym.js?v=5.1.0.3a2451"></script>
-<script id="weatherScript" src="js/7-weather.js?v=5.1.0.3a2451"></script>
-<script id="githubScript" src="js/8-github.js?v=5.1.0.3a2451"></script>
-<script id="analysisScript" src="js/9-analysis.js?v=5.1.0.3a2451"></script>
-<script src="js/10-app.js?v=5.1.0.3a2451"></script>
-<script src="js/11-app.js?v=5.1.0.3a2451"></script>
-<script src="js/12-app.js?v=5.1.0.3a2451"></script>
-<script src="js/13-app.js?v=5.1.0.3a2451"></script>
-<script src="js/14-app.js?v=5.1.0.3a2451"></script>
+<script id="coreScript" src="js/1-core.js?v=5.1.0.c8e52f"></script>
+<script id="poolsScript" src="js/2-pools.js?v=5.1.0.c8e52f"></script>
+<script id="sportsScript" src="js/3-sports.js?v=5.1.0.c8e52f"></script>
+<script id="stretchScript" src="js/4-stretch.js?v=5.1.0.c8e52f"></script>
+<script id="rodelnScript" src="js/5-rodeln.js?v=5.1.0.c8e52f"></script>
+<script id="gymScript" src="js/6-gym.js?v=5.1.0.c8e52f"></script>
+<script id="weatherScript" src="js/7-weather.js?v=5.1.0.c8e52f"></script>
+<script id="githubScript" src="js/8-github.js?v=5.1.0.c8e52f"></script>
+<script id="analysisScript" src="js/9-analysis.js?v=5.1.0.c8e52f"></script>
+<script src="js/10-app.js?v=5.1.0.c8e52f"></script>
+<script src="js/11-app.js?v=5.1.0.c8e52f"></script>
+<script src="js/12-app.js?v=5.1.0.c8e52f"></script>
+<script src="js/13-app.js?v=5.1.0.c8e52f"></script>
+<script src="js/14-app.js?v=5.1.0.c8e52f"></script>
 <!-- training-suite:start -->
-<script src="../sg/training-suite.js?v=5.1.0.3a2451"></script>
+<script src="../sg/training-suite.js?v=5.1.0.c8e52f"></script>
 <!-- training-suite:end -->
 <!-- gemeinsamer-kalender:start -->
-<script data-app="training" src="../sg/verbund.js?v=5.1.0.3a2451"></script>
+<script data-app="training" src="../sg/verbund.js?v=5.1.0.c8e52f"></script>
 <!-- gemeinsamer-kalender:end -->
 </body>
 </html>

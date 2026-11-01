@@ -851,7 +851,7 @@ function renderHeute(){
     (done ? "Nochmal trainieren" : $("heroTitle").textContent.replace(/-Zirkel$/, "") + " starten") + " · " + Math.round(todayDuration()/60) + " min";
   $("btnRest").classList.toggle("on", !!p.rest);
   $("btnRest").textContent = p.rest ? "Ruhetag aufheben" : "Heute als Ruhetag";
-  $("btnToggleDone").textContent = done ? "✓" : "✓";
+  $("btnToggleDone").classList.toggle("on", !!done);   // Symbol (Häkchen) steht fest im Knopf
   $("btnToggleDone").style.opacity = done ? "1" : ".55";
   $("btnToggleDone").style.color = done ? "var(--work)" : "";
   var fixedTrained = isTrainedElsewhereDay(S.today) && !done && !p.rest && !isVacationDay(S.today);

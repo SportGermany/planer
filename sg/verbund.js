@@ -920,7 +920,8 @@
     dragFab(fab);
     // Der App-Wechsler oben ersetzt den Knopf am Rand (Kalender, Design und Sync stehen in den Befehlen)
     fab.style.display = "none";
-    mountSwitcher();
+    // Einzel-Apps: kein App-Wechsler oben rechts (verdeckte dort den Einstellungen-Knopf; Selbsttest-Befund) – Apps wechseln über Android
+    if (!(window.SGApp && window.SGApp !== "planer")) mountSwitcher();
     render();
   }
 
@@ -1947,7 +1948,8 @@
   }
   function renderWpToast() {
     if (!root) return;
-    var tb = root.querySelector(".wptoast"), mon = wp ? null : wpDue();
+    // Wochenplanung gehört zum Planer: in den Einzel-Apps kein Hinweis (verdeckte dort den Plus-Knopf; Selbsttest-Befund)
+    var tb = root.querySelector(".wptoast"), mon = wp || (window.SGApp && window.SGApp !== "planer") ? null : wpDue();
     if (!mon) { tb.innerHTML = ""; return; }
     tb.innerHTML = "<div class='toast inst'><span class='mono' style='background:" + ME.color + "'>✓</span><div class='it'><b>Zeit für die Wochenplanung</b><small>KW " + kw(mon) + " · Training, Mobility, Atmung und Lernen in 2 Minuten planen.</small></div>" +
       "<div class='ia'><button class='no' data-p='later'>Später</button>" + (wpCfg().std ? "<button class='no' data-p='go'>Anpassen</button><button class='go' data-p='std'>Standard übernehmen</button>" : "<button class='go' data-p='go'>Jetzt planen</button>") + "</div></div>";

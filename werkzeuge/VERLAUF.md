@@ -5,6 +5,16 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Selbsttest in jeder App (Schritt 0b)
+- `werkzeuge/quellen/selbsttest.js` (→ sg/, erst beim Öffnen geladen) + Fehler-Sammler in design.js (SGFehler: Fehler, Konsole,
+  fehlende Dateien, lange Aufgaben ab Start). Einstieg: Einzel-Apps Einstellungen › Abschnitt „App“ › „Selbsttest“, Planer
+  Mehr › Design und mehr › Selbsttest. Bericht ✓/⚠/✗ mit Gerät, WebView, Version; Teilen (Android), Kopieren, Speichern.
+- Prüft je Reiter: öffnet/markiert, Zeit, Überlauf, Tippflächen, verdeckt, Emojis, Scrollen (Bilder/s), unten unter der Leiste;
+  dazu Speicher, Benachrichtigungen, Kalenderrecht, installierte Apps, Update, Cloud, Fehler seit Start. schnell-app.js lässt ihn mitlaufen.
+- Erste Befunde (alle behoben): Schule – App-Wechsler des Verbunds verdeckte „Einstellungen“ (in Einzel-Apps entfernt, Farbwelt/
+  Cloud stattdessen im Abschnitt „App“); Sonntags-Hinweis Wochenplanung verdeckte den Plus-Knopf (nur noch im Planer); Chips 28 px
+  → 36 px, „Plan →/Alle →“ 18 px → 40 px, Erledigt-Kreise mit 44-px-Tippfläche; Training – Emojis in Knöpfen (🏃 🎉 🔥 ✓) → Symbole.
+
 ## Fehler: Vorschau zeigte alte Fassung (01.11.)
 - Nutzerin: „Du hast es wieder nicht aktualisiert.“ Pages war aktuell (22:23), aber alle Adressen hießen weiter `?v=5.1.0` (keine neue
   Versionsnummer für Vorschau-Stände) → Browser-Zwischenspeicher und ein alter Service Worker aus der Web-App-Zeit lieferten Altes.

@@ -26,7 +26,7 @@ R=os.path.dirname(HERE)+'/'  # Wurzel des Repositorys
 SHARED={'design.js':open(SP+'design.js').read().replace('__SGVERSION__',VERSION),'verbund.js':open(SP+'verbund.js').read(),
   'training-suite.js':open(SP+'training_suite.js').read(),'install.js':open(SP+'install.js').read(),
   # Suche der Hülle: Schnelleingabe, Such-Kern, Bibelstellen (reine Bausteine, mit Node getestet)
-  'basis.css':open(SP+'basis.css').read(),'schnell.js':open(SP+'schnell.js').read(),'suche.js':open(SP+'suche.js').read(),'bibelstelle.js':open(SP+'bibelstelle.js').read()}
+  'basis.css':open(SP+'basis.css').read(),'selbsttest.js':open(SP+'selbsttest.js').read(),'schnell.js':open(SP+'schnell.js').read(),'suche.js':open(SP+'suche.js').read(),'bibelstelle.js':open(SP+'bibelstelle.js').read()}
 if os.path.exists(R+'sg/uebersicht.js'): os.remove(R+'sg/uebersicht.js')  # frühere Übersicht, ersetzt durch die Hülle
 # Sportwissenschaft: Buchinhalt aus wissen/buch.md neu erzeugen
 import subprocess; subprocess.run(['python3', SP+'gen_wissen.py'], check=True, stdout=subprocess.DEVNULL)

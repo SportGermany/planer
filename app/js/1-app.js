@@ -1542,6 +1542,7 @@
         (window.SGInstallEvt && !nat ? r("install", "download", "var(--muted)", "App installieren", "auf den Startbildschirm", "") : "") +
         r("update", "download", "var(--muted)", "Version " + esc(window.SGVersion || ""), nat ? "neue Version von GitHub holen" : "Version aktualisieren", newVer ? '<em class="hi">Neu: ' + esc(newVer) + "</em>" : "") +
         r("neu", "star", "var(--muted)", "Was ist neu", "Änderungen der letzten Versionen", "") +
+        r("selbsttest", "pulse", "var(--muted)", "Selbsttest", "App einmal komplett prüfen, Bericht teilen", "") +
         r("diag", "pulse", "var(--muted)", "Fehlerprotokoll", "für die Fehlersuche am Handy", (window.SGShellDiag() || []).length || "")
     };
     if (SLIM) {
@@ -1637,6 +1638,7 @@
     else if (m === "umzugin") moveInSheet(false);
     else if (m === "neu") whatsNewSheet();
     else if (m === "diag") diagSheet();
+    else if (m === "selbsttest") { closeSheet(); setTimeout(function () { window.SGSelbsttest.open(); }, 250); }
     else if (m === "update") { if (window.SGUpdate) window.SGUpdate.check(function (t) { snack(t); }); }
     else if (m === "bibel") go("bibel", "lesen", null, { push: true });
     else go(m, null, null, { push: true });

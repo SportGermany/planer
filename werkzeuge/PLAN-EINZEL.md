@@ -51,7 +51,7 @@ die Vorschau reicht `top.SGShell/SharedCalendar/…` an die gezeigte App weiter.
 - [ ] **0 Basis** – App-Rahmen + Bausteine in `design.js`, Symbolsatz, Einstellungs-Baukasten, Cloud nur eigene Gruppen,
   Bibel-Datengruppe, Token-Übergabe. Tests: „nichts unter der Leiste“, „4 Reiter“, „keine Emojis in Bedienelementen“,
   „Cloud gleicht nur eigene Gruppen ab“ (je App, schnell-app).
-- [ ] **0b Selbsttest in jeder App** (Wunsch 01.11.: „automatischer Fehlerfinder auf meinem Handy“) – gemeinsames Modul
+- [x] **0b Selbsttest in jeder App** (01.11.; Cloud-Datei `selbsttest-<app>.json` folgt mit dem Cloud-Schritt) (Wunsch 01.11.: „automatischer Fehlerfinder auf meinem Handy“) – gemeinsames Modul
   `werkzeuge/quellen/selbsttest.js` (→ `sg/`), Einstellungen › „Selbsttest“ in jeder App:
   - prüft auf dem echten Gerät **alles**: jeder Reiter/jede Ansicht öffnet ohne Fehler, Knöpfe bedienbar (Größe ≥ 44 px, nicht
     verdeckt, nicht unter der Leiste), kein seitliches Überlaufen, Speicher lesen/schreiben, Cloud erreichbar + Token gültig,

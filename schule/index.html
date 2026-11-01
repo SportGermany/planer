@@ -97,7 +97,11 @@ main{max-width:760px;margin:0 auto;padding:2px 16px calc(124px + env(safe-area-i
 .tab .lbl{line-height:16px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tab.on{color:var(--text)}.tab.on .lbl{font-weight:700}.tab.on .pill{background:var(--accent-soft);color:var(--accent)}
 .fab{bottom:calc(96px + env(safe-area-inset-bottom))}
-.subnav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:0 2px}.subnav::-webkit-scrollbar{display:none}.subnav>*{flex:none}
+.subnav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:0 2px}
+/* Tippflächen ≥ 36 px sichtbar, ≥ 44 px wirksam (Selbsttest-Befund 01.11.) */
+.subnav .chip.sm{min-height:36px;padding:0 14px;font-size:13.5px}
+.sec .more{min-height:40px;padding:0 6px;display:inline-flex;align-items:center}
+.chk{position:relative}.chk::after{content:"";position:absolute;inset:-10px}.subnav::-webkit-scrollbar{display:none}.subnav>*{flex:none}
 .fab{position:fixed;right:18px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:31;width:58px;height:58px;border-radius:18px;background:var(--accent);color:var(--accent-ink,#fff);display:grid;place-items:center;box-shadow:0 8px 22px color-mix(in srgb,var(--accent) 40%,transparent)}
 .fab svg{width:27px;height:27px}
 .fab:active{transform:scale(.95)}
@@ -503,7 +507,7 @@ code{background:var(--surface2);border-radius:5px;padding:1px 5px;font-size:12.5
 .printtitle{display:none}
 </style>
 <!-- verbund-design:start -->
-<script data-design="lernplan" data-sync="lernplan" src="../sg/design.js?v=5.1.0.3a2451"></script>
+<script data-design="lernplan" data-sync="lernplan" src="../sg/design.js?v=5.1.0.c8e52f"></script>
 <!-- verbund-design:end -->
 </head>
 <body>
@@ -542,9 +546,9 @@ code{background:var(--surface2);border-radius:5px;padding:1px 5px;font-size:12.5
 <input type="file" id="camIn" accept="image/*" capture="environment" hidden>
 <input type="file" id="galIn" accept="image/*" multiple hidden>
 <input type="file" id="ttFile" accept=".xlsx,.xlsm,.xls,.ods,.csv,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
-<script src="js/1-app.js?v=5.1.0.3a2451"></script>
+<script src="js/1-app.js?v=5.1.0.c8e52f"></script>
 <!-- gemeinsamer-kalender:start -->
-<script data-app="lernplan" src="../sg/verbund.js?v=5.1.0.3a2451"></script>
+<script data-app="lernplan" src="../sg/verbund.js?v=5.1.0.c8e52f"></script>
 <!-- gemeinsamer-kalender:end -->
 </body>
 </html>

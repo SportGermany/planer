@@ -35,6 +35,11 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
     ok(info.url.indexOf('/planer/' + A.start) >= 0, vp.width + ': Start ' + info.url);
     ok(info.app === KEY && info.ver === A.ver, vp.width + ': Kennung/Version ' + info.app + ' ' + info.ver);
     ok(info.txt > 50 && info.over <= 1, vp.width + ': Inhalt ' + info.txt + ' Zeichen, Überlauf ' + info.over);
+    // Selbsttest der App (derselbe wie auf dem Handy, Einstellungen › Selbsttest): kein ✗ erlaubt
+    if (vp.width < 600) {
+      const st = await p.evaluate(() => new Promise((ok, no) => { const s = document.createElement('script'); s.src = '../sg/selbsttest.js'; s.onload = ok; s.onerror = no; document.head.appendChild(s); }).then(() => window.SGSelbsttest.run()).then(r => ({ n: r.n, bad: r.list.filter(x => x[0] === 'fail').map(x => x[1] + ': ' + x[2]) })));
+      ok(!st.n.fail, 'Selbsttest: ' + st.n.fail + ' ✗ · ' + st.n.warn + ' ⚠ · ' + st.n.ok + ' ✓ ' + st.bad.join(' | '));
+    }
     const extra = path.join(__dirname, 'app-' + KEY + '.js');
     if (fs.existsSync(extra) && vp.width < 600) await require(extra)(p, ok, wait, null, null);
     // offline: Server weg, Seite neu laden aus dem Speicher ist im Browser nicht möglich – geprüft wird, dass nichts aus dem Netz nachgeladen wird

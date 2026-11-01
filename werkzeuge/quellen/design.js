@@ -20,6 +20,29 @@
     if (app) { window.SGApp = app; if (OHNE[app]) window.SGOhne = OHNE[app]; window.SGVorschau = true; }
   } catch (e) {}
 })();
+/* Selbsttest (PLAN-EINZEL.md 0b): sammelt ab dem Start Fehler und lange Aufgaben (Ruckler) – der eigentliche Test
+ * (sg/selbsttest.js) wird erst beim Öffnen geladen: SGSelbsttest.open(). Kostet im Alltag praktisch nichts. */
+(function () {
+  if (window.SGFehler) return;
+  var F = window.SGFehler = { list: [], long: [], t0: Date.now() };
+  function add(kind, msg, where) { if (F.list.length < 60) F.list.push({ kind: kind, msg: String(msg || "").slice(0, 300), where: where || "", at: Date.now() - F.t0 }); }
+  window.addEventListener("error", function (e) {
+    if (e.target && e.target !== window && (e.target.src || e.target.href)) add("datei", "Datei fehlt oder lädt nicht", e.target.src || e.target.href);
+    else add("fehler", e.message, (e.filename || "").replace(/^.*\/planer\//, "") + ":" + (e.lineno || ""));
+  }, true);
+  window.addEventListener("unhandledrejection", function (e) { add("versprechen", e.reason && (e.reason.message || e.reason)); });
+  try { var ce = console.error; console.error = function () { try { add("konsole", Array.prototype.map.call(arguments, String).join(" ")); } catch (x) {} return ce.apply(console, arguments); }; } catch (e) {}
+  try { new PerformanceObserver(function (l) { l.getEntries().forEach(function (x) { if (F.long.length < 200) F.long.push({ ms: Math.round(x.duration), at: Math.round(x.startTime) }); }); }).observe({ type: "longtask", buffered: true }); } catch (e) {}
+  // Test nachladen und starten (gleicher Ordner wie design.js)
+  var me = document.currentScript && document.currentScript.src;
+  window.SGSelbsttest = window.SGSelbsttest || { open: function () {
+    if (window.SGSelbsttest.ready) return window.SGSelbsttest.open();
+    var s = document.createElement("script"); s.src = (me || "../sg/design.js").replace(/design\.js(\?.*)?$/, "selbsttest.js$1");
+    s.onload = function () { if (window.SGSelbsttest.ready) window.SGSelbsttest.open(); };
+    s.onerror = function () { alert("Selbsttest konnte nicht geladen werden."); };
+    document.head.appendChild(s);
+  }, add: function (name, fn) { (window.SGSelbsttestEigene = window.SGSelbsttestEigene || []).push([name, fn]); } };
+})();
 (function () {
   try {
     var top = window.self === window.top, B = "/" + (location.pathname.split("/")[1] || "") + "/";
@@ -151,9 +174,13 @@
     if (!el) return;
     el.hidden = false;
     el.innerHTML = "<h3>App</h3><p class='info-text sg-note'>Version " + window.SGVersion + " · eigene App, gehört zum Planer.</p>" +
-      "<div class='btn-row sg-btns'><button type='button' class='btn sg-btn t' id='sgUpd'>Version aktualisieren</button>" + (window.SGNative ? "<button type='button' class='btn sg-btn t' id='sgToPlaner'>Planer öffnen</button>" : "") + "</div><p class='info-text' id='sgUpdMsg' style='margin-top:8px'></p>";
+      "<div class='btn-row sg-btns'><button type='button' class='btn sg-btn t' id='sgUpd'>Version aktualisieren</button>" + (window.SGNative ? "<button type='button' class='btn sg-btn t' id='sgToPlaner'>Planer öffnen</button>" : "") + (window.SharedCalendar && window.SharedCalendar.open ? "<button type='button' class='btn sg-btn t' id='sgFarbe'>Farbwelt</button><button type='button' class='btn sg-btn t' id='sgCloud'>Cloud</button>" : "") + "<button type='button' class='btn sg-btn t' id='sgTest'>Selbsttest</button></div><p class='info-text' id='sgUpdMsg' style='margin-top:8px'></p>";
     var msg = function (t) { document.getElementById("sgUpdMsg").textContent = t; };
     document.getElementById("sgUpd").onclick = function () { if (window.SGUpdate) window.SGUpdate.check(msg); };
+    document.getElementById("sgTest").onclick = function () { window.SGSelbsttest.open(); };
+    var fb = document.getElementById("sgFarbe"), cb = document.getElementById("sgCloud");
+    if (fb) fb.onclick = function () { window.SharedCalendar.open(null, "design"); };
+    if (cb) cb.onclick = function () { window.SharedCalendar.open(null, "sync"); };
     var tp = document.getElementById("sgToPlaner");
     if (tp) tp.onclick = function () { window.Capacitor.Plugins.PlanerSystem.openApp({ pkg: "de.sportgermany.planer" }).then(function (r) { if (!r || !r.opened) msg("Die Planer-App ist auf diesem Handy nicht installiert."); }); };
   }
