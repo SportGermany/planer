@@ -1,60 +1,79 @@
-# Plan: jede App als echte Einzel-App neu gestalten (Wunsch vom 01.11.2026)
+# Plan: Neuaufbau der Einzel-Apps (Wunsch vom 01.11.2026)
 
 **Jede Sitzung liest zuerst diese Datei und macht beim ersten offenen Punkt weiter.** Erledigtes abhaken (`[x]`),
-Fehler mit Ursache/Lösung in `VERLAUF.md`. Immer nur **eine App gleichzeitig**; jede App endet mit einem Release,
-das der Nutzer auf dem Handy prüft, bevor die nächste beginnt.
+Fehler mit Ursache/Lösung in `VERLAUF.md`. Immer nur **eine App gleichzeitig**.
+
 **Vorschau = echter App-Code:** https://sportgermany.github.io/planer/vorschau/ (Handyrahmen, App-Wahl; auf dem Handy direkt
 `/planer/<start>?app=<app>`). Dieselben Dateien wie die APK – was der Nutzer dort sieht und anmerkt, ist 1:1 die App.
 Technik: iframe `name="sgapp:<app>"` bzw. `?app=` → design.js setzt `SGApp`/`SGOhne`, `SGRahmen` = Rahmen gilt als eigenständig;
 die Vorschau reicht `top.SGShell/SharedCalendar/…` an die gezeigte App weiter. `vorschau/` kommt nicht in die APK (www.js SKIP).
 Änderungen gehen auf `main` **ohne** Versionssprung (Pages zeigt sie, keine APK) – erst nach Freigabe Version erhöhen → APK.
 
-## Wunsch des Nutzers
-- Die Apps wurden aus der großen App „herauskopiert“ – Designs schief, Synchronisation nur mittelmäßig.
-- Jede App einzeln ansehen, Design und Funktionen **auf Einzel-App zuschneiden**, fürs Handy optimieren:
-  Symbole sauber, alle Knöpfe gerade, nichts unter der Leiste versteckt.
-- Erst die Vorschau (Smartphone-Ansicht) zeigen, dann App für App umsetzen.
+## Wunsch des Nutzers (01.11., zweite Runde)
+- Nach dem „Generalumsturz“ jede App **neu strukturieren**: nur behalten, was für diese App noch relevant ist
+  (z. B. Planer: die Listen/Bereiche von Training, Schule, Bibel raus). Menüs dürfen wegfallen oder sich ändern.
+- **Bibel zuerst** – wieder klar strukturiert.
+- **Cloud-Speicherung in allen Apps gleich gut**, ein gemeinsamer Abgleich; Verbindung zwischen den Apps verbessern.
+- **Design in allen Apps weitgehend gleich** (angepasst an die Funktionen), gemeinsame Bausteine.
+- **Code schneller**, Ansicht übersichtlicher, schöner. Dateien klar strukturiert, gut verständlich.
+- Funktionen nicht stillschweigend verlieren: was wegfällt, steht unten in „entfällt“ und im VERLAUF; Daten bleiben lesbar.
 
-## Ist-Befund (Bildschirmfotos 412×915, APK-Bau, 01.11.)
-| App | Befund |
+## Ist-Befund
+| Thema | Befund (01.11.) |
 |---|---|
-| Planer | Leiste zeigt noch **Training** und **Schule** – öffnen nur den Hinweis „ist jetzt eine eigene App“. „Mehr“ hat noch Bibel, Sportwissenschaft, Pause als Bereiche. Apps sind nicht als Apps erkennbar. |
-| Training | **6 Reiter** (Heute, Kalender, Training, Analyse, Fitness, Einst.) – zu eng, Einstellungen gehören nicht in die Leiste. Analyse und Fitness doppeln sich (Woche, Serie, Rekorde). Inhalt verschwindet unter der Leiste, Plus-Knopf überdeckt Karten. Eigener Kartenstil (orange Knöpfe) statt gemeinsamem Design. |
-| Schule | **5 Reiter**; „Lehrgang“ als eigener Reiter für eine Erklärkarte. Kalender-Filter brechen in zwei Zeilen um („Fehlzeiten“). Schnellknöpfe mit Emojis, Plus-Knopf und Leiste überdecken „Nächste Prüfungen“. Kopf-Symbol rechts ohne Erklärung. |
-| Bibel | Leiste mit **Emojis** (📖📚⭐⚙️) statt Symbolen. „Mehr“ = Farbwelten-Galerie mit Text „gilt für alle Apps (Planer, Training, Bibel)“. Schrift gemischt (Serif + Sans). Untertitel bricht unsauber um. Inhalt unter der Leiste. |
-| alle | Jede App hat eigene Kopfzeile, Leiste, Karten, Abstände. Kein gemeinsamer Abstand zur Leiste. Sync: Termine zwischen den Apps nur über Google-Kalender, Rückweg dauert, Status (erledigt) kommt teils nicht an. |
+| Cloud | **Bibel: keine Cloud** (Text sagt sogar „keine Cloud“). **Schule:** eigener GitHub-Repo-Abgleich (Lernplan) + Verbund-Gist. **Training:** eigener „Cloud-Sync“ (8-github.js) + Verbund-Gist. **Planer:** Verbund-Gist über *alle* Datengruppen. Token muss je App einzeln eingegeben werden. Jede App gleicht auch fremde Datengruppen ab (unnötig, langsam). |
+| Design | Jede App eigene Kopfzeile, Leiste, Karten, Knöpfe; Bibel Emojis in der Leiste; Training orange Eigenstil; Inhalt unter der Leiste. |
+| Planer | Leiste zeigt Training/Schule (nur Hinweis „eigene App“). Hülle trägt noch alle Bereichs-Tabellen (`V`), Suchdaten (Bahnen, Übungen, Schulfächer), alte Seite `/planer/` (js/1-app.js, 100 KB) für „Aufgaben“. |
+| Training | 6 Reiter, Analyse/Fitness doppelt, 1,1 MB JS – alles beim Start geladen. |
+| Schule | 5 Reiter, Lehrgang als eigener Reiter, Kalender doppelt zum Planer. |
+| Bibel | Heute überladen (4 Umschaltreihen für Einstellungen, die man einmal setzt), „Mehr“ = Farbwelten-Galerie + PWA-Installation (in der APK sinnlos). |
 
-## Gemeinsame Basis (gilt für alle vier Apps, liegt in `werkzeuge/quellen/`)
-- **Kopf**: Titel links (22 px), Untertitel einzeilig, höchstens 2 Symbolknöpfe rechts (48 px Tippfläche).
-- **Untere Leiste**: genau **4 Reiter**, Material-3-Leiste (80 px), Liniensymbole, aktive Pille hinter dem Symbol, Beschriftung immer sichtbar.
-  Inhalt bekommt unten automatisch Platz (Leiste + Plus-Knopf), nichts verschwindet darunter.
-- **Plus-Knopf**: rechts über der Leiste, 56 px, nie über Inhalt, der noch bedient werden muss.
-- **Karten**: Radius 16, Abstand 12, Innenabstand 16; Listenzeilen ≥ 56 px mit Symbol (40 px) links, Pfeil rechts.
-- **Knöpfe**: eine Hauptaktion je Karte (gefüllt), sonst Tonal/Umriss; alle gleich hoch (40 px, Tippfläche 48).
-- **Symbole**: ein Liniensymbol-Satz für alle Apps, keine Emojis in Bedienelementen.
-- **Farbe je App** (Akzent auf gemeinsamer dunkler/heller Fläche): Planer Violett, Training Grün, Schule Blau, Bibel Bernstein.
-- **App-Info**: Abschnitt „App“ (Version, „Version aktualisieren“, „Planer öffnen“) in den Einstellungen jeder App, gleich aufgebaut.
+## Ziel-Architektur (gilt für alle Apps)
+**Gemeinsame Bausteine** in `werkzeuge/quellen/` (build.py → `sg/`):
+- `design.js` – Farbwelt, Material-You-Grundflächen, **App-Rahmen**: Kopf (Titel + max. 2 Symbole), untere Leiste mit **4 Reitern**
+  (Liniensymbole aus einem gemeinsamen Symbolsatz), Plus-Knopf, Platz unter der Leiste, Karten/Zeilen/Knöpfe als CSS-Klassen
+  (`sg-card`, `sg-row`, `sg-btn`, `sg-seg`), Blatt (Bottom-Sheet). Jede App nutzt diese Klassen statt eigener Kopien.
+- **Ein Einstellungs-Baukasten** (gleich in jeder App, unten in den Einstellungen): **Cloud** · **Farbwelt** · **App** (Version,
+  Version aktualisieren, Planer öffnen) · **Daten** (Datei sichern/laden). Gleiche Texte, gleiche Optik.
+- **Ein Cloud-Abgleich** (`verbund.js`, privater GitHub-Gist, eine Datei je Datengruppe):
+  - jede App gleicht **nur ihre eigenen** Datengruppen + `einstellungen` (Farbwelt) + `kalender` ab → schneller, keine fremden Daten;
+  - Bibel bekommt Datengruppe `bibel` (`zweiminutenbibel_v2`);
+  - **Token einmal**: Planer gibt ihn beim Öffnen einer App mit (Übergabe), jede App kann ihn auch selbst eintragen; Status
+    „zuletzt abgeglichen“ sichtbar; Abgleich beim Öffnen, nach Änderung (verzögert) und beim Verlassen;
+  - eigene Alt-Syncs (Schule-Repo, Training 8-github) bleiben lesbar, werden aber nicht mehr angeboten, sobald der gemeinsame läuft
+    (Einstellung wird übernommen, kein doppeltes Schreiben).
+- **Verbindung der Apps**: Termine über den Handy-/Google-Kalender (wie jetzt) + gemeinsame Gist-Datei `kalender`;
+  Springen per Android-Link/`openApp`; eine Liste der Apps an einer Stelle (`apps.json` → `design.js`).
+- **Schneller**: jede App lädt nur ihre Skripte; selten Genutztes (Statistik, Import, Rückblick, Suchdaten) erst bei Bedarf.
 
 ## Schritte
 - [x] **Vorschau** – /planer/vorschau/ mit echtem App-Code (01.11.).
-- [ ] **0 Basis** – Bausteine in `design.js`/gemeinsamer CSS (Kopf, Leiste mit 4 Reitern, Karten, Zeilen, Knöpfe, Symbolsatz,
-  Platz unter der Leiste). Test: Messung „nichts unter der Leiste“, „Leiste 4 Reiter“, „keine Emojis in Knöpfen“ je App.
-- [ ] **1 Planer** – Leiste: Heute · Kalender · Aufgaben · Mehr. Apps (Training, Schule, Bibel) als App-Kacheln mit „Öffnen“ bzw.
-  „Installieren“; Sportwissenschaft gehört zu Training; Pause bleibt unverändert unter Mehr. Sync-Check: Termine anderer Apps
-  erscheinen, „erledigt“ kommt an, Zielkalender klar erklärt. Release Planer 6.0.0.
-- [ ] **2 Training** – Leiste: Heute · Training · Fortschritt · Kalender. Analyse + Fitness zu „Fortschritt“ zusammen (nichts
-  löschen, nur umordnen), Einstellungen über Zahnrad im Kopf. Gemeinsame Karten/Knöpfe statt Eigenstil, Mobility inhaltlich
-  unverändert. Sync-Check: „✓ erledigt“ im Planer, geplante Trainings aus dem Planer. Release Training 2.0.0.
-- [ ] **3 Schule** – Leiste: Heute · Stundenplan · Aufgaben · Kalender. Lehrgänge in den Kalender (Unterreiter), Prüfungen in
-  Aufgaben, Filter einzeilig (Wischleiste), Schnellknöpfe mit Symbolen. Sync-Check: Prüfungen/Lernblöcke im Planer und in Google.
-  Release Schule 2.0.0.
-- [ ] **4 Bibel** – Leiste: Heute · Lesen · Meine Bibel · Mehr, Liniensymbole, eine Schriftlinie (Text Serif, Bedienung Sans).
-  „Mehr“: Bibel-Einstellungen (Leseplan, Erinnerung, Schriftgröße, Darstellung kompakt), App-Info. Sync-Check: Lesezeit als
-  Termin/erledigt im Planer. Release Bibel 2.0.0.
-- [ ] **5 Abschluss** – Sync-Test über alle Apps (Emulator + nachgestellt), Bildschirmfotos Ist/Neu, Bericht.
+- [ ] **0 Basis** – App-Rahmen + Bausteine in `design.js`, Symbolsatz, Einstellungs-Baukasten, Cloud nur eigene Gruppen,
+  Bibel-Datengruppe, Token-Übergabe. Tests: „nichts unter der Leiste“, „4 Reiter“, „keine Emojis in Bedienelementen“,
+  „Cloud gleicht nur eigene Gruppen ab“ (je App, schnell-app).
+- [ ] **1 Bibel** (Bibel 2.0.0)
+  - Reiter: **Heute · Lesen · Meine Bibel · Einstellungen**.
+  - Heute: Lesekarte (nächster Abschnitt, „Heute lesen“), Serie kompakt (Zahl + 14-Tage-Leiste), Vers des Tages.
+  - Lesen: Suche (Wort oder Stelle) + Bücher AT/NT aufklappbar + Fortschritt.
+  - Meine Bibel: Favoriten · Notizen · Verlauf (Wischleiste), Zufallsvers als Symbolknopf.
+  - Einstellungen: **Leseplan** (Testament, Plan, Reihenfolge, Tagesziel – bisher 4 Reihen auf „Heute“), **Lesen** (Hell/Dunkel/
+    Sepia/Nacht, Auto-Nacht, Schriftgröße, Schriftart), **Erinnerung**, Statistik kompakt, Baukasten (Cloud, Farbwelt, App, Daten).
+  - entfällt: Farbwelten-Galerie (→ eine Zeile „Farbwelt“), „Als App installieren“ (PWA, in der APK sinnlos), langer Über-Text
+    (→ kurz, ohne falsches „keine Cloud“).
+- [ ] **2 Planer** (Planer 6.0.0)
+  - Reiter: **Heute · Kalender · Aufgaben · Mehr**; Mehr: **Deine Apps** (Kacheln Öffnen/Installieren), Notizen, Woche planen,
+    Pause (unverändert), Kalender verbinden, Baukasten.
+  - entfällt in der Planer-APK: Bereichs-Tabellen und Suchdaten von Training/Schule/Bibel, alte Seite `/planer/` für Aufgaben
+    (Aufgaben nativ in der Hülle), Vorladen.
+- [ ] **3 Schule** (Schule 2.0.0) – Reiter: **Heute · Stundenplan · Aufgaben · Kalender**; Lehrgänge im Kalender, Prüfungen in
+  Aufgaben, Filter als Wischleiste, Schnellknöpfe mit Symbolen; eigener Repo-Sync → gemeinsamer Cloud-Abgleich (Ablage-Dateien
+  bleiben lokal + Datei-Sicherung).
+- [ ] **4 Training** (Training 2.0.0) – Reiter: **Heute · Training · Fortschritt · Kalender**, Einstellungen über Zahnrad;
+  Analyse + Fitness → Fortschritt; gemeinsame Karten/Knöpfe; Mobility/Atmung inhaltlich unverändert; Skripte nach Bedarf laden;
+  8-github-Sync → gemeinsamer Cloud-Abgleich.
+- [ ] **5 Abschluss** – Sync-Test über alle Apps (zwei Geräte nachgestellt + Emulator), Ladezeiten vorher/nachher, Bericht.
 
 ## Arbeitsweise je App
 1. Umbau direkt im App-Code, auf `main` ohne Versionssprung → Nutzer sieht ihn in der Vorschau, gibt frei oder ändert.
-2. Umsetzen (Funktionen bleiben, nur Ort/Optik ändern sich; Daten abwärtskompatibel).
-3. `node schnell-app.js <app>` + neue Basis-Prüfungen, Bildschirmfotos neu, Emulator auf GitHub, Release.
-4. Nutzer testet auf dem Handy, erst dann nächste App.
+2. Funktionen bleiben erreichbar (nur Ort/Optik ändern sich) – Ausnahme: Liste „entfällt“; Daten abwärtskompatibel.
+3. `node schnell-app.js <app>` + Basis-Prüfungen, Bildschirmfotos, Emulator auf GitHub, Release nach Freigabe.
