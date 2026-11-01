@@ -2479,7 +2479,7 @@ function applyTheme() {
 }
 // Im Planer eingebettet: Monat/Woche/Tag zeigt der große Planer-Kalender (mit Stundenplan, Prüfungen, Ferien),
 // hier bleiben die schul-eigenen Listen Termine, Ferien und Fehlzeiten.
-const IN_PLANER = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
+const IN_PLANER = (() => { try { return window.self !== window.top && !window.SGRahmen; } catch (e) { return true; } })();
 if (IN_PLANER) document.addEventListener('DOMContentLoaded', () => { const tl = document.querySelector('.tab[data-v="kalender"] .tl'); if (tl) tl.textContent = 'Termine'; });
 const SUBNAV = {
   kalender: ['kal', IN_PLANER ? [['termine', 'Termine'], ['ferien', 'Ferien'], ['fehlzeiten', 'Fehlzeiten']] : [['monat', 'Monat'], ['woche', 'Woche'], ['tag', 'Tag'], ['termine', 'Termine'], ['ferien', 'Ferien'], ['fehlzeiten', 'Fehlzeiten']]],

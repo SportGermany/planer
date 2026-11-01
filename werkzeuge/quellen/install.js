@@ -54,7 +54,7 @@
 (function () {
   "use strict";
   var B = "/" + (location.pathname.split("/")[1] || "") + "/";
-  if (window.self !== window.top || window.SGSwitch) return;
+  if ((window.self !== window.top && !window.SGRahmen) || window.SGSwitch) return;
   window.SGSwitch = true;
   var APPS = [["planer", "Planer", B + ""], ["training", "Training", B + "training/"], ["bibel", "Bibel", B + "bibel/"]];
   var st = document.createElement("style");

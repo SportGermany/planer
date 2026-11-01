@@ -2,7 +2,7 @@
 // damit dieselben Dateien in Chrome und in der APK laufen. Start: www/index.html → /planer/app/
 const fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '../..'), OUT = path.join(__dirname, 'www'), APP = path.join(OUT, 'planer');
-const SKIP = new Set(['werkzeuge', '.git', '.github', 'node_modules', '.gitignore', '.nojekyll', 'CLAUDE.md', 'README.md']); // sw.js bleibt drin (wird nicht registriert, manche Seiten fragen ihn ab)
+const SKIP = new Set(['werkzeuge', 'vorschau', '.git', '.github', 'node_modules', '.gitignore', '.nojekyll', 'CLAUDE.md', 'README.md']); // sw.js bleibt drin (wird nicht registriert, manche Seiten fragen ihn ab)
 // Mehrere Apps (werkzeuge/PLAN-APPS.md): node www.js <app> – ohne Angabe die Planer-App wie bisher.
 // Einzel-Apps bekommen nur ihre Ordner (dirs) + die Dateien im Hauptordner; Startseite = start; Version/Name aus apps.json.
 const APPS = JSON.parse(fs.readFileSync(path.join(ROOT, 'werkzeuge/apps.json'), 'utf8')), KEY = process.argv[2] || 'planer', A = APPS[KEY];

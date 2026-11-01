@@ -47,7 +47,7 @@
     ["Kalender", "#6ea8fe"], ["Lernplan", "#2b5fd9"], ["Training", "#4fc18a"], ["Trainingsblog", "#2f7d57"], ["Rodel-Mobility", "#c0303f"],
     ["Pulsplan", "#b4532a"], ["Atmung", "#d9774b"], ["Mobility", "#e0707e"], ["Denkpause", "#8a6d1f"], ["Focus", "#3d6b73"], ["Bibel", "#6b4a3a"], ["Notiz", "#e0b34e"]
   ];
-  var EMBED = (function () { try { return window.self !== window.top; } catch (e) { return true; } })();
+  var EMBED = (function () { try { return window.self !== window.top && !window.SGRahmen; } catch (e) { return true; } })();
   var KEY = "sg-shared-calendar-v1";
   var TKEY = "sg-shared-tasks-v1";
   var NKEY = "sg-notizen-v1";

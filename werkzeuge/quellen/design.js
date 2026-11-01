@@ -1,6 +1,25 @@
 /* Eine App, eine Hülle: Jede Seite (Planer, Training, Bibel, Module) läuft in /planer/app/ – dort gibt es eine
  * Navigation für alles. Wird eine einzelne Seite direkt geöffnet (alte Lesezeichen, Benachrichtigungen, Verknüpfungen),
  * geht es sofort in die Hülle an die passende Stelle. ?einzeln in der Adresse öffnet die Seite ausnahmsweise allein. */
+/* Vorschau der Einzel-Apps im Browser (werkzeuge/PLAN-EINZEL.md): dieselben Dateien wie in der APK.
+ * - /planer/vorschau/ zeigt jede App in einem Handyrahmen (iframe name="sgapp:<app>") – der Rahmen gilt als eigenständige App (SGRahmen).
+ * - auf dem Handy direkt: <start>?app=<app> (z. B. /planer/bibel/?app=bibel) – gilt für den ganzen Tab.
+ * In der APK setzt der Bau window.SGApp schon vorher, dann greift nichts hiervon. */
+(function () {
+  try {
+    if (window.SGApp) return;
+    var OHNE = { planer: ["training", "schule", "bibel", "wissen"] }, app = null, w = window;
+    for (var i = 0; i < 6 && w !== w.top; i++, w = w.parent) {
+      if (/^sgapp:\w+$/.test(w.name) && w.parent === w.top && /\/vorschau\//.test(w.top.location.pathname)) { app = w.name.slice(6); if (w === window) window.SGRahmen = true; break; }
+    }
+    if (!app && window.self === window.top) {
+      var m = /[?&]app=(planer|bibel|schule|training)\b/.exec(location.search);
+      if (m) sessionStorage.setItem("sg-vorschau-app", m[1]);
+      app = sessionStorage.getItem("sg-vorschau-app");
+    }
+    if (app) { window.SGApp = app; if (OHNE[app]) window.SGOhne = OHNE[app]; window.SGVorschau = true; }
+  } catch (e) {}
+})();
 (function () {
   try {
     var top = window.self === window.top, B = "/" + (location.pathname.split("/")[1] || "") + "/";
@@ -287,7 +306,7 @@
   var script = document.currentScript;
   var MODE = (script && script.getAttribute("data-design")) || "panel";
   // Als Modul in einer anderen App eingebettet? Dann übernimmt die äußere App Offline-Speicher und Installation.
-  var EMBED = (function () { try { return window.self !== window.top; } catch (e) { return true; } })();
+  var EMBED = (function () { try { return window.self !== window.top && !window.SGRahmen; } catch (e) { return true; } })();
   // Chrome bietet „App installieren“ an: Ereignis merken, damit die App einen eigenen Installieren-Knopf zeigen kann
   if (!EMBED) {
     window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); window.SGInstallEvt = e; window.dispatchEvent(new Event("sg-install")); });
@@ -451,7 +470,7 @@
 (function () {
   "use strict";
   if (window.SGUpdate) return;
-  var EMBED = (function () { try { return window.self !== window.top; } catch (e) { return true; } })();
+  var EMBED = (function () { try { return window.self !== window.top && !window.SGRahmen; } catch (e) { return true; } })();
   var BASE = "/" + (location.pathname.split("/")[1] || "") + "/";
   function num(v) { return String(v || "").replace(/^planer-/, ""); }
   function newer(a, b) {

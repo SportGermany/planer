@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apps – Vorschau</title>
+<!-- Vorschau der Einzel-Apps (werkzeuge/PLAN-EINZEL.md): zeigt die ECHTEN App-Dateien – dieselben wie in der APK –
+     in einem Handyrahmen. Was hier zu sehen ist, ist 1:1 der Stand der App. Nur Android-Teile (Handykalender,
+     Benachrichtigungen, Widgets, Übergabe zwischen Apps) gibt es erst in der APK. Diese Seite kommt nicht in die APK. -->
+<style>
+:root{--bg:#F4EFF4;--fg:#1D1B20;--mut:#49454F;--card:#FFFFFF;--line:#CAC4D0;--acc:#6750A4;--onacc:#FFFFFF}
+@media (prefers-color-scheme: dark){:root{--bg:#141218;--fg:#E6E0E9;--mut:#CAC4D0;--card:#211F26;--line:#49454F;--acc:#D0BCFF;--onacc:#381E72}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 Roboto,system-ui,sans-serif}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:16px}
+h1{font-size:20px;font-weight:500;margin:0;flex:1 1 200px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{height:44px;padding:0 18px;border-radius:22px;border:1px solid var(--line);background:var(--card);color:var(--fg);font:500 14px Roboto,system-ui,sans-serif;cursor:pointer;display:flex;align-items:center;gap:8px}
+.seg button .dot{width:12px;height:12px;border-radius:6px}
+.seg button[aria-pressed=true]{background:var(--acc);color:var(--onacc);border-color:var(--acc)}
+main{display:flex;flex-wrap:wrap;gap:24px;padding:0 16px 24px;align-items:flex-start;justify-content:center}
+.phone{flex:none;border-radius:44px;background:#000;padding:14px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.screen{width:412px;height:915px;border-radius:32px;overflow:hidden;background:#000;transform-origin:top left}
+.screen iframe{width:412px;height:915px;border:0;display:block;background:#fff}
+aside{flex:1 1 300px;max-width:420px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--card);border-radius:16px;padding:16px}
+.card h2{font-size:16px;font-weight:500;margin:0 0 8px}
+.card p{margin:0 0 8px;color:var(--mut);font-size:14px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btn{height:44px;padding:0 18px;border-radius:22px;border:1px solid var(--line);background:transparent;color:var(--fg);font:500 14px Roboto,system-ui,sans-serif;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none}
+.btn.p{background:var(--acc);color:var(--onacc);border-color:var(--acc)}
+.links{display:flex;flex-direction:column;gap:8px}
+.links a{display:flex;align-items:center;gap:12px;min-height:56px;padding:0 16px;border-radius:16px;background:var(--card);color:var(--fg);text-decoration:none;font-weight:500}
+.links a .dot{width:14px;height:14px;border-radius:7px}
+.klein{display:none}
+@media (max-width: 760px){.phone{display:none}.klein{display:block}}
+</style>
+</head>
+<body>
+<header>
+<h1>Apps – Vorschau (echter App-Code)</h1>
+<div class="seg" id="wahl" role="group" aria-label="App wählen"></div>
+</header>
+<main>
+<div class="phone" id="phone"><div class="screen" id="screen"></div></div>
+<aside>
+<div class="card klein">
+<h2>Auf dem Handy</h2>
+<p>Tippe eine App an – sie öffnet sich bildschirmfüllend, genau wie in der APK.</p>
+<div class="links" id="handy"></div>
+</div>
+<div class="card">
+<h2 id="titel">App</h2>
+<p id="info"></p>
+<div class="btns">
+<button class="btn p" id="neu" type="button">Neu laden</button>
+<button class="btn" id="test" type="button">Testdaten laden</button>
+<a class="btn" id="voll" href="#" target="_blank" rel="noopener">Im eigenen Tab öffnen</a>
+</div>
+</div>
+<div class="card">
+<h2>Was hier anders ist als in der APK</h2>
+<p>Design, Bedienung, Daten und Abgleich über die Cloud sind dieselben. Nur Android-Teile fehlen im Browser:
+Handykalender/Google-Kalender, Benachrichtigungen, Widget, App-Verknüpfungen und die Übergabe zwischen den Apps.</p>
+<p>Im Browser teilen sich die Apps einen Speicher; auf dem Handy hat jede App ihren eigenen.</p>
+</div>
+</aside>
+</main>
+<script>
+(function () {
+  var APPS = [
+    { id: "planer", name: "Planer", start: "../app/", farbe: "#6750A4" },
+    { id: "training", name: "Training", start: "../training/", farbe: "#2F7D57" },
+    { id: "schule", name: "Schule", start: "../schule/", farbe: "#2B5FD9" },
+    { id: "bibel", name: "Bibel", start: "../bibel/", farbe: "#6B4A3A" }
+  ];
+  var $ = function (id) { return document.getElementById(id); }, frame = null, cur = null;
+  // Seiten der Apps fragen window.top nach der Hülle bzw. dem Kalender-Kern – hier ist top diese Vorschau,
+  // also an die gerade gezeigte App weiterreichen (in der APK ist die App selbst top)
+  ["SGShell", "SGShellSearch", "SharedCalendar", "SGMove", "Capacitor"].forEach(function (k) {
+    Object.defineProperty(window, k, { configurable: true, get: function () { try { return frame && frame.contentWindow[k]; } catch (e) { return undefined; } } });
+  });
+  function show(id) {
+    var a = APPS.filter(function (x) { return x.id === id; })[0] || APPS[0]; cur = a;
+    Array.prototype.forEach.call($("wahl").children, function (b) { b.setAttribute("aria-pressed", String(b.dataset.id === a.id)); });
+    $("screen").innerHTML = "";
+    frame = document.createElement("iframe");
+    frame.name = "sgapp:" + a.id; frame.title = a.name + " (Vorschau)"; frame.src = a.start;
+    $("screen").appendChild(frame);
+    $("titel").textContent = a.name;
+    $("voll").href = a.start + "?app=" + a.id;
+    $("info").textContent = "Läuft gerade mit den Dateien von main (" + location.host + "). Änderungen erscheinen hier, sobald sie hochgeladen sind.";
+    try { history.replaceState(null, "", "#" + a.id); } catch (e) {}
+    fit();
+  }
+  function fit() {
+    var h = innerHeight - 110, s = Math.min(1, h / 943);
+    $("screen").style.transform = "scale(" + s + ")";
+    $("phone").style.width = (412 * s + 28) + "px"; $("phone").style.height = (915 * s + 28) + "px";
+  }
+  APPS.forEach(function (a) {
+    var b = document.createElement("button"); b.type = "button"; b.dataset.id = a.id;
+    b.innerHTML = '<span class="dot" style="background:' + a.farbe + '"></span>' + a.name;
+    b.addEventListener("click", function () { show(a.id); });
+    $("wahl").appendChild(b);
+    var l = document.createElement("a"); l.href = a.start + "?app=" + a.id;
+    l.innerHTML = '<span class="dot" style="background:' + a.farbe + '"></span>' + a.name;
+    $("handy").appendChild(l);
+  });
+  $("neu").addEventListener("click", function () { show(cur.id); });
+  $("test").addEventListener("click", function () {
+    fetch("../werkzeuge/tests/seed.js", { cache: "no-store" }).then(function (r) { return r.text(); }).then(function (t) {
+      localStorage.removeItem("seeded3"); new Function(t)(); show(cur.id);
+    }).catch(function () { alert("Testdaten konnten nicht geladen werden."); });
+  });
+  addEventListener("resize", fit);
+  show((location.hash || "#planer").slice(1));
+})();
+</script>
+</body>
+</html>

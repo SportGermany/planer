@@ -5,6 +5,12 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Vorschau der Einzel-Apps (PLAN-EINZEL.md)
+- Wunsch: keine gezeichneten Entwürfe, sondern eine HTML-Vorschau, die 1:1 der App entspricht. Lösung: /planer/vorschau/ lädt die
+  echten App-Dateien im Handyrahmen; design.js erkennt den Rahmen (`sgapp:<app>`) bzw. `?app=` und verhält sich wie die APK-App.
+- Stolperstein: viele Stellen fragen `window.top` (Hülle, Kalender-Kern) – in der Vorschau ist top die Vorschau-Seite. Lösung: sie
+  reicht diese Namen an die gezeigte App weiter; Prüfungen „bin ich eingebettet?“ beachten `SGRahmen`.
+
 ## Abnahme (Schritt 7) – Umbau in mehrere Apps abgeschlossen
 - Releases: v5.1.0 (Planer, 3,7 MB), bibel-v1.1.0, schule-v1.1.0, training-v1.1.0 – alle mit Emulator-Test grün.
 - Fehler, die erst der Emulator fand: siehe drei Einträge unter 5.1.0 (Play-Dienste, Vorladen in der Hülle und in /planer/).
