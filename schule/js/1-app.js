@@ -2336,7 +2336,7 @@ async function showDueReminders() { // beim Öffnen: heutige Erinnerungen als Be
 
 // ---------- Einstellungen ----------
 function refreshSettings() { if (sheetOpen && sheetMode === 'settings') openSheet(settingsHTML(), 'settings'); }
-function openSettings() { sheetReturn = null; openSheet(settingsHTML(), 'settings'); if (window.SGAppInfo) window.SGAppInfo(); }
+function openSettings() { sheetReturn = null; openSheet(settingsHTML(), 'settings'); if (window.SGAppInfo) window.SGAppInfo(); const z = $('#stundenZiel'); if (z) z.onchange = () => SC().handy.setTarget2(z.value).then(() => toast(z.value ? 'Stundenplan steht jetzt im eigenen Kalender' : 'Stundenplan wieder bei den Prüfungen')); }
 function settingsHTML() {
   const s = db.settings, k = klasse();
   const sel = (key, opts) => `<select class="inp" data-s="${key}" style="width:auto;padding:8px 10px">${opts.map(([v, l]) => `<option value="${v}"${String(s[key]) === String(v) ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
@@ -2411,6 +2411,12 @@ function settingsHTML() {
     <div class="small muted" style="margin-top:6px">.ics-Dateien lassen sich in Google Kalender importieren (am PC: Einstellungen → Importieren).</div>
     <div class="actions"><button class="btn danger" data-a="reset">Alle Daten löschen</button></div>
     <div class="sh">Info</div><div class="small muted">Lernplan · Version 5.0 · Ferien: BayMBl. 2022 Nr. 747 und OpenHolidays · Alle Angaben ohne Gewähr.<br><br>Am PC: <b>N</b> neu · <b>T</b> heute · <b>1–5</b> Bereiche · <b>← →</b> blättern</div>`;
+  // eigene Schul-App mit Handy-/Google-Abgleich: Stundenplan wahlweise in einen eigenen Kalender (in Google ein- und ausblendbar)
+  const H = SC() && SC().handy, hs = H && H.available && H.available() ? H.state() : null;
+  if (hs && hs.on && !IN_PLANER) {
+    const cals = (hs.cals || []).filter(c => c.writable !== false);
+    h += `<div class="sh">Stundenplan im Kalender</div><div class="switch"><span>Eigener Kalender für Stunden<small>z. B. ein Google-Kalender „Stundenplan“ – dort ein- und ausblendbar</small></span><select class="inp" id="stundenZiel" style="width:auto;max-width:55%;padding:8px 10px"><option value="">wie Prüfungen</option>${cals.map(c => `<option value="${esc(c.id)}"${hs.target2 === c.id ? ' selected' : ''}>${esc(c.name || 'Kalender')}</option>`).join('')}</select></div>`;
+  }
   h += `<div id="sgAppInfo" hidden></div>`;   // eigene Schul-App: Version, Aktualisieren, Planer öffnen (sg/design.js)
   return h;
 }
@@ -2480,7 +2486,20 @@ const SUBNAV = {
   // im Planer höchstens drei Einträge (Segmentschalter); Lernzeit und Ablage stehen dort im Seitenmenü
   aufgaben: ['auf', IN_PLANER ? [['offen', 'Offen'], ['pruef', 'Prüfungen'], ['erledigt', 'Erledigt']] : [['offen', 'Offen'], ['pruef', 'Prüfungen'], ['erledigt', 'Erledigt'], ['ablage', 'Ablage'], ['lernzeit', 'Lernzeit']]],
 };
+// eigene Schul-App: Widget (nächste Stunde bzw. nächste Prüfung) und Verknüpfungen auf dem App-Symbol – window.SGWidget aus sg/design.js
+function schulWidget() {
+  if (!window.SGWidget || IN_PLANER) return;
+  const t = todayStr(), nm = nowMin(), ls = isSchoolDay(t) ? lessonsOn(t) : [];
+  let nx = null; ls.forEach(l => { const p = period(l.period); if (p && !nx && nm < toMin(p.e)) nx = { l, p }; });
+  const ex = db.events.filter(e => isExam(e) && !e.done && e.date >= t).sort((a, b) => a.date.localeCompare(b.date))[0];
+  const exTxt = ex ? (subj(ex.subject).name || ex.title || 'Prüfung') + ' am ' + fmtDM(ex.date) : '';
+  if (nx) SGWidget({ kopf: (nm >= toMin(nx.p.s) ? 'Jetzt' : 'Nächste Stunde') + ' · ' + nx.p.s + ' Uhr', titel: subj(nx.l.subject).name || 'Stunde', zeile: [nx.l.room || subj(nx.l.subject).room, ex ? 'Prüfung: ' + exTxt : ''].filter(Boolean).join(' · '), ziel: 'heute' });
+  else if (ex) SGWidget({ kopf: 'Nächste Prüfung', titel: (subj(ex.subject).name || ex.title || 'Prüfung'), zeile: fmtDM(ex.date) + ' · in ' + diffDays(t, ex.date) + ' Tagen', ziel: 'aufgaben' });
+  else SGWidget({ kopf: 'Schule', titel: 'Heute keine Stunden mehr', zeile: 'Antippen für den Stundenplan', ziel: 'plan' });
+}
+if (window.SGShortcuts && !IN_PLANER) SGShortcuts([{ id: 'plan', titel: 'Stundenplan', ziel: 'plan' }, { id: 'aufgaben', titel: 'Aufgaben', ziel: 'aufgaben' }, { id: 'ablage', titel: 'Ablage', ziel: 'ablage' }]);
 function render() {
+  try { schulWidget(); } catch (e) {}
   if (IN_PLANER && ui.view === 'kalender' && ['monat', 'woche', 'tag'].includes(ui.kal)) ui.kal = 'termine';
   const v = ui.view, c = pd(ui.cursor), t = todayStr();
   document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x.dataset.v === v));

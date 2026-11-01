@@ -19,14 +19,19 @@
       "bibel",
       "sg"
     ],
-    "ver": "1.0.0",
+    "ver": "1.1.0",
     "probe": {
       "keys": {
         "zweiminutenbibel_v2": "{\"streak\":7}"
       },
       "ziel": "bibliothek",
       "check": "document.getElementById('view-bibliothek').classList.contains('active')"
-    }
+    },
+    "farbe": "#6B4A3A",
+    "symbol": [
+      "M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z",
+      "M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5"
+    ]
   },
   "schule": {
     "id": "de.sportgermany.schule",
@@ -36,7 +41,7 @@
       "schule",
       "sg"
     ],
-    "ver": "1.0.0",
+    "ver": "1.1.0",
     "probe": {
       "keys": {
         "schulplaner-lokal-v1": "{\"homeMore\":true}"
@@ -65,6 +70,11 @@
     },
     "net": [
       "openholidaysapi.org"
+    ],
+    "farbe": "#2B5FD9",
+    "symbol": [
+      "M2.5 9l9.5-5 9.5 5-9.5 5z",
+      "M6.5 11.2v4.8c0 1.5 2.5 3 5.5 3s5.5-1.5 5.5-3v-4.8"
     ]
   },
   "training": {
@@ -76,7 +86,7 @@
       "wissen",
       "sg"
     ],
-    "ver": "1.0.0",
+    "ver": "1.1.0",
     "probe": {
       "keys": {
         "wk_onboarded": "1",
@@ -102,6 +112,11 @@
         ]
       },
       "open": "location.hash = 'einst'"
-    }
+    },
+    "farbe": "#2F7D57",
+    "symbol": [
+      "M12.5 4.5a2 2 0 1 0 4 0a2 2 0 1 0 -4 0",
+      "M8 21l3-6 3 2 1 4M10.5 15l1-5 4 2 3-1M8 10l3-2"
+    ]
   }
 }

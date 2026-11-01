@@ -4,4 +4,5 @@
     <string name="title_activity_main">Planer</string>
     <string name="package_name">de.sportgermany.planer</string>
     <string name="custom_url_scheme">de.sportgermany.planer</string>
+    <string name="widget_beschreibung">Das Wichtigste von heute auf einen Blick</string>
 </resources>

@@ -359,7 +359,7 @@ textarea.diag { display: block; width: calc(100% - 32px); margin: 0 16px; min-he
 .sheet textarea { min-height: 100px; resize: vertical; }
 .sheet .btns { margin: 16px 16px 4px; }
 .qt { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 16px 6px; }
-.snack { position: fixed; left: 16px; right: 16px; bottom: calc(84px + var(--bot)); max-width: 560px; margin: 0 auto; z-index: 950; background: var(--ink); color: var(--bg); border-radius: 10px; min-height: 48px; display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 16px; font-size: 14.5px; box-shadow: 0 4px 18px rgba(0,0,0,.35); transform: translateY(16px); opacity: 0; pointer-events: none; transition: transform .2s, opacity .2s; }
+.snack { position: fixed; left: 16px; right: 16px; bottom: calc(84px + var(--bot)); max-width: 560px; margin: 0 auto; z-index: 2147483005;   /* über dem Hinweis „Woche planen“ des Kalender-Kerns (der liegt ebenfalls unten) */ background: var(--ink); color: var(--bg); border-radius: 10px; min-height: 48px; display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 16px; font-size: 14.5px; box-shadow: 0 4px 18px rgba(0,0,0,.35); transform: translateY(16px); opacity: 0; pointer-events: none; transition: transform .2s, opacity .2s; }
 .snack.on { transform: none; opacity: 1; pointer-events: auto; }
 .snack span { flex: 1; }
 .snack button { border: 0; background: none; color: var(--acc); font-weight: 700; padding: 8px 10px; }
@@ -376,6 +376,22 @@ textarea.diag { display: block; width: calc(100% - 32px); margin: 0 16px; min-he
 .seg2 { display: flex; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin: 0 12px 6px; }
 .seg2 button { flex: 1; border: 0; background: none; color: var(--muted); font-size: 13.5px; font-weight: 600; min-height: 44px; padding: 0 10px; }
 .seg2 button[aria-pressed="true"] { background: var(--s2); color: var(--ink); }
+/* Wochenraster im Monatsbereich (Umschalter Monat | Woche) */
+.mvseg { margin: 0 0 8px; }
+.wkgrid { display: grid; grid-template-columns: 30px repeat(7, minmax(0, 1fr)); gap: 2px; }
+.wkc, .wkt { min-width: 0; display: flex; flex-direction: column; }
+.wkh { border: 0; background: none; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); padding: 0; }
+.wkh b { font-size: 15px; color: var(--ink); }
+.wkc.t .wkh b { color: var(--accfg); background: var(--acc); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+.wka { min-height: 26px; display: flex; flex-direction: column; gap: 2px; padding: 0 1px 4px; }
+.wkg { position: relative; background: var(--s1); border-radius: 8px; }
+.wkt .wkg { background: none; }
+.wkt .wkg span { position: absolute; right: 3px; transform: translateY(-50%); font-size: 12px; color: var(--muted); }
+.wkb { position: absolute; left: 1px; right: 1px; border: 0; border-radius: 6px; padding: 2px 3px; background: color-mix(in srgb, var(--c) 30%, var(--s2)); border-left: 3px solid var(--c); color: var(--ink); font-size: 12px; text-align: left; overflow: hidden; display: flex; align-items: flex-start; }
+.wkb span { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; line-height: 1.2; word-break: break-word; }
+.wkb.all { position: static; min-height: 22px; white-space: nowrap; text-overflow: ellipsis; display: block; }
+.wkb.evd { opacity: .6; } .wkb.skip { opacity: .45; text-decoration: line-through; }
+.wkn { position: absolute; left: 0; right: 0; height: 2px; background: var(--now, #ff6b70); }
 .tgrid { position: relative; margin: 6px 4px 8px; border-top: 1px solid var(--line); }
 .tgrid .tl { position: absolute; left: 0; right: 0; border-top: 1px solid var(--line); height: 0; }
 .tgrid .tl span { position: absolute; left: 4px; top: -8px; font-size: 12px; color: var(--muted); background: var(--s1); padding: 0 3px; font-variant-numeric: tabular-nums; }
@@ -442,13 +458,13 @@ html.m3 .ev .go em { position: absolute; width: 1px; height: 1px; overflow: hidd
 @media (min-width: 900px) { html.m3 .nav { height: auto; border-right: 0; } }
 </style>
 <!-- verbund-design:start -->
-<script data-design="bahn" data-sync="" data-dir="1" src="../sg/design.js?v=5.0.0"></script>
+<script data-design="bahn" data-sync="" data-dir="1" src="../sg/design.js?v=5.1.0"></script>
 <!-- verbund-design:end -->
 <!-- suche:start -->
-<script src="../sg/schnell.js?v=5.0.0"></script>
-<script src="../sg/suche.js?v=5.0.0"></script>
-<script src="../sg/bibelstelle.js?v=5.0.0"></script>
-<script src="../sg/suche-daten.js?v=5.0.0"></script>
+<script src="../sg/schnell.js?v=5.1.0"></script>
+<script src="../sg/suche.js?v=5.1.0"></script>
+<script src="../sg/bibelstelle.js?v=5.1.0"></script>
+<script src="../sg/suche-daten.js?v=5.1.0"></script>
 <!-- suche:end -->
 </head>
 <body>
@@ -465,9 +481,9 @@ html.m3 .ev .go em { position: absolute; width: 1px; height: 1px; overflow: hidd
 <div class="drawer" id="drawer"><div class="dw-pn" id="dwpn" role="dialog" aria-modal="true" aria-label="Bereichsmenü"></div></div>
 <div class="sheet" id="sheet"><div class="pn"></div></div>
 <div class="snack" id="snack"></div>
-<script src="js/1-app.js?v=5.0.0"></script>
+<script src="js/1-app.js?v=5.1.0"></script>
 <!-- gemeinsamer-kalender:start -->
-<script data-app="planer" data-fab="off" src="../sg/verbund.js?v=5.0.0"></script>
+<script data-app="planer" data-fab="off" src="../sg/verbund.js?v=5.1.0"></script>
 <!-- gemeinsamer-kalender:end -->
 </body>
 </html>

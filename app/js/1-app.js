@@ -91,9 +91,9 @@
   // in denselben Gist sichert (je Bereich eine eigene Datei, siehe DATA in verbund.js)
   // idb: Datenbanken/Ablagen, die mitgehen (Dateien der Schul-Ablage); sg-handy-v1: Handy-/Google-Kalender gleich eingerichtet
   var EXT = { bibel: { pkg: "de.sportgermany.bibel", keys: /^zweiminutenbibel_/ },
-    schule: { pkg: "de.sportgermany.schule", keys: /^(schulkalender-bayern-v1|schulplaner-lokal-v1|sg-stundenplan-v1|sg-shared-calendar-sync|sg-handy-v1)$/, idb: [["lernplan-dateien", "files"], ["lernplan-dateien", "inbox"]] },
+    schule: { pkg: "de.sportgermany.schule", keys: /^(schulkalender-bayern-v1|schulplaner-lokal-v1|sg-stundenplan-v1|sg-shared-calendar-sync|sg-handy-v1|sg-erinnern-v1)$/, idb: [["lernplan-dateien", "files"], ["lernplan-dateien", "inbox"]] },
     // Training mit Mobility, Atmung, Bahnplan (Bilder), Sportwissenschaft; pre = Sprungziel-Vorsilbe in der Training-App (#mobility/…, #wissen/…)
-    training: { pkg: "de.sportgermany.training", keys: /^(wk_.*|rodelmobility\.v1|pulsplan\.v1|bahnplan\.v1|sg-wissen-v1|sg-training-akk-v1|sg-shared-calendar-sync|sg-handy-v1)$/, idb: [["bahnplan", "img"]],
+    training: { pkg: "de.sportgermany.training", keys: /^(wk_.*|rodelmobility\.v1|pulsplan\.v1|bahnplan\.v1|sg-wissen-v1|sg-training-akk-v1|sg-shared-calendar-sync|sg-handy-v1|sg-erinnern-v1)$/, idb: [["bahnplan", "img"]],
       pre: { mobility: "mobility", atmung: "atmung", rodeln: "bahnplan", wissen: "wissen" } } }, extOn = {};
   function sysP() { try { var Cp = window.Capacitor; return Cp && Cp.isNativePlatform && Cp.isNativePlatform() && Cp.Plugins.PlanerSystem || null; } catch (e) { return null; } }
   var extReady = Promise.resolve();
@@ -218,7 +218,7 @@
     var oa0 = ohne(cur.v, cur.s);
     if (oa0) { var c0 = cur; cur = { v: "kalender" }; try { history.replaceState({ app: 1 }, "", "#kalender"); } catch (e) {} viaApp(oa0, c0.v, c0.s, c0.k, {}); }
     var v = V[cur.v] || V.kalender;
-    titleEl.textContent = cur.v === "kalender" && calMon ? "Monat" : v.t;
+    titleEl.textContent = cur.v === "kalender" && calMon ? (monView() === "woche" ? "Woche" : "Monat") : v.t;
     document.title = v.t + " · Planer";
     backEl.hidden = !v.up; backEl.innerHTML = ico("back");
     var dw = hasDw(v);
@@ -309,6 +309,12 @@
   function fromHash() {
     var h = decodeURIComponent(location.hash.slice(1));
     if (h.indexOf("u=") === 0) { history.replaceState({ app: 1 }, "", "#kalender"); cur = { v: "kalender" }; render(); return openUrl(h.slice(2)); }
+    // Verknüpfungen auf dem App-Symbol (langer Druck): #neu/termin, #neu/aufgabe, #neu/woche
+    if (h.indexOf("neu/") === 0) {
+      history.replaceState({ app: 1 }, "", "#kalender"); cur = { v: "kalender" }; render();
+      var w = h.slice(4);
+      return setTimeout(function () { if (w === "termin") C().newEvent(calSel); else if (w === "aufgabe") taskSheet(); else if (w === "woche") C().weekPlan(); }, 300);
+    }
     if (h === "teilen") { history.replaceState({ app: 1 }, "", "#kalender"); cur = { v: "kalender" }; render(); return setTimeout(takeShared, 300); }
     var p = h.split("/"), al = alias(p[0], p[1]);
     if (al[0] !== p[0]) history.replaceState(history.state, "", hashOf(al[0], al[1], p[2]));
@@ -543,7 +549,17 @@
     calModeCls();
     return w;
   }
-  function renderCal() { dayRoll(); calBox(); calData(); renderStrip(); renderUp(); renderDay(); renderNext(); if (calMon) renderMonth(); }
+  function renderCal() { dayRoll(); calBox(); calData(); renderStrip(); renderUp(); renderDay(); renderNext(); if (calMon) renderMonth(); widget(); }
+  // Widget auf dem Startbildschirm: der nächste Eintrag von heute, sonst der nächste in den kommenden Tagen (nur in der Android-App)
+  function widget() {
+    if (!window.SGWidget || !CD) return;
+    var t = today(), n = nowMin(), e = (CD.by[t] || []).filter(function (x) { return x.time && !x.st && endMin(x) > n; }).sort(function (a, b) { return a.time.localeCompare(b.time); })[0];
+    if (e) { var d = tmin(e.time) - n; return SGWidget({ kopf: d <= 0 ? "Läuft gerade" : "Als Nächstes · heute", titel: (e.star ? "★ " : "") + (e.title || "Termin"), zeile: e.time + (e.end ? "–" + e.end : "") + " · " + AREA[area(e)].label, ziel: "kalender" }); }
+    var nx = CD.list.filter(function (x) { return x.date > t && !(x.of > 1 && x.day > 1); }).sort(function (a, b) { return (a.date + (a.time || "~")).localeCompare(b.date + (b.time || "~")); })[0];
+    if (nx) { var dd = parse(nx.date); return SGWidget({ kopf: "Heute nichts mehr · Demnächst", titel: nx.title || "Termin", zeile: WDL[dd.getDay()] + ", " + dd.getDate() + ". " + MO[dd.getMonth()] + (nx.time ? " · " + nx.time : ""), ziel: "kalender" }); }
+    SGWidget({ kopf: "Planer", titel: "Nichts geplant", zeile: "Antippen, um etwas einzutragen", ziel: "neu/termin" });
+  }
+  if (window.SGShortcuts) SGShortcuts([{ id: "termin", titel: "Neuer Termin", ziel: "neu/termin" }, { id: "aufgabe", titel: "Neue Aufgabe", ziel: "neu/aufgabe" }, { id: "woche", titel: "Woche planen", ziel: "neu/woche" }]);
   /* Monat hinter dem Kalender-Symbol (4.0): eigener Verlaufseintrag, Zurück führt zur Tagesansicht.
      Ein Tag im Monat gewählt → zurück zur Tagesansicht dieses Tages. */
   var calMon = false;
@@ -684,12 +700,33 @@
       return '<span class="mspan l' + z.lane + (z.s ? " s" : "") + (z.f ? " f" : "") + '" style="--c:' + z.c + '" aria-hidden="true">' + (wide && z.s ? "<em>" + esc(z.t) + "</em>" : "") + "</span>";
     }).join("");
   }
+  /* Wochenraster (Verbesserung 6): 7 Spalten, 06–22 Uhr, alle Bereiche und Apps; Umschalter „Monat | Woche“ über dem Monat */
+  function monView() { try { return localStorage.getItem("sg-monatsansicht-v1") === "woche" ? "woche" : "monat"; } catch (e) { return "monat"; } }
+  function viewSeg(v) { return '<div class="seg2 mvseg" role="group" aria-label="Ansicht"><button data-c="vmonat" aria-pressed="' + (v === "monat") + '">Monat</button><button data-c="vwoche" aria-pressed="' + (v === "woche") + '">Woche</button></div>'; }
+  function renderWeek() {
+    needData();
+    var t = today(), from = monday(calSel), H0 = 360, H1 = 1320, PX = 0.6, cols = "";
+    var head = '<div class="mhd"><button class="ib" data-c="wprev" aria-label="Vorherige Woche">' + ico("chevl") + '</button><span class="mt">KW ' + kwOf(from) + " · " + parse(from).getDate() + "." + (parse(from).getMonth() + 1) + ". – " + parse(plus(from, 6)).getDate() + "." + (parse(plus(from, 6)).getMonth() + 1) + '.</span><button class="ib" data-c="wnext" aria-label="Nächste Woche">' + ico("chev") + "</button></div>";
+    for (var i = 0; i < 7; i++) {
+      var k = plus(from, i), d = parse(k), day = (CD.by[k] || []), timed = day.filter(function (e) { return e.time && !(e.of > 1 && e.day > 1); }), all = day.filter(function (e) { return !e.time || (e.of > 1 && e.day > 1); });
+      cols += '<div class="wkc' + (k === t ? " t" : "") + '"><button class="wkh" data-mday="' + k + '" aria-label="' + dayLabel(k) + '"><small>' + WD[d.getDay()] + "</small><b>" + d.getDate() + "</b></button>" +
+        '<div class="wka">' + all.slice(0, 2).map(function (e) { return '<button class="wkb all" data-ev="' + e._k + '" style="--c:' + AREA[area(e)].c + '">' + esc(e.title || "") + "</button>"; }).join("") + (all.length > 2 ? '<span class="more">+' + (all.length - 2) + "</span>" : "") + "</div>" +
+        '<div class="wkg" style="height:' + Math.round((H1 - H0) * PX) + 'px">' + timed.map(function (e) {
+          var a = Math.max(H0, tmin(e.time)), b = Math.min(H1, Math.max(a + 25, endMin(e)));
+          return '<button class="wkb' + (e.st === "done" ? " evd" : e.st === "skip" ? " skip" : "") + '" data-ev="' + e._k + '" style="--c:' + AREA[area(e)].c + ";top:" + Math.round((a - H0) * PX) + "px;height:" + Math.max(22, Math.round((b - a) * PX)) + 'px" title="' + esc(e.time + " " + (e.title || "")) + '"><span>' + esc(e.title || "") + "</span></button>";
+        }).join("") + (k === t && nowMin() >= H0 && nowMin() <= H1 ? '<i class="wkn" style="top:' + Math.round((nowMin() - H0) * PX) + 'px"></i>' : "") + "</div></div>";
+    }
+    var hrs = ""; for (var m = H0; m <= H1; m += 120) hrs += '<span style="top:' + Math.round((m - H0) * PX) + 'px">' + pad(m / 60) + "</span>";
+    $("cal-month").innerHTML = viewSeg("woche") + head + '<div class="wkgrid" id="wkgrid"><div class="wkt"><div class="wkh"></div><div class="wka"></div><div class="wkg" style="height:' + Math.round((H1 - H0) * PX) + 'px">' + hrs + "</div></div>" + cols + "</div>";
+  }
   function renderMonth(slide) {
+    if (monView() === "woche") return renderWeek();
     needData();
     var t = today(), m0 = parse(calMonth), from = gridFrom(), box = $("n-kalender"), wide = (box.clientWidth || innerWidth) >= 600;
     renderMonth.wide = wide;
     var h = '<div class="mhd"><button class="ib" data-c="mprev" aria-label="Vorheriger Monat">' + ico("chevl") + '</button><button class="mt" data-c="mpick" aria-label="' + MO[m0.getMonth()] + " " + m0.getFullYear() + ', Monat und Jahr wählen">' + MO[m0.getMonth()] + " " + m0.getFullYear() +
       '</button><button class="ib" data-c="mnext" aria-label="Nächster Monat">' + ico("chev") + "</button>" + (calMonth !== t.slice(0, 8) + "01" ? '<button class="lnk" data-c="mtoday">Heute</button>' : "") + "</div>";
+    h = viewSeg("monat") + h;
     h += '<div class="mgrid' + (wide ? " wide" : "") + (slide ? " sl" + slide : "") + '" id="mgrid" role="grid" aria-label="' + MO[m0.getMonth()] + " " + m0.getFullYear() + '">' +
       '<div class="mrow mh" role="row"><span class="kw" role="columnheader">KW</span>' + ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map(function (w) { return '<span role="columnheader">' + w + "</span>"; }).join("") + "</div>";
     monthSpans(from);
@@ -879,6 +916,8 @@
     else if (a === "mprev" || a === "mnext") { calMonth = shiftMonth(calMonth, a === "mnext" ? 1 : -1); renderMonth(a === "mnext" ? "l" : "r"); }
     else if (a === "mtoday") { calMonth = today().slice(0, 8) + "01"; renderMonth(); }
     else if (a === "mon") setMon(true);
+    else if (a === "vmonat" || a === "vwoche") { try { localStorage.setItem("sg-monatsansicht-v1", a === "vwoche" ? "woche" : "monat"); } catch (x) {} renderMonth(); titleEl.textContent = a === "vwoche" ? "Woche" : "Monat"; }
+    else if (a === "wprev" || a === "wnext") { setSel(plus(calSel, a === "wnext" ? 7 : -7)); renderAfterPick(); }
     else if (a === "mpick") monthPickSheet();
     else if (a === "legend") legendSheet();
     else if (a === "new") addSheet();
@@ -1412,6 +1451,10 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["5.1.0", ["Widget für den Startbildschirm: „Als Nächstes“ (lange auf den Startbildschirm drücken › Widgets › Planer). Auch Training, Schule und Bibel haben eins",
+      "Langer Druck auf das App-Symbol: Neuer Termin, Neue Aufgabe, Woche planen", "Wochenraster: im Monat oben „Woche“ wählen – alle Termine aller Apps in einer Woche",
+      "Erledigte Trainings stehen im Google-Kalender mit ✓", "Training, Schule und Bibel haben jetzt eigene Symbole und Farben; Schule und Training erinnern selbst (Prüfungen, Lernblöcke, Atemübungen), die Bibel auf Wunsch täglich ans Lesen",
+      "Schule: Stundenplan auf Wunsch in einen eigenen Kalender (in Google ein- und ausblendbar)"]],
     ["5.0.0", ["Der Planer ist jetzt schlank: Kalender, Aufgaben, Notizen, Woche planen, Pause. Training, Schule und Bibel sind eigene Apps – der Planer öffnet sie; fehlt eine, gibt es den Download-Hinweis. Deine Daten bleiben gespeichert, bis die App sie übernimmt"]],
     ["4.4.0", ["Neu: eigene Training-App (Release „Training 1.0.0“) mit Mobility, Atmung, Bahnplan und Sportwissenschaft. Ist sie installiert, öffnet der Planer sie – beim ersten Mal mit allen Trainingsdaten",
       "Erledigte Einheiten trägt die Training-App als „✓ … erledigt“ in deinen (Google-)Kalender ein – der Planer hakt damit die geplanten Trainings ab"]],
@@ -1595,12 +1638,14 @@
     sheetEl.querySelector(".pn").innerHTML = '<div class="hd"></div>' + html; sheetCb = cb;
     if (drawerOpen) { drawerOpen = false; drawerEl.classList.remove("on"); menuEl.setAttribute("aria-expanded", "false"); dwInert(false); history.replaceState({ app: 1, sheet: 1 }, "", location.hash); sheetOpen = true; sheetAt = Date.now(); }
     if (!sheetOpen) { history.pushState({ app: 1, sheet: 1 }, "", location.hash); sheetOpen = true; sheetAt = Date.now(); }
-    sheetEl.classList.add("on");
+    sheetEl.classList.add("on"); vbHide(true);
   }
+  // Hinweise des Kalender-Kerns (z. B. sonntags „Zeit für die Wochenplanung“) liegen ebenfalls unten – solange ein Blatt offen ist, ausblenden
+  function vbHide(on) { var r = $("sg-shared-calendar"); if (r) r.style.visibility = on ? "hidden" : ""; }
   // after: läuft erst, wenn der Verlaufseintrag des Blatts wirklich weg ist – sonst schließt das späte „Zurück“
   // ein gleich danach geöffnetes Blatt des Verbunds (Termin) wieder
   function closeSheet(fromPop, after) {
-    if (!sheetOpen) { if (after) after(); return; } sheetOpen = false; sheetEl.classList.remove("on");
+    if (!sheetOpen) { if (after) after(); return; } sheetOpen = false; sheetEl.classList.remove("on"); vbHide(false);
     if (!fromPop && history.state && history.state.sheet) { if (after) shAfter = after; history.back(); }
     else if (after) after();
   }

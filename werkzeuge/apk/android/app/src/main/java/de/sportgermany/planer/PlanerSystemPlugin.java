@@ -108,6 +108,43 @@ public class PlanerSystemPlugin extends Plugin {
         call.resolve(r);
     }
 
+    /** Widget auf dem Startbildschirm füllen: kopf, titel, zeile, ziel (Sprungziel beim Antippen). */
+    @PluginMethod
+    public void setWidget(PluginCall call) {
+        getContext().getSharedPreferences(PlanerWidget.PREFS, android.content.Context.MODE_PRIVATE).edit()
+            .putString("kopf", call.getString("kopf", ""))
+            .putString("titel", call.getString("titel", ""))
+            .putString("zeile", call.getString("zeile", ""))
+            .putString("ziel", call.getString("ziel", ""))
+            .apply();
+        PlanerWidget.refresh(getContext());
+        call.resolve();
+    }
+
+    /** Verknüpfungen beim langen Druck auf das App-Symbol: list [{ id, titel, ziel }] (höchstens 4). */
+    @PluginMethod
+    public void setShortcuts(PluginCall call) {
+        try {
+            JSArray list = call.getArray("list", new JSArray());
+            java.util.List<androidx.core.content.pm.ShortcutInfoCompat> out = new java.util.ArrayList<>();
+            for (int i = 0; i < list.length() && out.size() < 4; i++) {
+                org.json.JSONObject o = list.getJSONObject(i);
+                android.content.Intent it = new android.content.Intent(getContext(), MainActivity.class);
+                it.setAction(android.content.Intent.ACTION_VIEW);
+                it.putExtra(EXTRA_ZIEL, o.optString("ziel", ""));
+                out.add(new androidx.core.content.pm.ShortcutInfoCompat.Builder(getContext(), o.optString("id", "k" + i))
+                    .setShortLabel(o.optString("titel", "Öffnen"))
+                    .setIcon(androidx.core.graphics.drawable.IconCompat.createWithResource(getContext(), R.mipmap.ic_launcher))
+                    .setIntent(it)
+                    .build());
+            }
+            androidx.core.content.pm.ShortcutManagerCompat.setDynamicShortcuts(getContext(), out);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject(e.getMessage());
+        }
+    }
+
     static void offerFile(String name, String text) {
         JSObject f = new JSObject();
         f.put("name", name);

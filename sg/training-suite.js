@@ -173,6 +173,20 @@
     if (go.charAt(0) === "#") { if (go !== "#") location.hash = go; } else location.href = window.SGFixUrl ? window.SGFixUrl(go) : go;
   });
 
+  /* ---------- Eigene Training-App: Widget (Training heute) und Verknüpfungen auf dem App-Symbol ---------- */
+  if (window.SGApp === "training" && window.top === window && window.SGWidget) {
+    var wT = 0, wUp = function () {
+      clearTimeout(wT); wT = setTimeout(function () {
+        var k = document.getElementById("heroKicker"), t = document.getElementById("heroTitle"), m = document.getElementById("heroMeta");
+        if (!t || !t.textContent.trim()) return;
+        window.SGWidget({ kopf: "Training heute" + (k && k.textContent.trim() ? " · " + k.textContent.trim() : ""), titel: t.textContent.trim(), zeile: m ? m.textContent.trim() : "", ziel: "heute" });
+      }, 400);
+    };
+    var hero = document.getElementById("hero"); if (hero) new MutationObserver(wUp).observe(hero, { subtree: true, childList: true, characterData: true });
+    setTimeout(wUp, 1500);
+    if (window.SGShortcuts) window.SGShortcuts([{ id: "start", titel: "Training starten", ziel: "start" }, { id: "atmung", titel: "Atemübung", ziel: "atmung/train" }, { id: "mobility", titel: "Mobility", ziel: "mobility" }, { id: "lauf", titel: "Laufen", ziel: "lauf" }]);
+  }
+
   /* ---------- Inhalte ---------- */
   function mobilityInfo() {
     var r = json("rodelmobility.v1") || {}, t = today();

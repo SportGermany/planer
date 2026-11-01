@@ -39,5 +39,18 @@ cc.appId = A.id; cc.appName = A.name; fs.writeFileSync(CC, JSON.stringify(cc, nu
 const SX = path.join(__dirname, 'android/app/src/main/res/values/strings.xml');
 if (fs.existsSync(SX)) fs.writeFileSync(SX, fs.readFileSync(SX, 'utf8').replace(/(name="app_name">)[^<]*/, '$1' + A.name).replace(/(name="title_activity_main">)[^<]*/, '$1' + A.name)
   .replace(/(name="package_name">)[^<]*/, '$1' + A.id).replace(/(name="custom_url_scheme">)[^<]*/, '$1' + A.id));
+// eigenes Symbol je App: Hintergrundfarbe + weißes Strich-Symbol (24er-Pfade wie in der App, mittig im 108er-Raster des adaptiven Symbols)
+const RES = path.join(__dirname, 'android/app/src/main/res');
+if (A.farbe && A.symbol && fs.existsSync(RES)) {
+  fs.writeFileSync(path.join(RES, 'values/ic_launcher_background.xml'), '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">' + A.farbe + '</color>\n</resources>\n');
+  fs.writeFileSync(path.join(RES, 'drawable/ic_launcher_foreground_app.xml'), '<?xml version="1.0" encoding="utf-8"?>\n<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">\n' +
+    '  <group android:translateX="30" android:translateY="30" android:scaleX="2" android:scaleY="2">\n' +
+    A.symbol.map(d => '    <path android:pathData="' + d + '" android:strokeColor="#FFFFFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="#00000000" />').join('\n') +
+    '\n  </group>\n</vector>\n');
+  for (const f of ['ic_launcher.xml', 'ic_launcher_round.xml']) {
+    const q = path.join(RES, 'mipmap-anydpi-v26', f);
+    if (fs.existsSync(q)) fs.writeFileSync(q, fs.readFileSync(q, 'utf8').replace(/@mipmap\/ic_launcher_foreground/, '@drawable/ic_launcher_foreground_app'));
+  }
+}
 fs.writeFileSync(path.join(__dirname, 'app.env'), 'APP=' + KEY + '\nAPP_ID=' + A.id + '\nAPP_NAME=' + A.name + '\nVER=' + ver + '\n');
 console.log('www (' + KEY + '): ' + n + ' Dateien, ' + (bytes / 1048576).toFixed(1) + ' MB, Version ' + ver);

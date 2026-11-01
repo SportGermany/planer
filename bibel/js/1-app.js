@@ -501,7 +501,10 @@ function renderVerseOfDay(){
   const v = getVerseOfDay();
   document.getElementById("votdText").textContent = "„" + v.text + "“";
   document.getElementById("votdRef").textContent = v.chapterRef + "," + v.num + " · " + (v.test==="AT"?"Altes Testament":"Neues Testament");
+  // eigene Bibel-App: Vers des Tages als Widget auf dem Startbildschirm (sg/design.js)
+  if (window.SGWidget && window.top === window) SGWidget({ kopf: "Vers des Tages · " + v.chapterRef + "," + v.num, titel: "„" + v.text + "“", zeile: (state.streak ? "Serie " + state.streak + " · " : "") + "Antippen zum Weiterlesen", ziel: "lesen" });
 }
+if (window.SGShortcuts && window.top === window) SGShortcuts([{ id: "lesen", titel: "Weiterlesen", ziel: "lesen" }, { id: "bibliothek", titel: "Bibliothek", ziel: "bibliothek" }, { id: "meine", titel: "Meine Bibel", ziel: "meinebibel" }]);
 document.getElementById("votdOpenBtn").addEventListener("click", () => {
   const v = getVerseOfDay();
   const chunk = findChunkContainingVerse(v.chapterRef, v.num);
@@ -913,6 +916,42 @@ function bibleHash(){
 }
 window.addEventListener("hashchange", bibleHash);
 bibleHash();
+/* Eigene Bibel-App: tägliche Lese-Erinnerung (Android), nur an Tagen, an denen noch nicht gelesen wurde.
+   Schalter im Bereich „Mehr“ über dem Abschnitt „App“; geplant werden immer die nächsten 7 Tage (IDs 7000–7006). */
+(function(){
+  const C = window.Capacitor, L = C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.LocalNotifications;
+  const host = document.getElementById("sgAppInfo");
+  if (!L || window.top !== window || !host) return;
+  const KEY = "bibel-erinnern-v1", get = () => { try { return JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch(e) { return {}; } };
+  const box = document.createElement("div"); box.className = "settings-section";
+  host.parentNode.insertBefore(box, host);
+  function plan(){
+    const st = get(), ids = [0,1,2,3,4,5,6].map(i => ({ id: 7000 + i }));
+    return L.cancel({ notifications: ids }).catch(() => {}).then(() => {
+      if (!st.on) return;
+      const t = (st.time || "19:00").split(":"), list = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(); d.setDate(d.getDate() + i); d.setHours(+t[0], +t[1], 0, 0);
+        if (d.getTime() < Date.now() + 60000 || (i === 0 && state.lastDate === todayStr())) continue;
+        list.push({ id: 7000 + i, title: "Bibel – 2 Minuten", body: "Dein Abschnitt für heute wartet." + (state.streak ? " Serie: " + state.streak + " Tage" : ""), schedule: { at: d, allowWhileIdle: true }, extra: { go: "lesen" } });
+      }
+      if (list.length) return L.schedule({ notifications: list });
+    }).catch(() => {});
+  }
+  function draw(){
+    const st = get();
+    box.innerHTML = '<h3>Erinnerung</h3><label style="display:flex;align-items:center;gap:12px;min-height:44px;cursor:pointer"><input type="checkbox" id="bibRem"' + (st.on ? " checked" : "") + ' style="width:22px;height:22px"><span>Täglich um ' + (st.time || "19:00") + ' Uhr ans Lesen erinnern<br><small style="color:var(--muted)">nur, wenn du an dem Tag noch nicht gelesen hast</small></span></label>';
+    box.querySelector("#bibRem").onchange = e => {
+      const on = e.target.checked;
+      (on ? L.requestPermissions() : Promise.resolve({ display: "granted" })).then(p => {
+        const s = get(); s.on = on && p.display === "granted"; localStorage.setItem(KEY, JSON.stringify(s)); draw(); plan();
+      });
+    };
+  }
+  draw(); plan();
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) plan(); });
+  try { L.addListener("localNotificationActionPerformed", a => { const g = a && a.notification && a.notification.extra && a.notification.extra.go; if (g) location.hash = g; }); } catch(e) {}
+})();
 window.SGBibelReady = true;
 } // startApp
 })();

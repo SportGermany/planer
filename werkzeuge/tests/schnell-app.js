@@ -18,7 +18,8 @@ const A = JSON.parse(fs.readFileSync(path.join(ROOT, 'werkzeuge/apps.json'), 'ut
 if (!A) { console.error('Unbekannte App ' + KEY); process.exit(1); }
 execSync('node www.js ' + KEY, { cwd: path.join(ROOT, 'werkzeuge/apk'), stdio: 'inherit' });
 // www.js setzt Paketname/Name für den Bau – im Repo bleibt die Planer-Fassung stehen
-execSync('git checkout -- werkzeuge/apk/capacitor.config.json werkzeuge/apk/android/app/src/main/res/values/strings.xml', { cwd: ROOT });
+execSync('git checkout -- werkzeuge/apk/capacitor.config.json werkzeuge/apk/android/app/src/main/res/values/strings.xml werkzeuge/apk/android/app/src/main/res/values/ic_launcher_background.xml werkzeuge/apk/android/app/src/main/res/mipmap-anydpi-v26', { cwd: ROOT });
+try { fs.unlinkSync(path.join(ROOT, 'werkzeuge/apk/android/app/src/main/res/drawable/ic_launcher_foreground_app.xml')); } catch (e) {}
 const srv = spawn('python3', ['-m', 'http.server', '8766'], { cwd: path.join(ROOT, 'werkzeuge/apk/www'), stdio: 'ignore' });
 let bad = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (!c) bad++; };
 const wait = ms => new Promise(r => setTimeout(r, ms));

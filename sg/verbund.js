@@ -2412,7 +2412,9 @@
     }
     if (opt.termine) withStatus(occurrences(from, to)).forEach(function (e) {
       if (e.app === "Handy" || e.st === "skip" || (e.of > 1 && e.day > 1 && e.date !== from)) return;   // Ausgelassenes nicht ins Handy   // mehrtägig: einmal (am ersten Tag oder am Anfang des Zeitraums)
-      add(e, (e.note ? e.note + "\n" : "") + "Planer · " + e.app);
+      // erledigt (von Hand oder aus der Training-App): im Handy/Google mit „✓“ und dem Ergebnis in der Beschreibung
+      var dn = e.st === "done";
+      add(dn ? Object.assign({}, e, { title: "✓ " + e.title }) : e, (e.note ? e.note + "\n" : "") + "Planer · " + e.app + (dn ? "\nErledigt" + (e.auto ? " (laut Trainingstagebuch)" : "") : ""));
     });
     var ext = []; try { ext = externalItems(from, to, true); } catch (x) {}
     // Training-App: erledigte Einheiten, Aktivitäten und Atemübungen als „✓ …“ – der Planer hakt damit seine geplanten Trainings ab
@@ -2532,13 +2534,18 @@
       // Ziel: gewählter (Google-)Kalender, sofern es ihn noch gibt und er beschreibbar ist – sonst der eigene „Planer“
       var tg = s.target && (s.cals || []).find(function (c) { return c.id === s.target && c.writable !== false; });
       s.calId = tg ? +s.target : r.calendarId;
-      var evs = hOut(s.opt), sig = strHash(s.calId + JSON.stringify(s.opt) + evs.map(function (e) { return e.key + e.h; }).join(","));
+      var evs = hOut(s.opt), sig = strHash(s.calId + "|" + (s.target2 || "") + JSON.stringify(s.opt) + evs.map(function (e) { return e.key + e.h; }).join(","));
       if (!force && sig === hLastOut) return null;
       // Ziel gewechselt: die eigenen Einträge im alten Kalender entfernen (fremde Termine dort bleiben unberührt)
       var prev = s.wrote != null ? s.wrote : r.calendarId;   // vor 4.1.0 ohne Merker: es war der eigene Kalender
       var old = prev >= 0 && prev !== s.calId ? P.write({ calendarId: prev, events: [], prune: true }).catch(function () {}) : Promise.resolve();
-      return old.then(function () { return P.write({ calendarId: s.calId, events: evs, prune: true }); })
-        .then(function (w) { hLastOut = sig; s.wrote = s.calId; res.added = w.added; res.changed = w.changed; res.removed = w.removed; });
+      // Stundenplan in einen eigenen Kalender (target2, z. B. ein Google-Kalender „Stundenplan“) – dann in Google ein-/ausblendbar
+      var t2 = s.target2 && +s.target2 !== s.calId && (s.cals || []).find(function (c) { return c.id === s.target2 && c.writable !== false; }) ? +s.target2 : null;
+      var main = t2 ? evs.filter(function (e) { return e.key.indexOf("st-") !== 0; }) : evs, st = t2 ? evs.filter(function (e) { return e.key.indexOf("st-") === 0; }) : [];
+      var old2 = s.wrote2 != null && s.wrote2 !== t2 && s.wrote2 !== s.calId ? P.write({ calendarId: s.wrote2, events: [], prune: true }).catch(function () {}) : Promise.resolve();
+      return old.then(function () { return old2; }).then(function () { return P.write({ calendarId: s.calId, events: main, prune: true }); })
+        .then(function (w) { res.added = w.added; res.changed = w.changed; res.removed = w.removed; return t2 ? P.write({ calendarId: t2, events: st, prune: true }) : null; })
+        .then(function (w2) { hLastOut = sig; s.wrote = s.calId; s.wrote2 = t2; if (w2) { res.added += w2.added; res.changed += w2.changed; res.removed += w2.removed; } });
     }).then(function () {
       var from = Date.now() + HDAYS[0] * 864e5, to = Date.now() + HDAYS[1] * 864e5;
       return Promise.all([P.instances({ from: from, to: to }), P.calendars({})]);
@@ -2601,6 +2608,8 @@
     },
     // Zielkalender wählen ("" = eigener Kalender „Planer“ nur auf dem Handy)
     setTarget: function (id) { var s = hState(); s.target = id ? String(id) : ""; hSave(s); return hSync(true); },
+    // eigener Kalender nur für den Stundenplan ("" = wie die anderen Einträge)
+    setTarget2: function (id) { var s = hState(); s.target2 = id ? String(id) : ""; hSave(s); return hSync(true); },
     setCal: function (id, on) { var s = hState(); if (on) delete s.off[id]; else s.off[id] = 1; hSave(s); emit(); },
     sync: hSync,
     out: function () { return hOut(hState().opt); },
@@ -2621,6 +2630,11 @@
       if (hState().on && !localStorage.getItem("sg-solo-handy-ok")) setTimeout(function () {
         api.handy.enable().then(function (r) { if (r && !r.error) try { localStorage.setItem("sg-solo-handy-ok", "1"); } catch (e) {} });
       }, 1500);
+      // ebenso Erinnerungen: waren sie im Planer an, fragt die App einmal selbst nach der Erlaubnis
+      setTimeout(function () {   // erst später prüfen: RKEY/rState stehen weiter unten in dieser Datei
+        if (!rState().on || localStorage.getItem("sg-solo-erinnern-ok")) return;
+        api.erinnern.enable().then(function (r) { if (r && !r.error) try { localStorage.setItem("sg-solo-erinnern-ok", "1"); } catch (e) {} });
+      }, 6000);
     }
   }
   /* ---------- Erinnerungen in der Android-App (echte Benachrichtigungen, auch bei geschlossener App) ----------
@@ -2635,6 +2649,21 @@
   function rPlan(opt) {
     var now = Date.now(), from = iso(new Date()), to = iso(new Date(now + 14 * 864e5)), out = [];
     function at(k, t) { var d = parse(k); var p = t.split(":"); d.setHours(+p[0], +p[1], 0, 0); return d.getTime(); }
+    // Einzel-Apps erinnern nur an ihre eigenen Sachen (die Termine des Planers erinnert der Planer)
+    if (SOLO) {
+      var ext = []; try { ext = externalItems(from, to, true); } catch (e) {}
+      if (SOLO === "schule" && opt.termine) ext.forEach(function (x) {
+        if (x.app !== "Lernplan") return;
+        if (x.exam) {
+          out.push({ key: "sx-" + x.id + "@" + x.date, at: at(x.date, x.time ? x.time : "07:00") - (x.time ? 60 * 60000 : 0), title: "Heute: " + x.title, body: x.time ? "um " + x.time + " Uhr – viel Erfolg!" : "Viel Erfolg!", go: "aufgaben" });
+          out.push({ key: "sy-" + x.id + "@" + x.date, at: at(plusDays(x.date, -1), "18:00"), title: "Morgen: " + x.title, body: "Noch einmal kurz wiederholen?", go: "aufgaben" });
+        } else if (x.learn) out.push({ key: "sl-" + x.id, at: at(x.date, "16:00"), title: x.title, body: "Lernblock für heute", go: "aufgaben" });
+      });
+      if (SOLO === "training" && opt.training) ext.forEach(function (x) {
+        if (x.app === "Atmung" && x.time) out.push({ key: "sa-" + x.id + "@" + x.date, at: at(x.date, x.time), title: (x.title || "Atemübung") + " – jetzt üben", body: "Antippen, dann geht es los", go: "atmung/train" });
+      });
+      return out.filter(function (x) { return x.at > now + 5000; }).sort(function (a, b) { return a.at - b.at; }).slice(0, 60);
+    }
     withStatus(occurrences(from, to)).forEach(function (e) {
       if (!e.time || e.app === "Handy" || e.st) return;   // mehrtägig: Uhrzeit steht nur am ersten Tag
       var start = at(e.date, e.time), tr = /^(Training|Mobility|Rodeln)/.test(e.app || "");

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget: Kopf (App/Abschnitt), großer Titel, eine Zeile – Material-You-Farben des Systems (ab Android 12), sonst dunkel -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/w_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:gravity="center_vertical"
+    android:background="@drawable/planer_widget_bg">
+    <TextView android:id="@+id/w_kopf" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:textSize="13sp" android:textColor="@color/planer_widget_akzent" android:maxLines="1" android:ellipsize="end" />
+    <TextView android:id="@+id/w_titel" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="2dp" android:textSize="19sp" android:textStyle="bold" android:textColor="@color/planer_widget_text"
+        android:maxLines="2" android:ellipsize="end" />
+    <TextView android:id="@+id/w_zeile" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="2dp" android:textSize="14sp" android:textColor="@color/planer_widget_leise" android:maxLines="2" android:ellipsize="end" />
+</LinearLayout>

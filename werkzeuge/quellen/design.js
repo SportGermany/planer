@@ -63,11 +63,18 @@
  * ziel = Adresse in der App (z. B. „lesen“ oder „stelle=Joh 3,16“). */
 (function () {
   var C = window.Capacitor;
-  if (!window.SGApp || window.SGApp === "planer" || window.top !== window || !C || !C.isNativePlatform || !C.isNativePlatform() || !C.Plugins.PlanerSystem) return;
-  var P = C.Plugins.PlanerSystem;
+  if (window.top !== window || !C || !C.isNativePlatform || !C.isNativePlatform() || !C.Plugins.PlanerSystem) return;
+  var P = C.Plugins.PlanerSystem, solo = window.SGApp && window.SGApp !== "planer";
+  /* Widget und Verknüpfungen (Schritt 8): jede Seite meldet, was auf dem Startbildschirm stehen soll.
+   * SGWidget({ kopf, titel, zeile, ziel }) · SGShortcuts([{ id, titel, ziel }]) – nur bei Änderung an Android weitergeben. */
+  var last = {};
+  function once(k, v, fn) { var j = JSON.stringify(v); if (last[k] === j) return; last[k] = j; try { fn(v); } catch (e) {} }
+  window.SGWidget = function (o) { once("w", o, function (v) { P.setWidget(v).catch(function () {}); }); };
+  window.SGShortcuts = function (list) { once("s", list, function (v) { P.setShortcuts({ list: v }).catch(function () {}); }); };
   function take() {
     P.takeHandover().then(function (h) {
       if (!h) return;
+      if (!solo) { if (h.ziel) location.hash = h.ziel; return null; }   // Planer: nur Sprungziel (Widget, Verknüpfung)
       if (h.daten) {
         var d = null; try { d = JSON.parse(h.daten); } catch (e) {}
         var keys = d && d.keys || {}, list = Object.keys(keys).filter(function (k) { return !/^sg-(uebergabe|uebernommen)/.test(k); });   // was der Planer für diese App auswählt

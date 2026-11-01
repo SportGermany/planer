@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="planer_bg">#131313</color>
+    <!-- Widget (Startbildschirm), dunkles Material You; ab Android 12 die Systemfarben (values-v31) -->
+    <color name="planer_widget_flaeche">#2B2930</color>
+    <color name="planer_widget_text">#E6E1E5</color>
+    <color name="planer_widget_leise">#CAC4D0</color>
+    <color name="planer_widget_akzent">#D0BCFF</color>
 </resources>
