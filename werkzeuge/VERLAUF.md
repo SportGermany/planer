@@ -5,6 +5,14 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Schule neu (Schritt 3, Vorschau)
+- Leiste: Heute · Stundenplan · Aufgaben · Kalender (vorher 5 Reiter); Lehrgänge sind Unterpunkt im Kalender (Kalender bleibt
+  markiert); Unterpunkte als Wischleiste statt Umbruch; Schnellknöpfe mit Symbolen statt Emojis.
+- Fehler: Leiste schwebte als schmale Glas-Pille (94 statt 101 px je Reiter) über dem Inhalt. Ursache: design.js `glassNav` auch in
+  Einzel-Apps. Lösung: in Einzel-Apps flache Leiste (gilt auch für Training).
+- Fehler (große Suite): Sprung #schule/lernplan fand den Knopf „Lehrgang“ nicht mehr → bleibt unsichtbar erhalten; in der Hülle
+  hatte die neue Bibel ihre eigene Leiste sichtbar → GLASS_NAV-Eintrag `basis` (.sg-nav) blendet sie dort aus.
+
 ## Planer neu (Schritt 2, Vorschau)
 - Leiste im schlanken Planer: Heute · Kalender (Monat/Woche) · Aufgaben · Mehr – vorher Training/Schule, die nur „eigene App“ zeigten.
   Leiste als Raster mit gleich breiten Spalten (gemessen 4 × 101 px, Symbol-Mitte 0 px).

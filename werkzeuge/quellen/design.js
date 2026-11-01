@@ -273,6 +273,8 @@
     rodeln: [".tabbar", ".tabbar button.on"],
     puls: ["nav.tabs", "nav.tabs button.on"],
     bibel: [".tabbar", ".tabbar button.active"],
+    // Einzel-Apps auf sg/basis.css: in der Hülle die eigene Leiste ausblenden, sonst flach (siehe glassCSS)
+    basis: [".sg-nav", ".sg-nav > button.active"],
     bahn: [".tabs", ".tabs button.on"]
   };
   /* Natürlicher Aufbau wie in den iOS-Einstellungen: Inhalte auf ruhigen, gruppierten Flächen (ohne Rahmen, ohne Glas),
@@ -286,6 +288,8 @@
     var nav = GLASS_NAV[MODE];
     // In der Übersicht-Navigation steuert die Übersicht die Unterseiten der Bereiche – deren eigene Leiste entfällt
     if (nav && DIRPARENT) return css + nav[0] + "{display:none!important}" + (SHELLHIDE[MODE] || "");
+    // Einzel-App (APK/Vorschau): Leiste liegt flach unten wie in allen Apps (sg/basis.css) – keine schwebende Glas-Pille
+    if (nav && window.SGApp && window.SGApp !== "planer" && !EMBED) return css;
     if (nav && nav[2]) { var inner = glassNav(t, nav, g); return css + "@media " + nav[2] + "{" + inner + "}"; }
     if (nav) css += glassNav(t, nav, g);
     return css;

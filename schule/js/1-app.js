@@ -360,6 +360,7 @@ const period = n => db.settings.periods[n - 1] || null;
 // ---------- Icons ----------
 const sv = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 const ICON = {
+  sick: sv('<path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/><path d="M12 9v7"/>'),
   home: sv('<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/>'),
   month: sv('<rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M7.5 13.5h.01M12 13.5h.01M16.5 13.5h.01M7.5 17h.01M12 17h.01M16.5 17h.01"/>'),
   plan: sv('<rect x="3" y="3.5" width="18" height="17" rx="2.5"/><path d="M3 9h18M3 14.5h18M9 3.5v17M15 3.5v17"/>'),
@@ -715,9 +716,9 @@ function homeHTML() {
   if (campNow) h += campHomeCard(t);
   let more = `<div style="margin-top:10px">${statusCard(t)}</div>` + (campNow ? '' : campHomeCard(t)) + morgenCard(t);
   const qa = `<div class="qa-row">
-    <button class="qa-btn" data-a="newHw"><span class="e">📝</span>Aufgabe</button>
-    <button class="qa-btn" data-a="add"><span class="e">📅</span>Prüfung</button>
-    <button class="qa-btn" data-a="sickToday"><span class="e">🤒</span>Krank</button></div>`;
+    <button class="qa-btn" data-a="newHw"><span class="e">${ICON.tasks}</span>Aufgabe</button>
+    <button class="qa-btn" data-a="add"><span class="e">${ICON.month}</span>Prüfung</button>
+    <button class="qa-btn" data-a="sickToday"><span class="e">${ICON.sick}</span>Krank</button></div>`;
   if (deferredPrompt) h += `<div class="card tip" style="margin-top:12px"><b>Als App installieren</b><div class="small">Startet dann wie eine normale App – auch offline.</div><div class="rowb"><button class="btn" data-a="install">Installieren</button></div></div>`;
   // Stundenplan
   const showDay = isSchoolDay(t) && lessonsOn(t).length && (() => { const ls = lessonsOn(t), p = period(ls[ls.length - 1].period); return !p || nowMin() < toMin(p.e); })() ? t : nextSchoolDay(t);
@@ -2482,7 +2483,7 @@ function applyTheme() {
 const IN_PLANER = (() => { try { return window.self !== window.top && !window.SGRahmen; } catch (e) { return true; } })();
 if (IN_PLANER) document.addEventListener('DOMContentLoaded', () => { const tl = document.querySelector('.tab[data-v="kalender"] .tl'); if (tl) tl.textContent = 'Termine'; });
 const SUBNAV = {
-  kalender: ['kal', IN_PLANER ? [['termine', 'Termine'], ['ferien', 'Ferien'], ['fehlzeiten', 'Fehlzeiten']] : [['monat', 'Monat'], ['woche', 'Woche'], ['tag', 'Tag'], ['termine', 'Termine'], ['ferien', 'Ferien'], ['fehlzeiten', 'Fehlzeiten']]],
+  kalender: ['kal', IN_PLANER ? [['termine', 'Termine'], ['ferien', 'Ferien'], ['fehlzeiten', 'Fehlzeiten']] : [['monat', 'Monat'], ['woche', 'Woche'], ['tag', 'Tag'], ['termine', 'Termine'], ['ferien', 'Ferien'], ['fehlzeiten', 'Fehlzeiten'], ['lehrgang', 'Lehrgänge']]],
   // im Planer höchstens drei Einträge (Segmentschalter); Lernzeit und Ablage stehen dort im Seitenmenü
   aufgaben: ['auf', IN_PLANER ? [['offen', 'Offen'], ['pruef', 'Prüfungen'], ['erledigt', 'Erledigt']] : [['offen', 'Offen'], ['pruef', 'Prüfungen'], ['erledigt', 'Erledigt'], ['ablage', 'Ablage'], ['lernzeit', 'Lernzeit']]],
 };
@@ -2502,12 +2503,13 @@ function render() {
   try { schulWidget(); } catch (e) {}
   if (IN_PLANER && ui.view === 'kalender' && ['monat', 'woche', 'tag'].includes(ui.kal)) ui.kal = 'termine';
   const v = ui.view, c = pd(ui.cursor), t = todayStr();
-  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x.dataset.v === v));
+  // Lehrgänge sind ein Unterpunkt des Kalenders (eigene App: 4 Reiter)
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x.dataset.v === (v === 'lehrgang' && !IN_PLANER ? 'kalender' : v)));
   const calNav = v === 'kalender' && (ui.kal === 'monat' || ui.kal === 'tag' || ui.kal === 'woche');
   $('#title').textContent = v === 'heute' ? 'Schule' : calNav ? MON[c.getMonth()] + ' ' + c.getFullYear() : { kalender: IN_PLANER ? 'Termine' : 'Kalender', plan: 'Stundenplan', aufgaben: ui.auf === 'ablage' ? 'Ablage' : ui.auf === 'lernzeit' ? 'Lernzeit' : 'Aufgaben', lehrgang: 'Lehrgänge', morgen: 'Morgen' }[v];
   $('#nav').hidden = !calNav;
   $('#btnToday').hidden = !(calNav && ui.cursor !== t);
-  const sn = $('#subnav'), cfg = SUBNAV[v];
+  const sn = $('#subnav'), cfg = SUBNAV[v === 'lehrgang' && !IN_PLANER ? 'kalender' : v];
   if (cfg) {
     const [key, opts] = cfg; sn.hidden = IN_PLANER && v === 'aufgaben' && (ui.auf === 'ablage' || ui.auf === 'lernzeit'); sn.classList.toggle('seg', IN_PLANER && opts.length <= 3);
     // Lernzeit/Ablage gehören nicht in den Schalter – dort ist keiner gewählt
@@ -2515,7 +2517,8 @@ function render() {
       let badge = '';
       if (k === 'offen') { const n = db.homework.filter(h => !h.done).length; if (n) badge = ` · ${n}`; }
       if (k === 'lernzeit' && local.timer) badge = ' ⏱';
-      return `<button class="chip sm${ui[key] === k ? ' on' : ''}" data-a="sub" data-v="${key}:${k}">${l}${badge}</button>`;
+      const isOn = v === 'lehrgang' ? k === 'lehrgang' : ui[key] === k;
+      return `<button class="chip sm${isOn ? ' on' : ''}" data-a="sub" data-v="${key}:${k}">${l}${badge}</button>`;
     }).join('');
   } else sn.hidden = true;
   $('#fab').hidden = v === 'plan' || v === 'morgen' || (v === 'aufgaben' && ui.auf === 'lernzeit' && local.timer);
@@ -2551,7 +2554,7 @@ document.addEventListener('click', e => {
       ui.view = v; render(); window.scrollTo(0, 0);
       if (!a.classList.contains('tab')) shellSec(SHELL_SEC[v]);   // Sprung aus der Seite („Alle →“, „Plan →“)
       break;
-    case 'sub': { const [k, val] = v.split(':'); ui[k] = val; render(); window.scrollTo(0, 0); break; }
+    case 'sub': { const [k, val] = v.split(':'); if (val === 'lehrgang') { ui.view = 'lehrgang'; ui.camp = null; } else { if (k === 'kal') ui.view = 'kalender'; ui[k] = val; } render(); window.scrollTo(0, 0); break; }
     case 'prev': shift(-1); break;
     case 'next': shift(1); break;
     case 'today': ui.cursor = todayStr(); render(); break;
@@ -2898,7 +2901,7 @@ window.addEventListener('appinstalled', () => { deferredPrompt = null; toast('In
 // ---------- Start ----------
 $('#btnPrev').innerHTML = ICON.left; $('#btnNext').innerHTML = ICON.right;
 $('#btnSettings').innerHTML = ICON.sliders; $('#fab').innerHTML = ICON.plus;
-document.querySelectorAll('.tab .i').forEach((el, i) => { el.outerHTML = [ICON.home, ICON.month, ICON.plan, ICON.tasks, ICON.sled][i]; });
+document.querySelectorAll('.tab .i').forEach(el => { el.outerHTML = ({ heute: ICON.home, plan: ICON.plan, aufgaben: ICON.tasks, kalender: ICON.month, lehrgang: ICON.sled })[el.closest('.tab').dataset.v]; });
 applyTheme(); applyFont(); buildFerien();
 const params = new URLSearchParams(location.search);
 const vParam = params.get('v') || location.hash.slice(1);

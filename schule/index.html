@@ -84,10 +84,20 @@ main{max-width:760px;margin:0 auto;padding:2px 16px calc(124px + env(safe-area-i
 .grow1{flex:1;min-width:0}
 
 /* Tabs */
-.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:color-mix(in srgb,var(--surface) 94%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:6px 2px calc(6px + env(safe-area-inset-bottom))}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:color-mix(in srgb,var(--surface) 94%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:6px 2px calc(6px + env(safe-area-inset-bottom))}
 .tab{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:650;color:var(--muted);padding:4px 0;text-align:center}
 .tab svg{width:23px;height:23px}
 .tab.on{color:var(--accent)}
+/* Einzel-App (PLAN-EINZEL.md): Leiste wie in allen Apps – 80 px, gleich breite Spalten, Pille hinter dem aktiven Symbol */
+.tabs{height:calc(80px + env(safe-area-inset-bottom));padding:0 4px env(safe-area-inset-bottom);align-items:center;-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--surface);border-top:0}
+.tab{height:64px;justify-content:center;gap:4px;padding:0;border:0;background:none;min-width:0;font-size:12px;font-weight:500;color:var(--muted)}
+.tab[hidden]{display:none!important}
+.tab .pill{width:64px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.tab .pill svg{width:24px;height:24px}
+.tab .lbl{line-height:16px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tab.on{color:var(--text)}.tab.on .lbl{font-weight:700}.tab.on .pill{background:var(--accent-soft);color:var(--accent)}
+.fab{bottom:calc(96px + env(safe-area-inset-bottom))}
+.subnav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:0 2px}.subnav::-webkit-scrollbar{display:none}.subnav>*{flex:none}
 .fab{position:fixed;right:18px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:31;width:58px;height:58px;border-radius:18px;background:var(--accent);color:var(--accent-ink,#fff);display:grid;place-items:center;box-shadow:0 8px 22px color-mix(in srgb,var(--accent) 40%,transparent)}
 .fab svg{width:27px;height:27px}
 .fab:active{transform:scale(.95)}
@@ -111,7 +121,7 @@ html.sg-embed .hero .big{font-size:24px}
 .status.ferien .st-t{color:var(--ferien-text)}
 .qa-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
 .qa-btn{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;font-weight:650;box-shadow:var(--shadow);text-align:center}
-.qa-btn .e{font-size:19px;line-height:1}
+.qa-btn .e{font-size:19px;line-height:1}.qa-btn .e svg{width:22px;height:22px;display:block}.qa-btn{min-height:64px;justify-content:center;color:var(--text)}.qa-btn .e{color:var(--accent)}
 .lessons{padding:4px 0;overflow:hidden}
 .les{display:flex;align-items:center;gap:10px;padding:8px 14px}
 .les+.les{border-top:1px solid var(--line)}
@@ -516,11 +526,12 @@ code{background:var(--surface2);border-radius:5px;padding:1px 5px;font-size:12.5
 <button class="fab" id="fab" data-a="fab" aria-label="Hinzufügen"></button>
 
 <nav class="tabs" id="tabs">
-  <button class="tab" data-a="tab" data-v="heute"><span class="i"></span>Heute</button>
-  <button class="tab" data-a="tab" data-v="kalender"><span class="i"></span><span class="tl">Kalender</span></button>
-  <button class="tab" data-a="tab" data-v="plan"><span class="i"></span>Plan</button>
-  <button class="tab" data-a="tab" data-v="aufgaben"><span class="i"></span>Aufgaben</button>
-  <button class="tab" data-a="tab" data-v="lehrgang"><span class="i"></span>Lehrgang</button>
+  <button class="tab" data-a="tab" data-v="heute"><span class="pill"><span class="i"></span></span><span class="lbl">Heute</span></button>
+  <button class="tab" data-a="tab" data-v="plan"><span class="pill"><span class="i"></span></span><span class="lbl">Stundenplan</span></button>
+  <button class="tab" data-a="tab" data-v="aufgaben"><span class="pill"><span class="i"></span></span><span class="lbl">Aufgaben</span></button>
+  <button class="tab" data-a="tab" data-v="kalender"><span class="pill"><span class="i"></span></span><span class="lbl tl">Kalender</span></button>
+  <!-- Lehrgänge: in der eigenen App Unterpunkt des Kalenders; der Knopf bleibt für Sprünge aus dem Planer (unsichtbar) -->
+  <button class="tab" data-a="tab" data-v="lehrgang" hidden><span class="pill"><span class="i"></span></span><span class="lbl">Lehrgang</span></button>
 </nav>
 
 <div class="sheet-wrap" id="sheet" hidden></div>
