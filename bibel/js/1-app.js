@@ -3,6 +3,8 @@
    Die Datei wird beim ersten Öffnen geladen und danach offline gespeichert.
    ========================================================================= */
 (function(){
+// Symbolsatz kommt aus sg/design.js – fehlt er (alter Zwischenspeicher), ohne Symbole weiterlaufen statt abzustürzen
+if(!window.SGIcon) window.SGIcon = () => "";
 const loadEl = document.getElementById("goBtn");
 if(loadEl){ loadEl.disabled = true; loadEl.textContent = "Bibel wird geladen …"; }
 fetch("elb1905.json").then(r => { if(!r.ok) throw new Error(r.status); return r.json(); }).then(startApp).catch(() => {
