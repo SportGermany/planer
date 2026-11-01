@@ -5,6 +5,12 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## 5.0.0 – schlanker Planer (Schritt 6)
+- Planer-APK ohne `training/`, `schule/`, `bibel/`, `wissen/` (0,9 statt 6,7 MB). Diese Bereiche öffnen die eigene App; fehlt sie,
+  Hinweis mit Download der neuesten APK. Auch eine gespeicherte Startadresse (#training/…) führt zum Kalender + Hinweis statt zur leeren Seite.
+- Daten der ausgelagerten Bereiche bleiben im Planer-Speicher, bis die App sie beim ersten Öffnen übernimmt (auch nach dem Update).
+- Emulator-Test: ausgelagerte Bereiche erwarten den Hinweis.
+
 ## 4.4.0 + Training 1.0.0 (Schritt 5)
 - Training als eigene APK (`training/` mit Mobility, Atmung, Bahnplan + `wissen/`). Sportwissenschaft über „Dazu heute“ › Sportwissenschaft
   bzw. `#wissen/…`. Fehler gefunden: Zurück aus der Sportwissenschaft sprang wieder hinein (Adresse behielt #wissen) – Adresse vorher ersetzen.

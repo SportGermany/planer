@@ -7,7 +7,7 @@ const SKIP = new Set(['werkzeuge', '.git', '.github', 'node_modules', '.gitignor
 // Einzel-Apps bekommen nur ihre Ordner (dirs) + die Dateien im Hauptordner; Startseite = start; Version/Name aus apps.json.
 const APPS = JSON.parse(fs.readFileSync(path.join(ROOT, 'werkzeuge/apps.json'), 'utf8')), KEY = process.argv[2] || 'planer', A = APPS[KEY];
 if (!A || KEY[0] === '_') { console.error('Unbekannte App: ' + KEY + ' (bekannt: ' + Object.keys(APPS).filter(k => k[0] !== '_').join(', ') + ')'); process.exit(1); }
-const ONLY = A.dirs ? new Set(A.dirs) : null;
+const ONLY = A.dirs ? new Set(A.dirs) : null, OHNE = new Set(A.ohne || []);   // ohne: Bereiche, die eigene Apps sind (schlanker Planer)
 fs.rmSync(OUT, { recursive: true, force: true });
 let n = 0, bytes = 0;
 (function copy(src, dst, top) {
@@ -15,6 +15,7 @@ let n = 0, bytes = 0;
   for (const e of fs.readdirSync(src, { withFileTypes: true })) {
     if (SKIP.has(e.name) || e.name.endsWith('.md')) continue;
     if (top && ONLY && e.isDirectory() && !ONLY.has(e.name)) continue;
+    if (top && e.isDirectory() && OHNE.has(e.name)) continue;
     const s = path.join(src, e.name), d = path.join(dst, e.name);
     if (e.isDirectory()) copy(s, d, false);
     else { fs.copyFileSync(s, d); n++; bytes += fs.statSync(s).size; }
@@ -24,6 +25,8 @@ fs.writeFileSync(path.join(OUT, 'index.html'), '<!doctype html><meta charset="ut
 let ver = (/const VERSION = 'planer-([^']+)'/.exec(fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8')) || [])[1];
 // Einzel-App: eigene Version und Kennung in die kopierte design.js (Anzeige „Version …“, Update sucht <app>-v…)
 const DJ = path.join(APP, 'sg/design.js');
+// schlanker Planer: welche Bereiche fehlen (die öffnet er über ihre eigene App, siehe EXT in app/js/1-app.js)
+if (A.ohne) fs.writeFileSync(DJ, 'window.SGOhne = ' + JSON.stringify(A.ohne) + ';\n' + fs.readFileSync(DJ, 'utf8'));
 if (KEY !== 'planer') {
   ver = A.ver;
   const t = fs.readFileSync(DJ, 'utf8'), u = 'window.SGApp = "' + KEY + '";\n' + t.replace(/var VERSION = "[^"]*";/, 'var VERSION = "' + ver + '";');

@@ -3,7 +3,13 @@
   "planer": {
     "id": "de.sportgermany.planer",
     "name": "Planer",
-    "start": "app/"
+    "start": "app/",
+    "ohne": [
+      "training",
+      "schule",
+      "bibel",
+      "wissen"
+    ]
   },
   "bibel": {
     "id": "de.sportgermany.bibel",

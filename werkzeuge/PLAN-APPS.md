@@ -35,7 +35,9 @@ veröffentlichten App. Die bestehende Planer-App bleibt bis zum Schluss voll nut
   → verbund.js liest/exportiert die alte Schulkopie nicht mehr; Einträge anderer Apps kommen über `fromApp` aus Google zurück.
 - [x] **5 App Training** – Training, Mobility, Atmung, Auswertung, Sportwissenschaft, Bahnplan (unverändert); Trainings in Google.
   „✓ … erledigt“-Einträge (Beschreibung „Planer · … erledigt“) → Planer `doneArea` hakt geplante Trainings ab; `#wissen/…` öffnet ../wissen/.
-- [ ] **6 Planer schlank** – nur Kalender, Aufgaben, Notizen, Woche planen, Web-/Handykalender; Bereiche als Kacheln zu den Apps.
+- [x] **6 Planer schlank** – nur Kalender, Aufgaben, Notizen, Woche planen, Web-/Handykalender; Bereiche als Kacheln zu den Apps.
+  apps.json `ohne` → www.js lässt die Ordner weg und setzt `window.SGOhne`; `ohne()`/`viaApp()`/`appMissing()` in 1-app.js (Download über `SGUpdate.apkFor`).
+  Im Browser/den Tests (ohne SGOhne) bleibt der volle Planer – die große Suite prüft weiter alle Bereiche. Planer-APK 6,7 → 0,9 MB.
 - [ ] **7 Abnahme** – je App alt/neu-Vergleich, offline, Emulator; Bericht an den Nutzer.
 - [ ] **8 Verbesserungen** – Widgets; App-Verknüpfungen (langer Druck); Benachrichtigungen je App; Trainingsergebnis im
   Google-Termin; Stundenplan als eigener Google-Unterkalender; Google-Termine im Planer bearbeiten + Wochenraster über alle Apps;

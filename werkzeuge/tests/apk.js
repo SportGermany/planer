@@ -190,6 +190,22 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
     return res;
   });
   ok(tr.pre === 0 && tr.autoDone === 1 && tr.tb === 0, 'Training-App installiert: „✓ erledigt“ aus Google hakt das geplante Training ab ' + JSON.stringify(tr));
+  // Schlanker Planer (APK ohne Training/Schule/Bibel): installierte App öffnet, fehlende → Hinweis mit Download; Startadresse eines ausgelagerten Bereichs → Kalender
+  const sl = await q.evaluate(async () => {
+    window.SGOhne = ['training', 'schule', 'bibel', 'wissen']; window.__sim.opened = [];
+    SGShell.go('bibel', 'lesen', null, { push: true }); await new Promise(r => setTimeout(r, 400));
+    SGShell.go('training', 'wissen', 'karten'); await new Promise(r => setTimeout(r, 400));
+    const sheet = document.getElementById('sheet').classList.contains('on') ? document.querySelector('#sheet h3').textContent : '';
+    document.querySelector('#sheet [data-s=x]') && document.querySelector('#sheet [data-s=x]').click(); await new Promise(r => setTimeout(r, 400));
+    location.hash = 'schule/plan'; await new Promise(r => setTimeout(r, 500));
+    const sh2 = document.getElementById('sheet').classList.contains('on') ? document.querySelector('#sheet h3').textContent : '', hash = location.hash;
+    document.querySelector('#sheet [data-s=x]') && document.querySelector('#sheet [data-s=x]').click(); await new Promise(r => setTimeout(r, 300));
+    const frames = [...document.querySelectorAll('#stage iframe')].map(f => f.dataset.p).filter(p => /^(training|schule|bibel|wissen)\//.test(p)).length;
+    window.SGOhne = null;
+    return { opened: window.__sim.opened.map(o => o.pkg + ' ' + o.ziel), sheet, sh2, hash, frames };
+  });
+  ok(sl.opened.join() === 'de.sportgermany.bibel lesen' && /Training ist jetzt eine eigene App/.test(sl.sheet) && /Schule ist jetzt eine eigene App/.test(sl.sh2) && sl.hash === '#kalender',
+    'Schlanker Planer: Bibel-App öffnet, fehlende Apps mit Hinweis, Startadresse → Kalender ' + JSON.stringify(sl));
   // Kalenderdatei direkt öffnen („Öffnen mit Planer“)
   await q.evaluate(() => { const s = window.__sim; s.file = { name: 'Quali-Lehrgang.ics', text: 'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:q1@x\r\nDTSTART;TZID=Europe/Berlin:20991023T160000\r\nDTEND;TZID=Europe/Berlin:20991023T173000\r\nSUMMARY:Training G1\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:q2@x\r\nDTSTART;VALUE=DATE:20991023\r\nDTEND;VALUE=DATE:20991029\r\nSUMMARY:Quali-Lehrgang\r\nEND:VEVENT\r\nEND:VCALENDAR' }; s.ls.fileOpened(); });
   await q.waitForTimeout(900);

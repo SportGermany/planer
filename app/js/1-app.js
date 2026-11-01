@@ -96,9 +96,10 @@
     training: { pkg: "de.sportgermany.training", keys: /^(wk_.*|rodelmobility\.v1|pulsplan\.v1|bahnplan\.v1|sg-wissen-v1|sg-training-akk-v1|sg-shared-calendar-sync|sg-handy-v1)$/, idb: [["bahnplan", "img"]],
       pre: { mobility: "mobility", atmung: "atmung", rodeln: "bahnplan", wissen: "wissen" } } }, extOn = {};
   function sysP() { try { var Cp = window.Capacitor; return Cp && Cp.isNativePlatform && Cp.isNativePlatform() && Cp.Plugins.PlanerSystem || null; } catch (e) { return null; } }
+  var extReady = Promise.resolve();
   function extCheck() {
     var P = sysP(); if (!P || !P.installed) return;
-    P.installed({ pkgs: Object.keys(EXT).map(function (k) { return EXT[k].pkg; }) }).then(function (r) {
+    extReady = P.installed({ pkgs: Object.keys(EXT).map(function (k) { return EXT[k].pkg; }) }).then(function (r) {
       var before = JSON.stringify(extOn);
       extOn = {}; (r.installed || []).forEach(function (pk) { Object.keys(EXT).forEach(function (k) { if (EXT[k].pkg === pk) extOn[k] = 1; }); });
       // verbund.js liest das: Daten ausgelagerter Bereiche nicht mehr selbst zeigen/ins Handy schreiben (kommen aus deren App)
@@ -106,15 +107,39 @@
       if (JSON.stringify(extOn) !== before && cur.v === "kalender") renderCal();
     }).catch(function () {});
   }
+  /* Schlanker Planer (APK ohne Training/Schule/Bibel/Sportwissenschaft, window.SGOhne vom APK-Bau): Diese Bereiche öffnen ihre
+   * eigene App; ist sie nicht installiert, gibt es den Hinweis mit Download. Die Daten bleiben im Planer, bis die App sie übernimmt. */
+  var APPNAME = { training: "Training", schule: "Schule", bibel: "Bibel" };
+  function ohne(v, s) {
+    var O = window.SGOhne; if (!O || !V[v] || !V[v].secs) return null;
+    var sec = secOf(V[v], s), d = (sec && sec.p || "").split("/")[0];
+    return O.indexOf(d) >= 0 ? (d === "wissen" ? "training" : d) : null;
+  }
+  function viaApp(app, v, s, k, opt) {
+    extReady.then(function () { if (extOn[app]) openExt(v, s, opt || {}, k, app); else appMissing(app); });
+  }
+  function appMissing(app) {
+    var n = APPNAME[app] || app;
+    sheet("<h3>" + n + " ist jetzt eine eigene App</h3><p class=\"s\">Lade die App „" + n + "“ einmal herunter und installiere sie. Öffnest du sie danach hier aus dem Planer, übernimmt sie deine Daten automatisch – bis dahin bleibt alles im Planer gespeichert.</p>" +
+      '<div class="btns"><button class="btn" data-s="x">Später</button><button class="btn p" data-s="dl">Herunterladen</button></div>', function (a) {
+      if (a !== "dl") return closeSheet();
+      snack("Suche die neueste Version …");
+      (window.SGUpdate && SGUpdate.apkFor ? SGUpdate.apkFor(app) : Promise.resolve(null)).then(function (u) {
+        u = u || "https://github.com/SportGermany/planer/releases";
+        closeSheet(); snack("Download startet – danach die Datei antippen und „Installieren“ wählen.");
+        if (window.SGNative && SGNative.external) SGNative.external(u); else window.open(u, "_blank");
+      }).catch(function () { snack("Ohne Internet geht der Download gerade nicht."); });
+    });
+  }
   extCheck();
   document.addEventListener("visibilitychange", function () { if (!document.hidden) extCheck(); });
-  function openExt(v, s, opt, k) {
-    var P = sysP(), E = EXT[v], sec = secOf(V[v], s), kid = kidOf(sec, k), done = {};
+  function openExt(v, s, opt, k, app) {
+    var P = sysP(), E = EXT[app || v], sec = secOf(V[v], s), kid = kidOf(sec, k), done = {};
     try { done = JSON.parse(localStorage.getItem("sg-uebergabe-v1") || "{}") || {}; } catch (e) {}
-    var part = opt.sub || (kid && (kid.h || kid.s)) || (sec && (sec.h || sec.s)) || "", pre = E.pre && sec && E.pre[sec.id];
+    var part = opt.sub || (kid && (kid.h || kid.s)) || (sec && (sec.h || sec.s)) || "", pre = E.pre && sec && v === (app || v) && E.pre[sec.id];
     var o = { pkg: E.pkg, ziel: pre ? pre + (part ? "/" + part : "") : part };
     var prep = Promise.resolve();
-    if (!done[v]) {
+    if (!done[app || v]) {
       var keys = {};
       for (var i = 0; i < localStorage.length; i++) { var key = localStorage.key(i); if (E.keys.test(key) || key === "sg-design-v3" || key === "sg-monet-v1") keys[key] = localStorage.getItem(key); }
       var pay = { von: "planer", at: Date.now(), keys: keys, idb: {}, stores: {} };
@@ -126,9 +151,9 @@
       })).then(function () { o.daten = JSON.stringify(pay); });
     }
     prep.then(function () { return P.openApp(o); }).then(function (r) {
-      if (r && r.opened) { if (o.daten) { done[v] = Date.now(); try { localStorage.setItem("sg-uebergabe-v1", JSON.stringify(done)); } catch (e) {} } }
-      else { delete extOn[v]; go(v, s, k, Object.assign({}, opt, { intern: true })); }
-    }).catch(function () { delete extOn[v]; go(v, s, k, Object.assign({}, opt, { intern: true })); });
+      if (r && r.opened) { if (o.daten) { done[app || v] = Date.now(); try { localStorage.setItem("sg-uebergabe-v1", JSON.stringify(done)); } catch (e) {} } }
+      else { delete extOn[app || v]; if (ohne(v, s)) appMissing(app || v); else go(v, s, k, Object.assign({}, opt, { intern: true })); }
+    }).catch(function () { delete extOn[app || v]; if (ohne(v, s)) appMissing(app || v); else go(v, s, k, Object.assign({}, opt, { intern: true })); });
     return true;
   }
 
@@ -189,6 +214,9 @@
   function secOf(v, id) { return v.secs ? v.secs.find(function (s) { return s.id === id; }) || v.secs[0] : null; }
   function kidOf(s, id) { return s && s.kids ? s.kids.find(function (k) { return k.id === id; }) || s.kids[0] : null; }
   function render() {
+    // schlanker Planer: Adresse eines ausgelagerten Bereichs (z. B. beim Start) → Kalender zeigen, App öffnen bzw. Hinweis
+    var oa0 = ohne(cur.v, cur.s);
+    if (oa0) { var c0 = cur; cur = { v: "kalender" }; try { history.replaceState({ app: 1 }, "", "#kalender"); } catch (e) {} viaApp(oa0, c0.v, c0.s, c0.k, {}); }
     var v = V[cur.v] || V.kalender;
     titleEl.textContent = cur.v === "kalender" && calMon ? "Monat" : v.t;
     document.title = v.t + " · Planer";
@@ -268,6 +296,7 @@
     if (drawerOpen) return closeDrawer(function () { go(v, s, k, opt); });
     var al = alias(v, s); v = al[0]; s = al[1];
     if (extOn[v] && !opt.intern && openExt(v, s, opt, k)) return;
+    var oa = ohne(v, s); if (oa) { viaApp(oa, v, s, k, opt); return; }
     if (!V[v]) v = "kalender";
     var push = opt.push != null ? opt.push : (cur.v === "kalender" && v !== "kalender") || (V[v].up === cur.v);
     if (calMon && v !== "kalender") { calMon = false; calModeCls(); if (history.state && history.state.mon) history.replaceState({ app: 1, from: history.state.from }, "", location.hash); }
@@ -1383,6 +1412,7 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["5.0.0", ["Der Planer ist jetzt schlank: Kalender, Aufgaben, Notizen, Woche planen, Pause. Training, Schule und Bibel sind eigene Apps – der Planer öffnet sie; fehlt eine, gibt es den Download-Hinweis. Deine Daten bleiben gespeichert, bis die App sie übernimmt"]],
     ["4.4.0", ["Neu: eigene Training-App (Release „Training 1.0.0“) mit Mobility, Atmung, Bahnplan und Sportwissenschaft. Ist sie installiert, öffnet der Planer sie – beim ersten Mal mit allen Trainingsdaten",
       "Erledigte Einheiten trägt die Training-App als „✓ … erledigt“ in deinen (Google-)Kalender ein – der Planer hakt damit die geplanten Trainings ab"]],
     ["4.3.0", ["Neu: eigene Schul-App (Release „Schule 1.0.0“). Ist sie installiert, öffnet der Planer sie – beim ersten Mal mit Stundenplan, Prüfungen, Aufgaben und den Dateien der Ablage",

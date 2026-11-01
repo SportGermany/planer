@@ -398,7 +398,7 @@
 (function () {
   "use strict";
   if (window.SGFixUrl) return;
-  var VERSION = "4.4.0";
+  var VERSION = "5.0.0";
   window.SGVersion = VERSION;
   var BASE = "/" + (location.pathname.split("/")[1] || "") + "/";
   var MAP = { trainingsblog: "training/", pulsplan: "training/atmung/", rodeln: "training/mobility/", schulplaner: "", kalender: "",
@@ -515,7 +515,18 @@
       status("Version " + v + " gefunden – wird geladen …"); install(status, v); return "neu";
     }).catch(function () { status("Der Server ist gerade nicht erreichbar. Die App läuft offline ganz normal weiter."); return "fehler"; });
   }
-  window.SGUpdate = { version: function () { return window.SGVersion; }, check: check, install: install };
+  // Download-Adresse der neuesten APK einer anderen App (Planer: fehlende Bereichs-App installieren)
+  function apkFor(app) {
+    return fetch(REL, { cache: "no-store", headers: { Accept: "application/vnd.github+json" } }).then(function (r) { return r.ok ? r.json() : []; }).then(function (list) {
+      var pre = app + "-v", best = null, bv = "";
+      (list || []).forEach(function (x) {
+        var t = String(x.tag_name || ""), v = t.indexOf(pre) === 0 ? t.slice(pre.length) : "", a = (x.assets || []).find(function (y) { return /\.apk$/.test(y.name); });
+        if (v && a && !x.draft && !x.prerelease && (!bv || newer(v, bv))) { best = a.browser_download_url; bv = v; }
+      });
+      return best;
+    });
+  }
+  window.SGUpdate = { version: function () { return window.SGVersion; }, check: check, install: install, apkFor: apkFor };
   // Beim Start leise nachsehen (höchstens alle 6 Stunden) und dann einen Hinweis anbieten
   if (EMBED) return;
   window.addEventListener("load", function () {

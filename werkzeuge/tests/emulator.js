@@ -90,7 +90,16 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   let restarts = 0;
   const playDied = () => /depends on provider com\.google\.android\.gms[^\n]*in dying proc/.test(execSync('adb logcat -d -t 3000', { encoding: 'utf8', maxBuffer: 64e6 }).split('\n').filter(l => /planer/.test(l)).join('\n'));
   const reopen = async () => { await dev.shell('am start -n ' + PKG + '/.MainActivity'); await wait(8000); page = await findPage(); await page.waitForSelector('#nav button', { timeout: 30000 }); };
+  // schlanker Planer (window.SGOhne): Training, Schule, Bibel sind eigene Apps – dort nur prüfen, dass der Hinweis statt einer leeren Seite kommt
+  const ohne = await page.evaluate(() => window.SGOhne || []);
   for (const h of ['kalender', 'training/heute', 'training/rodeln', 'training/wissen', 'training/mobility', 'training/atmung', 'schule', 'mehr', 'bibel', 'pause', 'notizen', 'aufgaben']) {
+    if (ohne.includes(h.split('/')[0])) {
+      await page.evaluate(h => { location.hash = h; }, h); await wait(1500);
+      const t = await page.evaluate(() => [location.hash, document.getElementById('sheet').classList.contains('on') ? document.querySelector('#sheet h3').textContent : '']);
+      ok(t[0] === '#kalender' && /eigene App/.test(t[1]), 'Bereich ' + h + ': eigene App – Hinweis statt leerer Seite (' + t[1] + ')');
+      await page.evaluate(() => { const b = document.querySelector('#sheet [data-s=x]'); if (b) b.click(); }); await wait(500);
+      continue;
+    }
     let r = null;
     for (let tries = 0; tries < 2 && !r; tries++) {
       try {
