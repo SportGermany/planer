@@ -4,8 +4,10 @@ Android-App (Capacitor 8, WebView = Chrome) aus reinen HTML/JS-Dateien. **Nur di
 Alles läuft 100 % offline; Netz nur für Cloud-Abgleich (Gist), Webkalender, Update-Prüfung, Wikipedia im Bahnplan.
 Sprache in App, Commits, Doku: Deutsch. Ausführliches Wissen: `werkzeuge/WISSEN.md`, Geschichte und Fehler: `werkzeuge/VERLAUF.md`.
 
+**Laufender Umbau in mehrere Apps: zuerst `werkzeuge/PLAN-APPS.md` lesen und dort weitermachen.**
+
 ## Feste Regeln
-- Eine App: alles bleibt unter `/planer/`. Keine Funktion löschen. Datenformate abwärtskompatibel (alte Geräte, Cloud, Umzugsdatei).
+- Ein Repo: alles bleibt unter `/planer/` (mehrere APKs aus denselben Dateien, siehe PLAN-APPS.md). Keine Funktion löschen. Datenformate abwärtskompatibel (alte Geräte, Cloud, Umzugsdatei).
 - Gemeinsamer Code nur in `werkzeuge/quellen/` → `python3 werkzeuge/build.py` kopiert nach `sg/` (nie `sg/` direkt bearbeiten).
 - Design zentral (`werkzeuge/quellen/design.js`, Standard „Material You“). Mobility (`training/mobility/`, `training/atmung/`) inhaltlich nicht ändern ohne Rückfrage.
 - Nicht anfassen: `bibel/elb1905.json`, `werkzeuge/apk/planer-schluessel.enc` (nie neu erzeugen), Passwortdatei (nie lesen/ausgeben).
