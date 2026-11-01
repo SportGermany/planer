@@ -1662,7 +1662,7 @@ function switchTab(name){
     s.classList.toggle("active", s.id === "s-" + name);
   });
   Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(t){
-    t.classList.toggle("on", t.dataset.t === name);
+    t.classList.toggle("on", t.dataset.t === name || (name === "daten" && t.dataset.t === "fitness"));   // Analyse gehört zu „Fortschritt“
   });
   var fab = $("fabAdd");
   if (fab) fab.style.display = (name === "lauf" && (S.uiPrefs || {}).showFab !== false) ? "flex" : "none";

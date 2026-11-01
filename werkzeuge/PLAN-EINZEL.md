@@ -64,7 +64,7 @@ die Vorschau reicht `top.SGShell/SharedCalendar/…` an die gezeigte App weiter.
     App-Version; Knöpfe „Teilen“ (Android-Teilen → in den Chat einfügen), „Kopieren“, „Als Datei speichern“; zusätzlich in der
     Cloud-Datei `selbsttest-<app>.json`, falls die Cloud eingerichtet ist;
   - derselbe Selbsttest läuft in `schnell-app.js` und im Emulator mit → gleiche Prüfungen lokal, auf GitHub und auf dem Handy.
-- [ ] **1 Bibel** (Bibel 2.0.0)
+- [~] **1 Bibel** (Bibel 2.0.0) – Aufbau + Design fertig in der Vorschau (01.11., Nutzerin: „sehr gut“); offen: Cloud, Selbsttest
   - Reiter: **Heute · Lesen · Meine Bibel · Einstellungen**.
   - Heute: Lesekarte (nächster Abschnitt, „Heute lesen“), Serie kompakt (Zahl + 14-Tage-Leiste), Vers des Tages.
   - Lesen: Suche (Wort oder Stelle) + Bücher AT/NT aufklappbar + Fortschritt.
@@ -73,15 +73,15 @@ die Vorschau reicht `top.SGShell/SharedCalendar/…` an die gezeigte App weiter.
     Sepia/Nacht, Auto-Nacht, Schriftgröße, Schriftart), **Erinnerung**, Statistik kompakt, Baukasten (Cloud, Farbwelt, App, Daten).
   - entfällt: Farbwelten-Galerie (→ eine Zeile „Farbwelt“), „Als App installieren“ (PWA, in der APK sinnlos), langer Über-Text
     (→ kurz, ohne falsches „keine Cloud“).
-- [ ] **2 Planer** (Planer 6.0.0)
+- [~] **2 Planer** (Planer 6.0.0) – Leiste/Mehr fertig in der Vorschau; offen: Cloud, Selbsttest, Code ausdünnen
   - Reiter: **Heute · Kalender · Aufgaben · Mehr**; Mehr: **Deine Apps** (Kacheln Öffnen/Installieren), Notizen, Woche planen,
     Pause (unverändert), Kalender verbinden, Baukasten.
   - entfällt in der Planer-APK: Bereichs-Tabellen und Suchdaten von Training/Schule/Bibel, alte Seite `/planer/` für Aufgaben
     (Aufgaben nativ in der Hülle), Vorladen.
-- [ ] **3 Schule** (Schule 2.0.0) – Reiter: **Heute · Stundenplan · Aufgaben · Kalender**; Lehrgänge im Kalender, Prüfungen in
+- [~] **3 Schule** (Schule 2.0.0) – Leiste/Lehrgänge fertig in der Vorschau; offen: Cloud, Selbsttest – Reiter: **Heute · Stundenplan · Aufgaben · Kalender**; Lehrgänge im Kalender, Prüfungen in
   Aufgaben, Filter als Wischleiste, Schnellknöpfe mit Symbolen; eigener Repo-Sync → gemeinsamer Cloud-Abgleich (Ablage-Dateien
   bleiben lokal + Datei-Sicherung).
-- [ ] **4 Training** (Training 2.0.0) – Reiter: **Heute · Training · Fortschritt · Kalender**, Einstellungen über Zahnrad;
+- [~] **4 Training** (Training 2.0.0) – Leiste/Fortschritt/Zahnrad fertig in der Vorschau; offen: Cloud, Selbsttest, Skripte nach Bedarf – Reiter: **Heute · Training · Fortschritt · Kalender**, Einstellungen über Zahnrad;
   Analyse + Fitness → Fortschritt; gemeinsame Karten/Knöpfe; Mobility/Atmung inhaltlich unverändert; Skripte nach Bedarf laden;
   8-github-Sync → gemeinsamer Cloud-Abgleich.
 - [ ] **5 Abschluss** – Sync-Test über alle Apps (zwei Geräte nachgestellt + Emulator), Ladezeiten vorher/nachher, Bericht.

@@ -23,7 +23,7 @@
     --roundrest:#c98bd9; --roundrest-dim:#332338;
     --run:#6fa8ea; --run-dim:#1e2c3d;
     --danger:#e0645f; --ok:#8fd15c;
-    --nav-h:60px;
+    --nav-h:80px;
   }
   html[data-theme="light"]{
     --bg:#f4f5f7; --panel:#ffffff; --panel-2:#eceef1; --panel-3:#e2e5ea;
@@ -274,6 +274,23 @@
   .tab span{ font-size:9.5px; font-weight:600; letter-spacing:-.01em; }
   .tab.on{ color:var(--text); }
   .tab.on svg{ color:var(--work); }
+  /* Einzel-App: gleichmäßige Leiste (4 gleich breite Spalten, Pille hinter dem aktiven Symbol) – wie sg/basis.css */
+  .nav{ background:var(--panel); border-top:0; -webkit-backdrop-filter:none; backdrop-filter:none; }
+  .nav-inner{ max-width:640px; display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); height:80px; align-items:center; padding:0 4px; }
+  .tab{ height:64px; gap:4px; min-width:0; color:var(--text-dim); }
+  .tab[hidden]{ display:none !important; }
+  .tab .pill{ width:64px; height:32px; border-radius:16px; display:flex; align-items:center; justify-content:center; transition:background .2s; }
+  .tab .pill svg{ width:24px; height:24px; }
+  .tab > span:last-child{ font-size:12px; font-weight:500; line-height:16px; letter-spacing:0; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tab.on > span:last-child{ font-weight:700; }
+  .tab.on .pill{ background:color-mix(in srgb, var(--work) 22%, transparent); }
+  .tgear{ margin-left:auto; flex:none; width:48px; height:48px; border:0; border-radius:24px; background:none; color:var(--text); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+  .tgear svg{ width:24px; height:24px; }
+  html.sg-embed .tgear, html.sg-embed .fseg{ display:none; }
+  .fseg{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); border:1px solid var(--text-faint); border-radius:20px; overflow:hidden; margin:0 0 14px; }
+  .fseg button{ height:40px; border:0; background:none; color:var(--text); font-size:14px; font-weight:500; cursor:pointer; }
+  .fseg button + button{ border-left:1px solid var(--text-faint); }
+  .fseg button.on{ background:color-mix(in srgb, var(--work) 22%, transparent); color:var(--work); }
 
   /* ---------- Overlay: Player & Sheet ---------- */
   .overlay{
@@ -1498,7 +1515,7 @@ html.m3 .streak-chip { border-radius: 8px; }
 <!-- ==================== DATEN ==================== -->
 <section class="screen" id="s-daten">
   <div class="top">
-    <div><h1>Analyse</h1><p>Was deine eigenen Daten hergeben</p></div>
+    <div><h1>Fortschritt</h1><p>Was deine eigenen Daten hergeben</p></div>
   </div>
 
   <div class="segbar" id="segAnalyse">
@@ -1648,7 +1665,7 @@ html.m3 .streak-chip { border-radius: 8px; }
 <!-- ==================== FITNESS ==================== -->
 <section class="screen" id="s-fitness">
   <div class="top">
-    <div><h1>Fitness</h1><p>Dein aktueller Stand</p></div>
+    <div><h1>Fortschritt</h1><p>Dein aktueller Stand</p></div>
   </div>
 
   <div class="card" data-sec="fitscore">
@@ -2140,25 +2157,29 @@ html.m3 .streak-chip { border-radius: 8px; }
 
 <!-- ==================== TAB-LEISTE ==================== -->
 <nav class="nav"><div class="nav-inner" id="nav">
-  <button class="tab on" data-t="heute">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Heute</span>
-  </button>
-  <button class="tab" data-t="kalender">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Kalender</span>
-  </button>
-  <button class="tab" data-t="lauf">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="15" cy="4.5" r="2"/><path d="M12 21l1.5-5.5-3-2.5.5-4 3.5 2 3 1"/><path d="M8 9l3-2.5 3.5 1.5"/><path d="M6 16l2.5-2.5"/></svg><span>Training</span>
-  </button>
-  <button class="tab" data-t="daten">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 8l4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg><span>Analyse</span>
-  </button>
-  <button class="tab" data-t="fitness">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 3 4-6 5 5"/></svg><span>Fitness</span>
-  </button>
-  <button class="tab" data-t="einst">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 7 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9H1a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 2.6 7a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H7a1.7 1.7 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1A1.7 1.7 0 0 0 15 2.6a1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V7a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" transform="translate(1.5,1.5) scale(0.88)"/></svg><span>Einst.</span>
-  </button>
+  <button class="tab on" data-t="heute"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span><span>Heute</span></button>
+  <button class="tab" data-t="lauf"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="15" cy="4.5" r="2"/><path d="M12 21l1.5-5.5-3-2.5.5-4 3.5 2 3 1"/><path d="M8 9l3-2.5 3.5 1.5"/><path d="M6 16l2.5-2.5"/></svg></span><span>Training</span></button>
+  <button class="tab" data-t="fitness"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 3 4-6 5 5"/></svg></span><span>Fortschritt</span></button>
+  <button class="tab" data-t="kalender"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span><span>Kalender</span></button>
+  <!-- Analyse liegt unter „Fortschritt“, Einstellungen hinter dem Zahnrad oben – Knöpfe bleiben für Sprünge erhalten -->
+  <button class="tab" data-t="daten" hidden><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 8l4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span><span>Analyse</span></button>
+  <button class="tab" data-t="einst" hidden><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 7 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9H1a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 2.6 7a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H7a1.7 1.7 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1A1.7 1.7 0 0 0 15 2.6a1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V7a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" transform="translate(1.5,1.5) scale(0.88)"/></svg></span><span>Einstellungen</span></button>
 </div></nav>
+<script>
+/* Einzel-App (PLAN-EINZEL.md): 4 Reiter. „Fortschritt“ = Stand (Fitness) + Analyse mit Umschalter; Einstellungen über das Zahnrad. */
+(function () {
+  function go(t) { var b = document.querySelector('.tab[data-t="' + t + '"]'); if (b) b.click(); }
+  var gear = '<button class="tgear" type="button" data-go="einst" aria-label="Einstellungen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>';
+  ["s-heute", "s-lauf", "s-fitness", "s-daten", "s-kalender"].forEach(function (id) {
+    var top = document.querySelector("#" + id + " > .top"); if (top) top.insertAdjacentHTML("beforeend", gear);
+  });
+  [["s-fitness", "fitness"], ["s-daten", "daten"]].forEach(function (x) {
+    var top = document.querySelector("#" + x[0] + " > .top"); if (!top) return;
+    top.insertAdjacentHTML("afterend", '<div class="fseg" role="group" aria-label="Fortschritt"><button type="button" data-go="fitness"' + (x[1] === "fitness" ? ' class="on"' : "") + '>Stand</button><button type="button" data-go="daten"' + (x[1] === "daten" ? ' class="on"' : "") + ">Analyse</button></div>");
+  });
+  document.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-go]"); if (b) go(b.dataset.go); });
+})();
+</script>
 
 <!-- ==================== PLAYER ==================== -->
 <audio id="mediaSessionAudio" loop playsinline style="display:none"></audio>
