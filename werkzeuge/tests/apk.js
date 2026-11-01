@@ -113,6 +113,7 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
         installed: o => Promise.resolve({ installed: o.pkgs.filter(x => x === 'de.sportgermany.bibel' || (st.schuleApp && x === 'de.sportgermany.schule') || (st.trainingApp && x === 'de.sportgermany.training')) }),
         openApp: o => { (st.opened = st.opened || []).push(o); return Promise.resolve({ opened: true }); },
         takeHandover: () => Promise.resolve({}),
+        setWidget: o => { st.widget = o; return Promise.resolve(); }, setShortcuts: o => { st.shortcuts = o.list; return Promise.resolve(); },
         addListener: (ev, fn) => { (st.ls = st.ls || {})[ev] = fn; return Promise.resolve({ remove() {} }); } },
       CapacitorHttp: { get: o => { st.http = (st.http || []).concat([o.url]); return Promise.resolve({ status: 200, data: 'BEGIN:VCALENDAR\r\nX-WR-CALNAME:Verein\r\nBEGIN:VEVENT\r\nUID:a@b\r\nDTSTART;VALUE=DATE:20991231\r\nSUMMARY:Silvesterlauf\r\nEND:VEVENT\r\nEND:VCALENDAR' }); } },
       LocalNotifications: {
@@ -206,6 +207,11 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
   });
   ok(sl.opened.join() === 'de.sportgermany.bibel lesen' && /Training ist jetzt eine eigene App/.test(sl.sheet) && /Schule ist jetzt eine eigene App/.test(sl.sh2) && sl.hash === '#kalender',
     'Schlanker Planer: Bibel-App öffnet, fehlende Apps mit Hinweis, Startadresse → Kalender ' + JSON.stringify(sl));
+  // Widget und Verknüpfungen (Schritt 8): Planer meldet „Als Nächstes“ bzw. Demnächst und drei Verknüpfungen
+  const wg = await q.evaluate(async () => { location.hash = 'kalender'; await new Promise(r => setTimeout(r, 500)); return { w: window.__sim.widget, s: (window.__sim.shortcuts || []).map(x => x.ziel) }; });
+  ok(wg.w && wg.w.titel && wg.w.kopf && wg.s.join() === 'neu/termin,neu/aufgabe,neu/woche', 'Widget und Verknüpfungen gemeldet ' + JSON.stringify(wg).slice(0, 200));
+  const nt = await q.evaluate(async () => { location.hash = 'neu/aufgabe'; await new Promise(r => setTimeout(r, 900)); const o = document.getElementById('sheet').classList.contains('on') && !!document.getElementById('tq'); history.back(); await new Promise(r => setTimeout(r, 300)); return [o, location.hash]; });
+  ok(nt[0] && nt[1] === '#kalender', 'Verknüpfung „Neue Aufgabe“ öffnet das Aufgabenblatt ' + nt);
   // Kalenderdatei direkt öffnen („Öffnen mit Planer“)
   await q.evaluate(() => { const s = window.__sim; s.file = { name: 'Quali-Lehrgang.ics', text: 'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:q1@x\r\nDTSTART;TZID=Europe/Berlin:20991023T160000\r\nDTEND;TZID=Europe/Berlin:20991023T173000\r\nSUMMARY:Training G1\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:q2@x\r\nDTSTART;VALUE=DATE:20991023\r\nDTEND;VALUE=DATE:20991029\r\nSUMMARY:Quali-Lehrgang\r\nEND:VEVENT\r\nEND:VCALENDAR' }; s.ls.fileOpened(); });
   await q.waitForTimeout(900);

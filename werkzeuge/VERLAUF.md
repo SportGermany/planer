@@ -5,6 +5,20 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## 5.1.0 + Apps 1.1.0 – Verbesserungen (Schritt 8)
+- Widget (PlanerWidget.java, ein Baustein für alle Apps, Material-You-Farben ab Android 12): Inhalt setzt die Seite über
+  `SGWidget` (design.js → PlanerSystem.setWidget). Planer: Als Nächstes/Demnächst · Training: Training heute · Schule: nächste Stunde/Prüfung · Bibel: Vers des Tages.
+- Verknüpfungen (langer Druck auf das Symbol) über `SGShortcuts` → ShortcutManager; Sprungziel wie bei der Übergabe (EXTRA_ZIEL).
+  Planer: #neu/termin, #neu/aufgabe, #neu/woche.
+- Eigene Symbole: apps.json `farbe` + `symbol` (24er-Pfade) → www.js schreibt Hintergrundfarbe und Vektor-Vordergrund.
+- Erinnerungen je App: rPlan im SOLO-Modus (Schule: Prüfung am Tag/Vortag, Lernblöcke; Training: Atemübungen), Erlaubnis einmal je App;
+  Bibel: eigene tägliche Lese-Erinnerung (nur wenn noch nicht gelesen).
+- Erledigte Termine gehen mit „✓“ und „Erledigt“ in den (Google-)Kalender. Schule: Stundenplan wahlweise in eigenen Kalender (`target2`).
+- Wochenraster im Monatsbereich (Monat | Woche), alle Bereiche/Apps, Tag antippen → Tagesansicht.
+- Fehler (Sonntag): Hinweis „Zeit für die Wochenplanung“ des Kalender-Kerns lag über „Rückgängig“ und über offenen Blättern.
+  Lösung: Rückgängig-Meldung höher gelegt, Hinweis ausgeblendet, solange ein Blatt offen ist.
+- Fehler: `pkill -f <Muster>` beendet die eigene Shell, weil das Muster in deren Befehlszeile steht – nie mehr so aufräumen.
+
 ## 5.0.0 – schlanker Planer (Schritt 6)
 - Planer-APK ohne `training/`, `schule/`, `bibel/`, `wissen/` (0,9 statt 6,7 MB). Diese Bereiche öffnen die eigene App; fehlt sie,
   Hinweis mit Download der neuesten APK. Auch eine gespeicherte Startadresse (#training/…) führt zum Kalender + Hinweis statt zur leeren Seite.
