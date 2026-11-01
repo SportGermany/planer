@@ -244,7 +244,8 @@
     // Kopf-Aktionen
     actsEl.innerHTML = (cur.v === "kalender" ? '<button class="ib" data-act="month" aria-pressed="' + calMon + '" aria-label="' + (calMon ? "Zurück zur Tagesansicht" : "Monatskalender") + '">' + ico(calMon ? "list" : "cal") + "</button>" : "") +
       '<button class="ib" data-act="search" aria-label="Suchen">' + ico("search") + "</button>";
-    fab.classList.toggle("on", cur.v === "kalender" || cur.v === "notizen");
+    // Monatsansicht: kein Plus-Knopf (lag über dem letzten Tag; Selbsttest-Befund) – Tag antippen, dort ist er wieder da
+    fab.classList.toggle("on", (cur.v === "kalender" && !(SLIM && calMon)) || cur.v === "notizen");
     fab.innerHTML = ico("plus");
     if (v.native) {
       chipsEl.innerHTML = ""; stage.classList.remove("lined"); dwPn.innerHTML = "";
