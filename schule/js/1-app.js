@@ -136,7 +136,7 @@ const DEFAULT_PERIODS = [
   ['08:00', '08:45'], ['08:45', '09:30'], ['09:45', '10:30'], ['10:30', '11:15'], ['11:30', '12:15'],
   ['12:15', '13:00'], ['13:45', '14:30'], ['14:30', '15:15'], ['15:15', '16:00'],
 ].map(([s, e]) => ({ s, e }));
-const COLLS = ['subjects', 'events', 'homework', 'timetable', 'absences', 'study', 'camps', 'docs'];
+const COLLS = ['subjects', 'events', 'homework', 'timetable', 'absences', 'study', 'camps', 'docs', 'cards'];
 const HW_KINDS = { ha: 'Hausaufgabe', lernen: 'Lernen', mit: 'Mitbringen', abgabe: 'Abgabe', sonst: 'Sonstiges' };
 const ABS_REASONS = { krank: 'Krank', arzt: 'Arzttermin', beurlaubt: 'Beurlaubt', lehrgang: 'Lehrgang / Wettkampf', sonst: 'Sonstiges' };
 
@@ -157,7 +157,7 @@ function defaults() {
       klassen: {}, wpfg: '', ab: { on: false, ref: mondayOf(todayStr()) }, periods: DEFAULT_PERIODS, days: 5, ws: 1, ttTimes: true, hint: true, setupDone: false,
     },
     subjects: DEFAULT_SUBJECTS.map(([name, short, color], i) => ({ id: 'r' + i, name, short, color, teacher: '', room: '', u: 0 })),
-    events: [], homework: [], timetable: [], absences: [], study: [], camps: [], docs: [],
+    events: [], homework: [], timetable: [], absences: [], study: [], camps: [], docs: [], cards: [],
     deleted: {},
   };
 }
@@ -980,6 +980,7 @@ function planHTML() {
 // ---------- Aufgaben ----------
 function aufgabenHTML() {
   if (ui.auf === 'lernzeit') return studyHTML();
+  const KK = ui.auf === 'offen' && window.kkSummaryHTML ? kkSummaryHTML('') : '';   // Lernkarten (wenn vorhanden) über den offenen Aufgaben
   if (ui.auf === 'ablage') return ablageHTML();
   const t = todayStr();
   if (ui.auf === 'pruef') {
@@ -992,7 +993,7 @@ function aufgabenHTML() {
     return list.length ? `<div class="stack">${list.slice(0, 80).map(hwItem).join('')}</div>${list.length > 80 ? '<p class="small muted">Nur die letzten 80 werden angezeigt.</p>' : ''}` : `<div class="empty">Noch nichts erledigt.</div>`;
   }
   const open = db.homework.filter(h => !h.done).sort((a, b) => (a.due || '9') < (b.due || '9') ? -1 : 1);
-  if (!open.length) return `<div class="empty">Alles erledigt! 🎉<br><br><button class="btn" data-a="newHw">Aufgabe eintragen</button></div>`;
+  if (!open.length) return KK + `<div class="empty">Alles erledigt! 🎉<br><br><button class="btn" data-a="newHw">Aufgabe eintragen</button></div>`;
   const groups = [['Überfällig', h => h.due && h.due < t], ['Heute', h => h.due === t], ['Morgen', h => h.due === addDays(t, 1)],
     ['Diese Woche', h => h.due && h.due > addDays(t, 1) && h.due <= addDays(mondayOf(t), 6)], ['Später', h => h.due && h.due > addDays(mondayOf(t), 6)], ['Ohne Datum', h => !h.due]];
   let h = '', used = new Set();
@@ -1000,7 +1001,7 @@ function aufgabenHTML() {
     const list = open.filter(x => !used.has(x.id) && fn(x)); list.forEach(x => used.add(x.id));
     if (list.length) h += `<div class="hgroup${name === 'Überfällig' ? ' over' : ''}" style="${name === 'Überfällig' ? 'color:var(--danger)' : ''}">${name === 'Überfällig' ? '⚠️ ' : ''}${name} <span class="sec" style="margin:0"><span class="cnt">${list.length}</span></span></div><div class="stack">${list.map(hwItem).join('')}</div>`;
   });
-  return h;
+  return KK + h;
 }
 function timerElapsed() { const tm = local.timer; if (!tm) return 0; return (tm.acc || 0) + (tm.running ? Date.now() - tm.start : 0); }
 const fmtClock = ms => { const s = Math.floor(ms / 1000); return (s >= 3600 ? Math.floor(s / 3600) + ':' : '') + pad(Math.floor(s / 60) % 60) + ':' + pad(s % 60); };
@@ -1167,7 +1168,7 @@ async function updateStoreInfo() {
 function attachHTML(key, id, subject) {
   const ds = docsFor(key, id);
   return `<label class="fl">Dateien & Fotos${ds.length ? ' · ' + ds.length : ''}</label>${ds.length ? `<div class="stack">${ds.map(d => docRow(d, { noLink: true })).join('')}</div>` : ''}
-    <div class="row" style="gap:8px;margin-top:8px"><button class="btn ghost" data-a="attScan" data-v="${key}:${id}:${subject || ''}">📷 Foto / Scan</button><button class="btn ghost" data-a="attFile" data-v="${key}:${id}:${subject || ''}">📄 Datei anhängen</button></div>`;
+    <div class="row" style="gap:8px;margin-top:8px"><button class="btn ghost" data-a="attScan" data-v="${key}:${id}:${subject || ''}">Foto oder Scan</button><button class="btn ghost" data-a="attFile" data-v="${key}:${id}:${subject || ''}">Datei / PDF anhängen</button></div>`;
 }
 
 // ---------- Scanner: Fotos → PDF ----------
@@ -1683,7 +1684,9 @@ function openSubject(id) {
   if (sdocs.length) h += `<div class="sec">Dateien & Arbeitsblätter <span class="cnt">${sdocs.length}</span></div><div class="stack">${sdocs.slice(0, 6).map(d => docRow(d, { noSubj: true })).join('')}</div>${sdocs.length > 6 ? `<button class="linkbtn" data-a="docsForSubj" data-v="${id}">Alle ${sdocs.length} in der Ablage →</button>` : ''}`;
   const openHwList = db.homework.filter(x => x.subject === id && !x.done);
   if (openHwList.length) h += `<div class="sec">Offene Aufgaben</div><div class="stack">${openHwList.map(hwItem).join('')}</div>`;
-  h += `<div class="actions"><button class="btn" data-a="timerFor" data-v="${id}">▶ Lernzeit</button></div>`;
+  if (window.kkSummaryHTML) h += kkSummaryHTML(id);   // Lernkarten des Fachs
+  h += `<div class="sec">Dateien hinzufügen</div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn ghost" data-a="attFile" data-v="subject:${id}:${id}">Datei / PDF anhängen</button><button class="btn ghost" data-a="attScan" data-v="subject:${id}:${id}">Foto oder Scan</button></div>`;
+  h += `<div class="actions"><button class="btn" data-a="timerFor" data-v="${id}">Lernzeit starten</button></div>`;
   openSheet(h, 'subject:' + id);
 }
 
@@ -2077,7 +2080,7 @@ function ttImportHTML() {
   if (!r) {
     h += `<div class="info">📸<div><b>Tipp:</b> Fotografiere deinen Stundenplan und lass daraus eine Excel-Datei machen (z. B. von Claude). Die kannst du hier direkt einlesen.</div></div>
       <label class="fl">1. Excel- oder CSV-Datei wählen</label>
-      <button class="btn wide" data-a="ttPickFile" style="margin-top:0">📄 Datei auswählen (.xlsx, .csv)</button>
+      <button class="btn wide" data-a="ttPickFile" style="margin-top:0">Datei auswählen (.xlsx, .csv)</button>
       <label class="fl">2. … oder aus Excel/Google Tabellen kopieren und hier einfügen</label>
       <textarea class="inp" id="ttPaste" placeholder="Stunde → Mo → Di → Mi → Do → Fr&#10;1 → Mathe → Deutsch → …" style="min-height:110px;font-family:monospace;font-size:13px"></textarea>
       <button class="btn ghost wide" data-a="ttPasteGo" style="margin-top:8px">Eingefügte Tabelle lesen</button>

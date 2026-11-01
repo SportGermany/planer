@@ -90,7 +90,7 @@ die Vorschau reicht `top.SGShell/SharedCalendar/…` an die gezeigte App weiter.
     (erledigt/offen, offen mit einem Tipp auf morgen) · [x] freie Zeit finden (Lücken zwischen Schule/Training/Terminen, Aufgabe
     hineinlegen) · [x] neue Termine direkt in den Google-Kalender (Zielkalender beim Anlegen, Standard = gewählter Google-Kalender).
   - Bibel: [x] Lesepläne (Vorschau 01.11.) (Bibel in 1 Jahr, NT in 90 Tagen, Psalmen & Sprüche, Evangelien) mit Fortschritt, Tagesabschnitt auf „Heute“.
-  - Schule: [ ] Lernkarten je Fach (Wiederholung 1/3/7 Tage, aus Prüfungsthemen) · [ ] Dateien (PDF, Fotos) direkt an Aufgaben,
+  - Schule (Vorschau 01.11.): [x] Lernkarten je Fach (Wiederholung 1/3/7 Tage, aus Prüfungsthemen) · [x] Dateien (PDF, Fotos) direkt an Aufgaben,
     Prüfungen und Fächer hängen (Ablage-Speicher mitnutzen).
   - Training: [x] Wettkampf-Countdown (Vorschau 01.11.) (Wettkampf eintragen, Countdown auf Heute, Tapering der letzten Tage, Checkliste Wettkampftag).
 - [ ] **7 Code schneller** – je App nur ihre Skripte; Selten-Genutztes nach Bedarf laden; Altlasten (alte Hülle-Teile, PWA, Wechsler)

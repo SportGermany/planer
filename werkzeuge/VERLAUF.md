@@ -5,6 +5,13 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Neue Funktionen Schule: Lernkarten, Dateien am Fach (Schritt 6)
+- schule/js/2-karten.js: Lernkarten je Fach in db.cards (neue Sammlung in COLLS → Speicher, Datei-Sicherung, Schul-Abgleich),
+  Karteikasten 0–4 mit Abfrage nach 0/1/3/7/14 Tagen (gewusst → weiter, nicht gewusst → morgen wieder). Einstiege: Fach-Blatt
+  (Lernen, Karte hinzufügen, Alle Karten) und Karte oben unter Aufgaben › Offen.
+- Dateien: Prüfungen, Aufgaben und Lehrgänge hatten schon „Dateien & Fotos“; neu am Fach selbst „Datei / PDF anhängen“ und
+  „Foto oder Scan“ (Skripte, Formelsammlungen). Emojis in diesen Knöpfen entfernt.
+
 ## Neue Funktion Training: Wettkampf-Countdown (Schritt 6)
 - training/js/15-wettkampf.js: Wettkämpfe in `wk_comps` (Cloud-Datengruppe Training ergänzt), Karte oben auf „Heute“ mit Countdown
   und Phase (Aufbau > 21 Tage, wettkampfnah 8–21, Tapering 2–7: Umfang −40 %, Vortag, Wettkampftag) samt Hinweis, Checkliste
