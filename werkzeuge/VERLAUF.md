@@ -5,6 +5,16 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## 4.1.0 – Termine im Google-Kalender (Schritt 1 des App-Plans)
+- Handykalender › Ziel: beliebiger beschreibbarer Kalender, Google-Konten zuerst. In den eigenen lokalen „Planer“ schreibt die App
+  weiter als Sync-Adapter (SYNC_DATA1/2); in fremde (Google-)Kalender als normale App – unsere Einträge tragen
+  CUSTOM_APP_PACKAGE (Paketname) und CUSTOM_APP_URI `sgplaner://t/<Schlüssel>?h=<Prüfsumme>`. Grund: Sync-Adapter-Schreiben
+  ist nur im eigenen Konto erlaubt. Zielwechsel räumt die eigenen Einträge im alten Kalender ab (`s.wrote`; vor 4.1.0 = eigener).
+- Rücklesen (`instances`) überspringt Einträge mit dem eigenen Paketnamen (sonst doppelt), Einträge anderer Planer-Apps tragen `fromApp`.
+- Aufgaben optional (`opt.aufgaben`, Standard aus) als ganztägige „☐ …“-Einträge.
+- Testfehler durch das Datum (1.11.2026, Sonntag): Lauftag → „Zum Lauf“ statt Spieler; Monatserster → Heute-Markierung in der
+  Kontrastmessung; November mit 6 Wochen → Rückblick-Monat ragt unten heraus. Tests datumsfest gemacht.
+
 ## Mehrere Apps – Schritt 0 Grundlagen (Plan: `werkzeuge/PLAN-APPS.md`)
 - `werkzeuge/apps.json` beschreibt die Apps; `node www.js <app>` kopiert nur deren Ordner, setzt Paketname/Name und schreibt
   Version + `window.SGApp` in die kopierte `sg/design.js`. Gradle nimmt `-PappId`. Workflow `apps.yml` baut je App ohne Release.

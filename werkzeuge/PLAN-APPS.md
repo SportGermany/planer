@@ -23,7 +23,8 @@ veröffentlichten App. Die bestehende Planer-App bleibt bis zum Schluss voll nut
 ## Schritte
 - [x] **0 Grundlagen** – `schnell-app.js` (Planer 3,4 min), `apps.json`, `www.js <app>`, Gradle `-PappId`, Workflow `apps.yml`
   (baut nur Apps ohne Release, Emulator `emulator-app.js`, Release `--latest=false`), Update-Prüfung sucht nur das eigene Release.
-- [ ] **1 Google-Kalender-Ziel im Planer** – Zielkalender wählbar (Google-Konto statt lokal), Aufgaben-Schalter; Release 4.1.0.
+- [x] **1 Google-Kalender-Ziel im Planer** – Zielkalender wählbar (Google-Konto statt lokal), Aufgaben-Schalter; Release 4.1.0.
+  Fremde Kalender: Einträge mit CUSTOM_APP_PACKAGE/URI (kein Sync-Adapter nötig); Rücklesen überspringt eigene, meldet `fromApp`.
 - [ ] **2 App Bibel** – eigene APK, Import aus Planer, Vergleichstest alt/neu, Planer-Kachel öffnet die App; Release `bibel-v1.0.0`.
 - [ ] **3 App Pause** – wie 2.
 - [ ] **4 App Schule** – Stundenplan, Aufgaben/Prüfungen, Lernplan, Ferien; Prüfungen/Lernblöcke in Google.

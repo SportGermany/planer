@@ -96,10 +96,10 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
         request: () => { st.perm = 'granted'; return Promise.resolve({ permission: 'granted', calendarId: st.own }); },
         status: () => Promise.resolve({ permission: st.perm, calendarId: st.own }),
         ensure: () => { if (st.own < 0) st.own = 77; return Promise.resolve({ calendarId: st.own }); },
-        calendars: () => Promise.resolve({ calendars: [{ id: 1, name: 'Mein Kalender', account: 'My calendar', color: '#33AA55', visible: true, own: false, sync: true }, { id: 3, name: 'Feiertage per Link', account: 'x@gmail.com', color: '#AA3355', visible: true, own: false, sync: !!st.sync3 }, { id: 77, name: 'Planer', own: true }] }),
+        calendars: () => Promise.resolve({ calendars: [{ id: 1, name: 'Mein Kalender', account: 'My calendar', color: '#33AA55', visible: true, own: false, sync: true }, { id: 3, name: 'Feiertage per Link', account: 'x@gmail.com', color: '#AA3355', visible: true, own: false, sync: !!st.sync3 }, { id: 5, name: 'Diana', account: 'diana@gmail.com', type: 'com.google', color: '#4285F4', visible: true, own: false, sync: true, writable: true }, { id: 77, name: 'Planer', own: true }] }),
         enableSync: o => { st.sync3 = o.id === 3; st.enabled = (st.enabled || []).concat([o.id]); return Promise.resolve({ updated: 1, syncRequested: true }); },
         instances: () => Promise.resolve({ events: st.phone.slice() }),
-        write: o => { const before = st.cal.length; st.cal = o.events.slice(); return Promise.resolve({ added: o.events.length, changed: 0, removed: 0, calendarId: o.calendarId }); },
+        write: o => { const before = st.cal.length; (st.writes = st.writes || []).push({ cal: o.calendarId, n: o.events.length }); if (o.events.length || o.calendarId === (st.target || 77)) st.cal = o.events.slice(); return Promise.resolve({ added: o.events.length, changed: 0, removed: 0, calendarId: o.calendarId }); },
         update: o => { st.updated.push(o); const e = st.phone.find(x => x.eventId === o.eventId); if (e && o.title) e.title = o.title; return Promise.resolve({ updated: 1 }); },
         remove: o => { st.removed.push(o.eventId); st.phone = st.phone.filter(x => x.eventId !== o.eventId); return Promise.resolve({ removed: 1 }); } },
       PlanerSystem: {
@@ -136,6 +136,14 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
   ok(sim.cal.some(e => /Langsames Atmen|Morgenmessung/.test(e.title)), 'Ins Handy: Atemübungen');
   ok(sim.cal.every(e => e.key && e.h && e.start < e.end) && new Set(sim.cal.map(e => e.key)).size === sim.cal.length, 'Jeder Eintrag mit eindeutigem Schlüssel und Prüfsumme');
   ok(sim.cal.some(e => e.title === 'Krafttraining' && e.reminder === 15), 'Erinnerung des Termins geht mit ins Handy');
+  // Google-Kalender als Ziel (4.1.0): eigene Einträge ziehen um, alter Kalender wird geleert; Aufgaben nur mit Schalter
+  ok(!sim.cal.some(e => /^☐/.test(e.title)), 'Aufgaben standardmäßig nicht im Handy/Google');
+  const g = await q.evaluate(async () => { window.__sim.writes = []; window.__sim.target = 5; await SharedCalendar.handy.setTarget('5'); return { w: window.__sim.writes, st: SharedCalendar.handy.state().calId }; });
+  ok(g.st === 5 && g.w.some(x => x.cal === 77 && x.n === 0) && g.w.some(x => x.cal === 5 && x.n > 0), 'Ziel Google-Kalender: Termine ziehen um, „Planer“ wird geleert ' + JSON.stringify(g));
+  await q.evaluate(() => { const d = new Date(); d.setDate(d.getDate() + 1); SharedCalendar.tasks.add({ title: 'Trikot kaufen', due: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') }); });
+  await q.evaluate(() => SharedCalendar.handy.setOpt('aufgaben', true));
+  ok((await q.evaluate(() => window.__sim.cal)).some(e => e.title === '☐ Trikot kaufen' && e.allDay), 'Aufgaben mit Schalter als ganztägiger Eintrag');
+  await q.evaluate(() => SharedCalendar.handy.setOpt('aufgaben', false));
   await q.evaluate(() => { location.hash = 'kalender'; }); await q.waitForTimeout(600);
   const arzt = await q.evaluate(() => SharedCalendar.allItems(new Date().toISOString().slice(0, 10), '2099-01-01').find(e => e.title === 'Arzttermin'));
   ok(arzt && arzt.app === 'Handy' && arzt.phone && arzt.phone.eventId === 501, 'Aus dem Handy: Termin erscheint in der App');

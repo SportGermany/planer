@@ -62,6 +62,10 @@ public class PlanerKalenderPlugin extends Plugin {
         return false;
     }
 
+    private static Uri sx(boolean mine, Uri uri) {
+        return mine ? asSync(uri) : uri;
+    }
+
     private static Uri asSync(Uri uri) {
         return uri
             .buildUpon()
@@ -253,7 +257,8 @@ public class PlanerKalenderPlugin extends Plugin {
                         Instances.CALENDAR_DISPLAY_NAME,
                         Instances.DISPLAY_COLOR,
                         Instances.RRULE,
-                        Instances.EVENT_TIMEZONE
+                        Instances.EVENT_TIMEZONE,
+                        Instances.CUSTOM_APP_PACKAGE
                     },
                     Instances.VISIBLE + "=1",
                     null,
@@ -262,7 +267,11 @@ public class PlanerKalenderPlugin extends Plugin {
         ) {
             while (c != null && c.moveToNext()) {
                 if (c.getLong(1) == own) continue;
+                // eigene Termine in einem Google-Kalender (Ziel gewählt) nicht als fremde Handytermine zurücklesen
+                String app = c.getString(12);
+                if (getContext().getPackageName().equals(app)) continue;
                 JSObject o = new JSObject();
+                if (app != null && app.startsWith("de.sportgermany.")) o.put("fromApp", app.substring(16));
                 o.put("eventId", c.getLong(0));
                 o.put("calendarId", c.getLong(1));
                 o.put("title", c.getString(2));
@@ -299,21 +308,29 @@ public class PlanerKalenderPlugin extends Plugin {
         JSArray events = call.getArray("events", new JSArray());
         Map<String, long[]> have = new HashMap<>();
         Map<String, String> hashes = new HashMap<>();
+        // Eigener lokaler Kalender: als Sync-Adapter mit SYNC_DATA1/2 (Schlüssel/Prüfsumme).
+        // Fremder Kalender (z. B. Google-Konto, wird von Android zu Google hochgeladen): als normale App; unsere Termine
+        // tragen CUSTOM_APP_PACKAGE = Paketname und CUSTOM_APP_URI = sgplaner://t/<Schlüssel>?h=<Prüfsumme>.
+        final boolean mine = cal == ownId();
+        final String pkg = getContext().getPackageName();
         try (
-            Cursor c = cr()
-                .query(
-                    asSync(Events.CONTENT_URI),
-                    new String[] { Events._ID, Events.SYNC_DATA1, Events.SYNC_DATA2 },
-                    Events.CALENDAR_ID + "=? AND " + Events.DELETED + "=0",
-                    new String[] { String.valueOf(cal) },
-                    null
-                )
+            Cursor c = mine
+                ? cr().query(asSync(Events.CONTENT_URI), new String[] { Events._ID, Events.SYNC_DATA1, Events.SYNC_DATA2 },
+                    Events.CALENDAR_ID + "=? AND " + Events.DELETED + "=0", new String[] { String.valueOf(cal) }, null)
+                : cr().query(Events.CONTENT_URI, new String[] { Events._ID, Events.CUSTOM_APP_URI },
+                    Events.CALENDAR_ID + "=? AND " + Events.DELETED + "=0 AND " + Events.CUSTOM_APP_PACKAGE + "=?", new String[] { String.valueOf(cal), pkg }, null)
         ) {
             while (c != null && c.moveToNext()) {
-                String k = c.getString(1);
+                String k, h;
+                if (mine) { k = c.getString(1); h = c.getString(2); }
+                else {
+                    Uri u = c.getString(1) == null ? null : Uri.parse(c.getString(1));
+                    if (u == null || u.getPath() == null || u.getPath().length() < 2) continue;
+                    k = u.getPath().substring(1); h = u.getQueryParameter("h");
+                }
                 if (k == null) continue;
                 have.put(k, new long[] { c.getLong(0) });
-                hashes.put(k, c.getString(2));
+                hashes.put(k, h);
             }
         }
         ArrayList<ContentProviderOperation> ops = new ArrayList<>();
@@ -337,19 +354,24 @@ public class PlanerKalenderPlugin extends Plugin {
                 v.put(Events.DTEND, e.getLong("end"));
                 v.put(Events.ALL_DAY, allDay ? 1 : 0);
                 v.put(Events.EVENT_TIMEZONE, allDay ? "UTC" : tz);
-                v.put(Events.SYNC_DATA1, key);
-                v.put(Events.SYNC_DATA2, h);
+                if (mine) {
+                    v.put(Events.SYNC_DATA1, key);
+                    v.put(Events.SYNC_DATA2, h);
+                } else {
+                    v.put(Events.CUSTOM_APP_PACKAGE, pkg);
+                    v.put(Events.CUSTOM_APP_URI, new Uri.Builder().scheme("sgplaner").authority("t").appendPath(key).appendQueryParameter("h", h).build().toString());
+                }
                 int rem = e.optInt("reminder", -1);
                 v.put(Events.HAS_ALARM, rem >= 0 ? 1 : 0);
                 if (old != null) {
-                    ops.add(ContentProviderOperation.newUpdate(asSync(ContentUris.withAppendedId(Events.CONTENT_URI, old[0]))).withValues(v).build());
+                    ops.add(ContentProviderOperation.newUpdate(sx(mine, ContentUris.withAppendedId(Events.CONTENT_URI, old[0]))).withValues(v).build());
                     ops.add(
-                        ContentProviderOperation.newDelete(asSync(Reminders.CONTENT_URI))
+                        ContentProviderOperation.newDelete(sx(mine, Reminders.CONTENT_URI))
                             .withSelection(Reminders.EVENT_ID + "=?", new String[] { String.valueOf(old[0]) })
                             .build()
                     );
                     if (rem >= 0) ops.add(
-                        ContentProviderOperation.newInsert(asSync(Reminders.CONTENT_URI))
+                        ContentProviderOperation.newInsert(sx(mine, Reminders.CONTENT_URI))
                             .withValue(Reminders.EVENT_ID, old[0])
                             .withValue(Reminders.MINUTES, rem)
                             .withValue(Reminders.METHOD, Reminders.METHOD_ALERT)
@@ -358,9 +380,9 @@ public class PlanerKalenderPlugin extends Plugin {
                     changed++;
                 } else {
                     int at = ops.size();
-                    ops.add(ContentProviderOperation.newInsert(asSync(Events.CONTENT_URI)).withValues(v).build());
+                    ops.add(ContentProviderOperation.newInsert(sx(mine, Events.CONTENT_URI)).withValues(v).build());
                     if (rem >= 0) ops.add(
-                        ContentProviderOperation.newInsert(asSync(Reminders.CONTENT_URI))
+                        ContentProviderOperation.newInsert(sx(mine, Reminders.CONTENT_URI))
                             .withValueBackReference(Reminders.EVENT_ID, at)
                             .withValue(Reminders.MINUTES, rem)
                             .withValue(Reminders.METHOD, Reminders.METHOD_ALERT)
@@ -376,7 +398,7 @@ public class PlanerKalenderPlugin extends Plugin {
             if (prune) {
                 for (Map.Entry<String, long[]> x : have.entrySet()) {
                     if (seen.contains(x.getKey())) continue;
-                    ops.add(ContentProviderOperation.newDelete(asSync(ContentUris.withAppendedId(Events.CONTENT_URI, x.getValue()[0]))).build());
+                    ops.add(ContentProviderOperation.newDelete(sx(mine, ContentUris.withAppendedId(Events.CONTENT_URI, x.getValue()[0]))).build());
                     removed++;
                     if (ops.size() > 300) {
                         cr().applyBatch(CalendarContract.AUTHORITY, ops);

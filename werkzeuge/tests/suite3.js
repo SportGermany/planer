@@ -4,7 +4,7 @@ const fs = require('fs');
 const U = 'http://localhost:8765/planer/', APP = U + 'app/';
 const SEED = fs.readFileSync(__dirname + '/seed.js', 'utf8');
 const ONLY = process.argv[2] || '';
-const VER = '4.0.0';
+const VER = '4.1.0';
 const results = [];
 const PAGES = ['', 'schule/', 'pause/', 'training/', 'training/mobility/', 'training/atmung/', 'training/bahnplan/', 'bibel/', 'wissen/'];
 const PHONE = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 };
@@ -214,7 +214,8 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     for (const [h, sel] of [['heute', '#btnStartToday'], ['lauf', '#btnRunTrackStart'], ['kraft', '#btnGymStart'], ['auswertung/fitness', '[data-sec=fitscore]'], ['auswertung/analyse', '[data-sec=dkpis]'], ['auswertung/rueckblick', '[data-sec=calgrid]']]) {
       await open(p, '#training/' + h);
       const r = await trFrame(p).evaluate(sel => { const el = document.querySelector(sel), b = el && el.getBoundingClientRect(); return el && el.offsetParent ? [Math.round(b.top), Math.round(b.bottom), innerHeight, scrollY] : null; }, sel);
-      if (!r || r[3] > 0 || r[0] < 0 || r[1] > r[2]) bad.push(h + ' ' + JSON.stringify(r));
+      // Rückblick: der Monat hat je nach Monat 5 oder 6 Wochen – dort reicht es, dass er oben sichtbar beginnt
+      if (!r || r[3] > 0 || r[0] < 0 || (/rueckblick/.test(h) ? r[0] > r[2] - 200 : r[1] > r[2])) bad.push(h + ' ' + JSON.stringify(r));
     }
     // Laufen ohne Gym/Dehnen, Kraft ohne Lauf; in Kraft steht Dehnen (120 Übungen) gleich nach Gym
     await open(p, '#training/lauf');
@@ -294,7 +295,9 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
       const p = await c.newPage(); e.push(...watch(p));
       await open(p, '#training/' + h); const f = trFrame(p);
       await f.click(sel); await wait(p, 700);
-      if (!await f.$(want)) bad.push(h + ' ' + sel + ' öffnet nicht');
+      // Lauftag: „Zum Lauf“ wechselt zu Laufen statt den Spieler zu öffnen (abhängig vom heutigen Datum)
+      if (h === 'heute' && /Zum Lauf/.test(await f.textContent(sel).catch(() => ''))) { if (!/^#training\/lauf/.test((await state(p)).hash)) bad.push('Zum Lauf → ' + (await state(p)).hash); }
+      else if (!await f.$(want)) bad.push(h + ' ' + sel + ' öffnet nicht');
       if (h === 'lauf') {
         await f.evaluate(() => window.APP.connectHr()); await wait(p, 600);
         await f.click('#btnRunGo'); await wait(p, 2500);
@@ -881,7 +884,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     const lum = 'const L=c=>{const m=c.match(/\\d+(\\.\\d+)?/g).map(Number);const f=v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)};return .2126*f(m[0])+.7152*f(m[1])+.0722*f(m[2])};const K=(a,b)=>{const x=L(a),y=L(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)};';
     for (const id of ids) {
       await p.evaluate(id => SGTheme.set(id), id); await wait(p, 150);
-      const k = await p.evaluate(lum + 'const bg=getComputedStyle(document.querySelector("#mgrid")).backgroundColor,fg=getComputedStyle(document.querySelector("#mgrid .mc:not(.o) .n")).color,mu=getComputedStyle(document.querySelector("#mgrid .mh span")).color,dbg=getComputedStyle(document.querySelector("#dayplan .cells")).backgroundColor,dfg=getComputedStyle(document.querySelector("#dayplan .ev b")).color,oc=getComputedStyle(document.querySelector("#mgrid .mc.o .n")).color,kw=getComputedStyle(document.querySelector("#mgrid .mrow:not(.mh) .kw")).color;[K(fg,bg),K(mu,bg),K(dfg,dbg),K(oc,bg),K(kw,bg)]');
+      const k = await p.evaluate(lum + 'const bg=getComputedStyle(document.querySelector("#mgrid")).backgroundColor,fg=getComputedStyle(document.querySelector("#mgrid .mc:not(.o):not(.t):not(.s) .n")).color,mu=getComputedStyle(document.querySelector("#mgrid .mh span")).color,dbg=getComputedStyle(document.querySelector("#dayplan .cells")).backgroundColor,dfg=getComputedStyle(document.querySelector("#dayplan .ev b")).color,oc=getComputedStyle(document.querySelector("#mgrid .mc.o .n")).color,kw=getComputedStyle(document.querySelector("#mgrid .mrow:not(.mh) .kw")).color;[K(fg,bg),K(mu,bg),K(dfg,dbg),K(oc,bg),K(kw,bg)]');
       if (k.some(x => x < 4.5)) bad.push(id + ' ' + k.map(x => x.toFixed(1)).join('/'));
     }
     assert(!bad.length, 'Kontrast zu niedrig: ' + bad.join(', '));

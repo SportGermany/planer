@@ -2371,7 +2371,10 @@
   var HKEY = "sg-handy-v1", HDAYS = [-30, 180];
   function hState() {
     var s = jkey(HKEY) || {};
-    s.opt = Object.assign({ termine: true, schule: true, stunden: true, atmung: true }, s.opt || {});
+    // aufgaben: offene Aufgaben mit Datum als ganztägige Einträge (Wunsch: optional, Standard aus)
+    s.opt = Object.assign({ termine: true, schule: true, stunden: true, atmung: true, aufgaben: false }, s.opt || {});
+    // target: Zielkalender (Kalender-ID als Text, z. B. ein Google-Kalender – Android lädt ihn zu Google hoch); leer = eigener lokaler Kalender „Planer“
+    s.target = s.target || "";
     s.off = s.off || {}; s.cache = s.cache || { events: [] };
     return s;
   }
@@ -2404,6 +2407,10 @@
     ext.forEach(function (x) {
       if (x.learn) return;
       if ((x.app === "Lernplan" && opt.schule) || (x.app === "Atmung" && opt.atmung)) add(x, (x.note ? x.note + "\n" : "") + "Planer · " + (x.app === "Lernplan" ? "Schule" : x.app));
+    });
+    if (opt.aufgaben) live("todo").forEach(function (q) {
+      if (q.done || q.deleted || !q.due || q.due < from || q.due > to) return;
+      add({ id: "a-" + q.id, title: "☐ " + q.title, date: q.due }, (q.note ? q.note + "\n" : "") + "Planer · Aufgabe");
     });
     if (opt.stunden) {
       var sp = jkey("sg-stundenplan-v1");
@@ -2503,10 +2510,16 @@
     hBusy = true;
     var res = { added: 0, changed: 0, removed: 0, read: 0 };
     return P.ensure({}).then(function (r) {
-      s.calId = r.calendarId;
-      var evs = hOut(s.opt), sig = strHash(JSON.stringify(s.opt) + evs.map(function (e) { return e.key + e.h; }).join(","));
+      // Ziel: gewählter (Google-)Kalender, sofern es ihn noch gibt und er beschreibbar ist – sonst der eigene „Planer“
+      var tg = s.target && (s.cals || []).find(function (c) { return c.id === s.target && c.writable !== false; });
+      s.calId = tg ? +s.target : r.calendarId;
+      var evs = hOut(s.opt), sig = strHash(s.calId + JSON.stringify(s.opt) + evs.map(function (e) { return e.key + e.h; }).join(","));
       if (!force && sig === hLastOut) return null;
-      return P.write({ calendarId: s.calId, events: evs, prune: true }).then(function (w) { hLastOut = sig; res.added = w.added; res.changed = w.changed; res.removed = w.removed; });
+      // Ziel gewechselt: die eigenen Einträge im alten Kalender entfernen (fremde Termine dort bleiben unberührt)
+      var prev = s.wrote != null ? s.wrote : r.calendarId;   // vor 4.1.0 ohne Merker: es war der eigene Kalender
+      var old = prev >= 0 && prev !== s.calId ? P.write({ calendarId: prev, events: [], prune: true }).catch(function () {}) : Promise.resolve();
+      return old.then(function () { return P.write({ calendarId: s.calId, events: evs, prune: true }); })
+        .then(function (w) { hLastOut = sig; s.wrote = s.calId; res.added = w.added; res.changed = w.changed; res.removed = w.removed; });
     }).then(function () {
       var from = Date.now() + HDAYS[0] * 864e5, to = Date.now() + HDAYS[1] * 864e5;
       return Promise.all([P.instances({ from: from, to: to }), P.calendars({})]);
@@ -2520,11 +2533,11 @@
           var ed = iso(en), et = pad(en.getHours()) + ":" + pad(en.getMinutes());
           if (ed === date) end = et; else if (et === "00:00" && plusDays(ed, -1) === date) end = "23:59"; else { endDate = et === "00:00" ? plusDays(ed, -1) : ed; end = et === "00:00" ? "" : et; }
         }
-        return { id: "hd-" + e.eventId + "-" + e.begin, title: e.title || "(ohne Titel)", date: date, endDate: endDate, time: time, end: end, app: "Handy", color: e.color, cal: String(e.calendarId), calName: e.calendar,
+        return { id: "hd-" + e.eventId + "-" + e.begin, fromApp: e.fromApp || "", title: e.title || "(ohne Titel)", date: date, endDate: endDate, time: time, end: end, app: "Handy", color: e.color, cal: String(e.calendarId), calName: e.calendar,
           note: [e.location ? "Ort: " + e.location : "", e.description || ""].filter(Boolean).join("\n"), ro: "Handykalender", phone: { eventId: e.eventId, recurring: !!e.recurring, begin: e.begin, end: e.end, allDay: !!e.allDay } };
       });
       res.read = list.length;
-      var cals = (x[1].calendars || []).filter(function (c) { return !c.own; }).map(function (c) { return { id: String(c.id), name: c.name, account: c.account, color: c.color, visible: c.visible, sync: c.sync !== false }; });
+      var cals = (x[1].calendars || []).filter(function (c) { return !c.own; }).map(function (c) { return { id: String(c.id), name: c.name, account: c.account, type: c.type, color: c.color, visible: c.visible, sync: c.sync !== false, writable: c.writable !== false }; });
       var before = JSON.stringify(s.cache.events || []);
       s.cache = { at: Date.now(), events: list }; s.cals = cals; s.last = Date.now(); s.err = ""; s.lastRes = res;
       hSave(s);
@@ -2560,6 +2573,8 @@
         return hSync(true).then(function () { return r; });
       }).catch(function (e) { return { error: String(e && (e.message || e.code) || e) }; });
     },
+    // Zielkalender wählen ("" = eigener Kalender „Planer“ nur auf dem Handy)
+    setTarget: function (id) { var s = hState(); s.target = id ? String(id) : ""; hSave(s); return hSync(true); },
     setCal: function (id, on) { var s = hState(); if (on) delete s.off[id]; else s.off[id] = 1; hSave(s); emit(); },
     sync: hSync,
     out: function () { return hOut(hState().opt); },

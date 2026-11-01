@@ -26,7 +26,7 @@ let ver = (/const VERSION = 'planer-([^']+)'/.exec(fs.readFileSync(path.join(ROO
 const DJ = path.join(APP, 'sg/design.js');
 if (KEY !== 'planer') {
   ver = A.ver;
-  const t = fs.readFileSync(DJ, 'utf8'), u = t.replace(/var VERSION = "[^"]*";/, 'var VERSION = "' + ver + '"; window.SGApp = "' + KEY + '";');
+  const t = fs.readFileSync(DJ, 'utf8'), u = 'window.SGApp = "' + KEY + '";\n' + t.replace(/var VERSION = "[^"]*";/, 'var VERSION = "' + ver + '";');
   if (u === t) { console.error('design.js: VERSION nicht gefunden'); process.exit(1); }
   fs.writeFileSync(DJ, u);
 }

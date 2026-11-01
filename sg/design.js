@@ -4,7 +4,9 @@
 (function () {
   try {
     var top = window.self === window.top, B = "/" + (location.pathname.split("/")[1] || "") + "/";
-    if (top && !/\/app\/(index\.html)?$/.test(location.pathname) && !/[?&]einzeln/.test(location.search) && location.protocol !== "file:") {
+    // Einzel-Apps (window.SGApp, gesetzt vom APK-Bau ganz oben in design.js) haben keine Hülle – dort nie umleiten
+    var solo = window.SGApp && window.SGApp !== "planer";
+    if (top && !solo && !/\/app\/(index\.html)?$/.test(location.pathname) && !/[?&]einzeln/.test(location.search) && location.protocol !== "file:") {
       var rest = location.pathname.slice(B.length).replace(/index\.html$/, "");
       location.replace(B + "app/#u=" + encodeURIComponent(rest + location.hash));
       document.documentElement.style.visibility = "hidden";
@@ -321,7 +323,7 @@
 (function () {
   "use strict";
   if (window.SGFixUrl) return;
-  var VERSION = "4.0.0";
+  var VERSION = "4.1.0";
   window.SGVersion = VERSION;
   var BASE = "/" + (location.pathname.split("/")[1] || "") + "/";
   var MAP = { trainingsblog: "training/", pulsplan: "training/atmung/", rodeln: "training/mobility/", schulplaner: "", kalender: "",

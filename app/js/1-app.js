@@ -55,7 +55,7 @@
       { id: "mobility", t: "Mobility", p: "training/mobility/", sel: MODNAV, kids: [{ id: "heute", t: "Tagesblock", s: "heute" }, { id: "wettkampf", t: "Wettkampf", s: "wettkampf" }, { id: "uebungen", t: "Übungen", s: "uebungen" }, { id: "fortschritt", t: "Fortschritt", s: "fortschritt" }] },
       { id: "atmung", t: "Atmung & HRV", st: "Atmung", ic: "wind", p: "training/atmung/", sel: MODNAV, kids: [{ id: "heute", t: "Heute", s: "today" }, { id: "hrv", t: "Üben & HRV messen", s: "train" }, { id: "woche", t: "Woche", s: "week" }, { id: "verlauf", t: "Verlauf", s: "log" }, { id: "plan", t: "12-Wochen-Plan", s: "plan" }] },
       { id: "rodeln", t: "Rodeln", ic: "sled", p: "training/bahnplan/", sel: MODNAV, kids: [{ id: "plan", t: "Kurvenbuch", s: "plan" }, { id: "bahnen", t: "Bahnen", s: "bahnen" }, { id: "laeufe", t: "Läufe & Zeiten", s: "laeufe" }, { id: "buch", t: "Drucken", s: "buch" }] },
-      { id: "auswertung", t: "Auswertung", ic: "pulse", p: "training/", kids: [{ id: "fitness", t: "Fitness", h: "fitness" }, { id: "analyse", t: "Analyse", h: "daten" }, { id: "rueckblick", t: "Kalender & Rückblick", h: "kalender" }] },
+      { id: "auswertung", t: "Auswertung", ic: "pulse", p: "training/", kids: [{ id: "fitness", t: "Fitness", h: "fitness" }, { id: "analyse", t: "Analyse", h: "daten" }, { id: "rueckblick", t: "Rückblick", h: "kalender" }] },
       { id: "wissen", t: "Sportwissenschaft", ic: "book", p: "wissen/", kids: [{ id: "lesen", t: "Lesen", h: "lesen" }, { id: "karten", t: "Karteikarten", h: "karten" }, { id: "quiz", t: "Quiz", h: "quiz" }, { id: "suche", t: "Suche", h: "suche" }] }
     ] },
     schule: { t: "Schule", tab: "schule", nav: "tabs", vis: 3, c: "var(--c-schule)", secs: [
@@ -1029,7 +1029,7 @@
     var chk = toggleRow;
     if (!s.on) {
       sheet('<h3>Handykalender</h3><p class="s">Die App gleicht sich mit dem Kalender auf deinem Handy ab – automatisch, in beide Richtungen, auch offline:</p>' +
-        '<p class="s">• Termine aus der App stehen im Handy in einem eigenen Kalender „Planer“ (ein- und ausblendbar, eigene Farbe).<br>• Termine aus deinen Handykalendern erscheinen in der App und lassen sich dort ändern oder löschen.</p>' +
+        '<p class="s">• Termine aus der App stehen im Handy – auf Wunsch direkt in deinem Google-Kalender (dann auch am PC und überall, wo du Google nutzt).<br>• Termine aus deinen Handykalendern erscheinen in der App und lassen sich dort ändern oder löschen.</p>' +
         '<p class="s">Android fragt gleich, ob die App auf den Kalender zugreifen darf.</p><div class="btns"><button class="btn p" data-s="on">Abgleich einschalten</button></div>' +
         '<p class="s" style="margin-top:14px">Ohne Abgleich geht es weiter über Dateien: <a href="#" data-s="file" style="color:var(--acc)">Kalenderdatei öffnen</a></p>', function (act) {
         if (act === "file") return pickFile();
@@ -1040,12 +1040,16 @@
       return;
     }
     var cals = s.cals || [], r = s.lastRes || {};
+    var tg = s.target && cals.find(function (k) { return k.id === s.target; });
+    var tgName = tg ? (tg.name || "Kalender") + (tg.account && tg.account !== tg.name ? " · " + tg.account : "") : "Kalender „Planer“ (nur auf dem Handy)";
     sheet('<h3>Handykalender</h3><p class="s">' + (s.err ? '<span style="color:#e5484d">Fehler: ' + esc(s.err) + "</span><br>" : "") + "Zuletzt abgeglichen: " + ago(s.last) + (s.last ? " · " + (s.cache.events || []).length + " Termine aus dem Handy" : "") + "</p>" +
-      '<div class="grp"><header><span>Ins Handy (Kalender „Planer“)</span></header><div class="cells">' +
+      '<div class="grp"><header><span>Ins Handy</span></header><div class="cells">' +
+      '<button class="row" data-s="ziel" style="--c:var(--c-termin)"><span class="ic">' + ico("cal") + '</span><span class="tx"><b>Ziel: ' + esc(tgName) + '</b><small>' + (tg ? "erscheint auch im Google-Kalender" : "antippen, um deinen Google-Kalender zu wählen") + "</small></span></button>" +
       chk('data-h="termine"', "Termine & Wochenplanung", "alles, was du in der App einträgst", s.opt.termine) +
       chk('data-h="schule"', "Schule", "Prüfungen, Schultermine, Lehrgänge", s.opt.schule) +
       chk('data-h="stunden"', "Stundenplan", "jede Schulstunde (ohne Ferien und Feiertage)", s.opt.stunden) +
-      chk('data-h="atmung"', "Atemübungen", "geplante Übungen aus Atmung & HRV", s.opt.atmung) + "</div></div>" +
+      chk('data-h="atmung"', "Atemübungen", "geplante Übungen aus Atmung & HRV", s.opt.atmung) +
+      chk('data-h="aufgaben"', "Aufgaben", "offene Aufgaben mit Datum als ganztägiger Eintrag", s.opt.aufgaben) + "</div></div>" +
       (cals.length ? '<div class="grp"><header><span>Aus dem Handy anzeigen</span></header><div class="cells">' + cals.map(function (k) {
         // per Link eingebundene Google-Kalender: auf dem Handy oft „nicht synchronisiert“ – dann kommen keine Termine an
         if (k.sync === false) return '<button class="row" data-s="sy:' + esc(k.id) + '" style="--c:#e5a04b"><span class="ic">' + ico("cloud") + '</span><span class="tx"><b>' + esc(k.name || "Kalender") + '</b><small>wird auf dem Handy nicht synchronisiert – antippen zum Einschalten</small></span></button>';
@@ -1054,12 +1058,27 @@
       '<p class="s">Fehlt ein Kalender, den du in Google per Link eingebunden hast? Dann unter <a href="#" data-s="abo" style="color:var(--acc)">Webkalender</a> die Adresse einfügen – die App holt ihn selbst.</p>' +
       '<div class="btns"><button class="btn" data-s="off">Abgleich aus</button><button class="btn p" data-s="now">Jetzt abgleichen</button></div>', function (act) {
       if (act === "abo") return aboSheet();
+      if (act === "ziel") return zielSheet();
       if (act.indexOf("sy:") === 0) { snack("Schalte Synchronisieren ein …"); H.enableSync(act.slice(3)).then(function (x) { snack(x && x.error ? x.error + " – sonst im Google-Kalender: Einstellungen › Kalender › Synchronisieren" : "Eingeschaltet – Google lädt die Termine, das kann eine Minute dauern"); refresh(); handySheet(); }); return; }
       if (act === "now") { snack("Gleiche ab …"); H.sync(true).then(function (x) { snack(x && x.error ? "Fehler: " + x.error : "Abgeglichen" + (x ? " – " + (x.added + x.changed) + " ins Handy, " + x.read + " aus dem Handy" : "")); refresh(); handySheet(); }); }
       else if (act === "off") { H.disable(); refresh(); closeSheet(); snack("Abgleich aus – der Kalender „Planer“ bleibt im Handy, bis du ihn dort entfernst"); }
     });
     Array.prototype.forEach.call(document.querySelectorAll("#sheet [data-h]"), function (x) { x.onchange = function () { H.setOpt(x.dataset.h, x.checked).then(function () { refresh(); }); }; });
     Array.prototype.forEach.call(document.querySelectorAll("#sheet [data-c]"), function (x) { x.onchange = function () { H.setCal(x.dataset.c, x.checked); refresh(); }; });
+  }
+  // Zielkalender: Google-Kalender (Konto com.google) zuerst; Android lädt die Einträge zu Google hoch, auch später, wenn Netz da ist
+  function zielSheet() {
+    var H = C().handy, s = H.state(), cals = (s.cals || []).filter(function (k) { return k.writable !== false; });
+    cals.sort(function (a, b) { return (b.type === "com.google") - (a.type === "com.google") || String(a.name).localeCompare(String(b.name)); });
+    var row = function (id, name, sub, col, on) { return '<button class="row" data-s="t:' + esc(id) + '" style="--c:' + esc(col) + '"><span class="ic">' + (on ? ico("ok") : ico("cal")) + '</span><span class="tx"><b>' + esc(name) + "</b><small>" + esc(sub) + "</small></span></button>"; };
+    sheet('<h3>Wohin sollen die Termine?</h3><p class="s">Wählst du einen Google-Kalender, stehen deine Termine auch im Google-Kalender am PC und auf anderen Geräten. Ohne Internet wartet Android und lädt sie später hoch. Aufgaben kommen nur mit, wenn „Aufgaben“ eingeschaltet ist.</p>' +
+      '<div class="grp"><div class="cells">' + cals.map(function (k) { return row(k.id, k.name || "Kalender", (k.type === "com.google" ? "Google · " : "") + (k.account || ""), k.color || "var(--c-termin)", s.target === k.id); }).join("") +
+      row("", "Kalender „Planer“", "nur auf diesem Handy", "var(--muted)", !s.target) + "</div></div>" +
+      (cals.length ? "" : '<p class="s">Noch keine beschreibbaren Kalender gefunden – erst „Jetzt abgleichen“ antippen.</p>'), function (act) {
+      if (act.indexOf("t:") !== 0) return;
+      var id = act.slice(2); snack("Termine werden umgezogen …");
+      H.setTarget(id).then(function (x) { snack(x && x.error ? "Fehler: " + x.error : id ? "Fertig – deine Termine stehen jetzt im gewählten Kalender" : "Fertig – Termine wieder im Kalender „Planer“"); refresh(); handySheet(); });
+    });
   }
   /* Webkalender: per Internetadresse (.ics/webcal) eingebundene Kalender, z. B. Feiertage, Vereins- oder Schulkalender aus Google */
   function aboBadge() { var a = C() && C().abo; if (!a) return ""; var l = a.list(); if (!l.length) return ""; var bad = l.filter(function (x) { return x.err && x.err !== "offline"; }).length; return bad ? '<em class="bad">! ' + bad + "</em>" : l.length + ""; }
@@ -1315,6 +1334,8 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["4.1.0", ["Termine im Google-Kalender: Mehr › Kalender verbinden › Handykalender › Ziel – deinen Google-Kalender wählen. Android lädt die Termine zu Google hoch (auch später, wenn wieder Netz da ist)",
+      "Aufgaben mit Datum können auf Wunsch mit in den Kalender (Schalter „Aufgaben“, Standard aus)", "Update-Suche findet nur noch Versionen dieser App (Vorbereitung für die getrennten Apps)"]],
     ["4.0.0", ["Aufgeräumt: unten nur noch Heute · Training · Schule · Mehr – Mobility und Atmung stehen jetzt unter Training",
       "Reiter oben statt Seitenmenü (Training, Schule, Bibel, Pause); seltener Benutztes hinter „Mehr ▾“",
       "Startseite „Heute“: Als Nächstes mit einem Knopf, Liste für heute, Demnächst; der Monat liegt hinter dem Kalender-Symbol oben",
