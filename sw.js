@@ -8,13 +8,13 @@ const SHELL = [
   './app/', './', './index.html', './schule/', './pause/', './training/',
   './training/mobility/', './training/atmung/', './training/bahnplan/', './bibel/', './bibel/elb1905.json', './wissen/',
   './manifest.json', './inter.woff2', './icon-192.png', './icon-512.png', './icon-maskable-192.png', './icon-maskable-512.png',
-  './apple-touch-icon.png', './favicon.png', './app/js/1-app.js?v=5.1.0.f6ee72', './app/js/suche-worker.js?v=5.1.0.f6ee72', './bibel/js/1-app.js?v=5.1.0.f6ee72', './js/1-app.js?v=5.1.0.f6ee72',
-  './pause/js/1-app.js?v=5.1.0.f6ee72', './schule/js/1-app.js?v=5.1.0.f6ee72', './schule/js/2-karten.js?v=5.1.0.f6ee72', './sg/bibelstelle.js?v=5.1.0.f6ee72', './sg/design.js?v=5.1.0.f6ee72', './sg/install.js?v=5.1.0.f6ee72',
-  './sg/schnell.js?v=5.1.0.f6ee72', './sg/selbsttest.js?v=5.1.0.f6ee72', './sg/suche-daten.js?v=5.1.0.f6ee72', './sg/suche.js?v=5.1.0.f6ee72', './sg/training-suite.js?v=5.1.0.f6ee72', './sg/verbund.js?v=5.1.0.f6ee72',
-  './training/atmung/js/1-app.js?v=5.1.0.f6ee72', './training/bahnplan/js/1-app.js?v=5.1.0.f6ee72', './training/js/1-core.js?v=5.1.0.f6ee72', './training/js/10-app.js?v=5.1.0.f6ee72', './training/js/11-app.js?v=5.1.0.f6ee72', './training/js/12-app.js?v=5.1.0.f6ee72',
-  './training/js/13-app.js?v=5.1.0.f6ee72', './training/js/14-app.js?v=5.1.0.f6ee72', './training/js/15-wettkampf.js?v=5.1.0.f6ee72', './training/js/2-pools.js?v=5.1.0.f6ee72', './training/js/3-sports.js?v=5.1.0.f6ee72', './training/js/4-stretch.js?v=5.1.0.f6ee72',
-  './training/js/5-rodeln.js?v=5.1.0.f6ee72', './training/js/6-gym.js?v=5.1.0.f6ee72', './training/js/7-weather.js?v=5.1.0.f6ee72', './training/js/8-github.js?v=5.1.0.f6ee72', './training/js/9-analysis.js?v=5.1.0.f6ee72', './training/js/csv-worker.js?v=5.1.0.f6ee72',
-  './training/mobility/js/1-app.js?v=5.1.0.f6ee72', './wissen/js/1-app.js?v=5.1.0.f6ee72', './wissen/js/buch.js?v=5.1.0.f6ee72'
+  './apple-touch-icon.png', './favicon.png', './app/js/1-app.js?v=5.1.0.982756', './app/js/suche-worker.js?v=5.1.0.982756', './bibel/js/1-app.js?v=5.1.0.982756', './js/1-app.js?v=5.1.0.982756',
+  './pause/js/1-app.js?v=5.1.0.982756', './schule/js/1-app.js?v=5.1.0.982756', './schule/js/2-karten.js?v=5.1.0.982756', './sg/bibelstelle.js?v=5.1.0.982756', './sg/design.js?v=5.1.0.982756', './sg/install.js?v=5.1.0.982756',
+  './sg/schnell.js?v=5.1.0.982756', './sg/selbsttest.js?v=5.1.0.982756', './sg/suche-daten.js?v=5.1.0.982756', './sg/suche.js?v=5.1.0.982756', './sg/training-suite.js?v=5.1.0.982756', './sg/verbund.js?v=5.1.0.982756',
+  './training/atmung/js/1-app.js?v=5.1.0.982756', './training/bahnplan/js/1-app.js?v=5.1.0.982756', './training/js/1-core.js?v=5.1.0.982756', './training/js/10-app.js?v=5.1.0.982756', './training/js/11-app.js?v=5.1.0.982756', './training/js/12-app.js?v=5.1.0.982756',
+  './training/js/13-app.js?v=5.1.0.982756', './training/js/14-app.js?v=5.1.0.982756', './training/js/15-wettkampf.js?v=5.1.0.982756', './training/js/2-pools.js?v=5.1.0.982756', './training/js/3-sports.js?v=5.1.0.982756', './training/js/4-stretch.js?v=5.1.0.982756',
+  './training/js/5-rodeln.js?v=5.1.0.982756', './training/js/6-gym.js?v=5.1.0.982756', './training/js/7-weather.js?v=5.1.0.982756', './training/js/8-github.js?v=5.1.0.982756', './training/js/9-analysis.js?v=5.1.0.982756', './training/js/csv-worker.js?v=5.1.0.982756',
+  './training/mobility/js/1-app.js?v=5.1.0.982756', './wissen/js/1-app.js?v=5.1.0.982756', './wissen/js/buch.js?v=5.1.0.982756'
 ];
 
 self.addEventListener('install', e => {

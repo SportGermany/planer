@@ -20,7 +20,7 @@
       sections: [["Heute", "#brief"], ["Kalender", "#cal"], ["Aufgaben", "#tasks"], ["Schule", "#schule"], ["Pause", "#pause"]], owns: ["lernplan", "denkpause"] },
     { id: "training", name: "Training", cal: "Training", path: "training", color: "#4fc18a", info: "Training, Mobility, Atmung und HRV",
       sections: [["Heute", ""], ["Mobility", "#mobility"], ["Atmung", "#atmung"], ["Bahnplan", "#bahnplan"]], owns: ["training", "rodeln", "puls", "bahnplan"] },
-    { id: "bibel", name: "Bibel", cal: "Bibel", path: "bibel", color: "#c9a27a", info: "Ganze Elberfelder Bibel · ohne Cloud", sections: [], owns: [] }
+    { id: "bibel", name: "Bibel", cal: "Bibel", path: "bibel", color: "#c9a27a", info: "Ganze Elberfelder Bibel", sections: [], owns: ["bibel"] }
   ];
   // Eingebettete Module: gehören zu einer App, haben selbst keinen Knopf und keinen eigenen Sync
   var MODULES = [
@@ -40,8 +40,19 @@
     { id: "training", name: "Training", keys: ["wk_settings", "wk_log", "wk_activities", "wk_runs", "wk_body", "wk_colors", "wk_custom_ex", "wk_custom_gym", "wk_freezes", "wk_gymlog", "wk_illness_active", "wk_injury_active", "wk_injurydays", "wk_onboarded", "wk_race", "wk_comps", "wk_rests", "wk_sections", "wk_sickdays", "wk_skin", "wk_swaps", "wk_trainedoverride", "wk_vacation", "wk_weekgoal", "wk_widgets"] },
     { id: "rodeln", name: "Mobility", keys: ["rodelmobility.v1"] },
     { id: "puls", name: "Atmung & HRV", keys: ["pulsplan.v1"] },
-    { id: "bahnplan", name: "Bahnplan", keys: ["bahnplan.v1"] }
+    { id: "bahnplan", name: "Bahnplan", keys: ["bahnplan.v1"] },
+    // Bibel (eigene App ab 2.0): Serie, Lesepläne, Favoriten, Notizen, Markierungen, Lese-Erinnerung
+    { id: "bibel", name: "Bibel", keys: ["zweiminutenbibel_v2", "bibel-erinnern-v1"] }
   ];
+  /* Einzel-Apps (PLAN-EINZEL.md): jede App gleicht nur ihre eigenen Datengruppen ab (+ Farbwelt), der schlanke Planer nicht die
+   * der ausgelagerten Apps – schneller, und keine App überschreibt Daten einer anderen mit einer alten Kopie. */
+  var OWN = { training: ["training", "rodeln", "puls", "bahnplan", "wissen", "einstellungen"], schule: ["lernplan", "einstellungen"], bibel: ["bibel", "einstellungen"],
+    planer: ["denkpause", "einstellungen", "wochenplan"] };
+  function syncsGroup(id) {
+    var a = window.SGApp; if (!a) return true;   // Browser/alte Hülle: alles wie bisher
+    if (a === "planer" && !(window.SGOhne && window.SGOhne.length)) return true;
+    return (OWN[a] || []).indexOf(id) > -1;
+  }
   // Farben der Kalender-Quellen (Eintrag.app); alte Namen bleiben gültig
   var SOURCES = [
     ["Kalender", "#6ea8fe"], ["Lernplan", "#2b5fd9"], ["Training", "#4fc18a"], ["Trainingsblog", "#2f7d57"], ["Rodel-Mobility", "#c0303f"],
@@ -605,7 +616,7 @@
   var EXTRA = [{ id: "einstellungen", name: "Einstellungen", keys: ["sg-design", "sg-glass", "sg-dir-v1", "sg-abos-v1"], lww: true }, { id: "wochenplan", name: "Wochenplanung", keys: ["sg-wochenplan-v1"], lww: true }, { id: "wissen", name: "Sportwissenschaft", keys: ["sg-wissen-v1"], lww: true }];
   function syncApps(g, files) {
     DATA.concat(EXTRA).forEach(function (app) {
-      if (!app.keys.length || (app.own && app.own())) return;
+      if (!app.keys.length || (app.own && app.own()) || !syncsGroup(app.id)) return;
       var local = snapshot(app), h = hash(local), m = meta()[app.id] || {};
       var remote = readJSON(g.files && g.files["app-" + app.id + ".json"]);
       var localChanged = h !== m.hash && Object.keys(local).length > 0;

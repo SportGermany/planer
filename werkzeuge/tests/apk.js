@@ -165,6 +165,12 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
     SGShell.go('bibel', 'bibliothek', null, { push: true }); await new Promise(r => setTimeout(r, 300)); return { o: window.__sim.opened || [], hash: location.hash }; });
   ok(ex.o.length === 2 && ex.o[0].pkg === 'de.sportgermany.bibel' && ex.o[0].ziel === 'lesen' && /zweiminutenbibel_v2/.test(ex.o[0].daten) && !ex.o[1].daten && ex.o[1].ziel === 'bibliothek' && !/bibel/.test(ex.hash),
     'Bibel-App installiert: Planer öffnet sie (Daten einmal, dann nur Ziel) ' + JSON.stringify(ex).slice(0, 200));
+  // Cloud-Zugang später im Planer eingetragen: beim nächsten Öffnen geht nur der Zugang mit (still), danach wieder nur das Ziel
+  const zg = await q.evaluate(async () => { window.__sim.opened = []; localStorage.setItem('sg-shared-calendar-sync', JSON.stringify({ token: 'ghp_test', user: 'x' }));
+    SGShell.go('bibel', 'lesen', null, { push: true }); await new Promise(r => setTimeout(r, 300)); SGShell.go('bibel', 'lesen', null, { push: true }); await new Promise(r => setTimeout(r, 300));
+    const o = window.__sim.opened; localStorage.removeItem('sg-shared-calendar-sync'); return o.map(x => x.daten ? JSON.parse(x.daten) : null); });
+  ok(zg.length === 2 && zg[0] && zg[0].zugang && /ghp_test/.test(zg[0].keys['sg-shared-calendar-sync']) && !zg[0].keys.zweiminutenbibel_v2 && !zg[1],
+    'Cloud-Zugang geht später still mit, danach wieder nur das Ziel ' + JSON.stringify(zg).slice(0, 160));
   // Schul-App installiert: Planer zeigt/exportiert seine alte Schulkopie nicht mehr (kommt über Google aus der Schul-App), Schule öffnet die App mit Daten
   const sc = await q.evaluate(async () => {
     const k0 = new Date(), k = k0.getFullYear() + '-' + String(k0.getMonth() + 1).padStart(2, '0') + '-' + String(k0.getDate()).padStart(2, '0'), far = '2099-01-01';

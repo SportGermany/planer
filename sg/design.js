@@ -119,6 +119,11 @@
       if (!solo) { if (h.ziel) location.hash = h.ziel; return null; }   // Planer: nur Sprungziel (Widget, Verknüpfung)
       if (h.daten) {
         var d = null; try { d = JSON.parse(h.daten); } catch (e) {}
+        // nur Zugang (Cloud) und Farbwelt aus dem Planer: still übernehmen, ohne Rückfrage
+        if (d && d.zugang) {
+          var ch = false; Object.keys(d.keys || {}).forEach(function (k) { if (localStorage.getItem(k) !== d.keys[k]) { try { localStorage.setItem(k, d.keys[k]); ch = true; } catch (e) {} } });
+          h.daten = null; h.neu = ch; return h;
+        }
         var keys = d && d.keys || {}, list = Object.keys(keys).filter(function (k) { return !/^sg-(uebergabe|uebernommen)/.test(k); });   // was der Planer für diese App auswählt
         // erste Übergabe: ohne Frage (die App legt beim ersten Start schon leere Grundwerte an); später nur nach Rückfrage
         var first = !localStorage.getItem("sg-uebernommen-v1");
@@ -133,9 +138,10 @@
       }
       return h;
     }).then(function (h) {
+      if (h && h.neu && !h.ziel) return location.reload();
       if (!h || (!h.ziel && !h.daten)) return;
       if (h.ziel) { var u = location.pathname + "#" + h.ziel; if (h.daten) location.replace(u); else location.hash = h.ziel; }
-      if (h.daten && localStorage.getItem("sg-uebernommen-v1")) location.reload();
+      if ((h.daten && localStorage.getItem("sg-uebernommen-v1")) || h.neu) location.reload();
     }).catch(function () {});
   }
   // Dateien der Ablagen (wie beim Umzug: { __blob: data:-Adresse, type, name }) in die Datenbank dieser App schreiben
@@ -173,7 +179,11 @@
     if (ins && window.SGNative) ins.hidden = true;
     if (!el) return;
     el.hidden = false;
-    el.innerHTML = "<h3>App</h3><p class='info-text sg-note'>Version " + window.SGVersion + " · eigene App, gehört zum Planer.</p>" +
+    // Cloud-Stand (gemeinsamer Abgleich, eine Datei je App im selben Gist)
+    var cs = "", SC = window.SharedCalendar;
+    try { var cf = JSON.parse(localStorage.getItem("sg-shared-calendar-sync") || "null") || {}; var st = SC && SC.status ? SC.status() : {};
+      cs = !cf.token ? "Cloud: nicht eingerichtet" : st.error && !st.offline ? "Cloud: Fehler – " + st.error : "Cloud: verbunden" + (cf.last ? " · zuletzt " + new Date(cf.last).toLocaleString("de-DE", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }) : ""); } catch (e) {}
+    el.innerHTML = "<h3>App</h3><p class='info-text sg-note'>Version " + window.SGVersion + " · eigene App, gehört zum Planer." + (cs ? "<br>" + cs : "") + "</p>" +
       "<div class='btn-row sg-btns'><button type='button' class='btn sg-btn t' id='sgUpd'>Version aktualisieren</button>" + (window.SGNative ? "<button type='button' class='btn sg-btn t' id='sgToPlaner'>Planer öffnen</button>" : "") + (window.SharedCalendar && window.SharedCalendar.open ? "<button type='button' class='btn sg-btn t' id='sgFarbe'>Farbwelt</button><button type='button' class='btn sg-btn t' id='sgCloud'>Cloud</button>" : "") + "<button type='button' class='btn sg-btn t' id='sgTest'>Selbsttest</button></div><p class='info-text' id='sgUpdMsg' style='margin-top:8px'></p>";
     var msg = function (t) { document.getElementById("sgUpdMsg").textContent = t; };
     document.getElementById("sgUpd").onclick = function () { if (window.SGUpdate) window.SGUpdate.check(msg); };

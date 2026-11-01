@@ -5,6 +5,17 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Gemeinsamer Cloud-Abgleich (Schritt 0, Rest)
+- Vorher: Bibel ohne Cloud; jede App glich alle Datengruppen ab (auch fremde, alte Kopien); Zugang je App einzeln einzutragen.
+- Jetzt: verbund.js `OWN`/`syncsGroup` – Training: training, rodeln, puls, bahnplan, wissen; Schule: lernplan; Bibel: bibel (neue
+  Datengruppe zweiminutenbibel_v2 + bibel-erinnern-v1); schlanker Planer: denkpause, wochenplan; alle: einstellungen (Farbwelt).
+  Browser/alte Hülle unverändert (alles).
+- Bibel lädt verbund.js (defer, ohne Knopf/Wechsler/Wochenhinweis) → Cloud-Abgleich; Handykalender nur, wenn übergeben.
+- Zugang einmal: Planer gibt `sg-shared-calendar-sync` + Farbwelt bei der ersten Übergabe mit (jetzt auch an die Bibel und die
+  Farbwelt selbst, `sg-design`), später still nur bei Änderung (`zugang: true`, kein Nachfragen; apk.js prüft beides).
+- Abschnitt „App“ jeder Einzel-App zeigt „Cloud: verbunden · zuletzt …“ bzw. „nicht eingerichtet“ und hat die Knöpfe Farbwelt/Cloud.
+- Offen: eigene Alt-Syncs (Schule-Repo, Training 8-github) noch sichtbar; Selbsttest-Bericht in den Gist.
+
 ## Neue Funktionen Schule: Lernkarten, Dateien am Fach (Schritt 6)
 - schule/js/2-karten.js: Lernkarten je Fach in db.cards (neue Sammlung in COLLS → Speicher, Datei-Sicherung, Schul-Abgleich),
   Karteikasten 0–4 mit Abfrage nach 0/1/3/7/14 Tagen (gewusst → weiter, nicht gewusst → morgen wieder). Einstiege: Fach-Blatt

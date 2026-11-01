@@ -98,7 +98,7 @@
   // keys: Daten des Bereichs; der Zugang zur Cloud-Sicherung (sg-shared-calendar-sync) geht mit, damit die App ihren Teil
   // in denselben Gist sichert (je Bereich eine eigene Datei, siehe DATA in verbund.js)
   // idb: Datenbanken/Ablagen, die mitgehen (Dateien der Schul-Ablage); sg-handy-v1: Handy-/Google-Kalender gleich eingerichtet
-  var EXT = { bibel: { pkg: "de.sportgermany.bibel", keys: /^zweiminutenbibel_/ },
+  var EXT = { bibel: { pkg: "de.sportgermany.bibel", keys: /^(zweiminutenbibel_.*|sg-shared-calendar-sync)$/ },
     schule: { pkg: "de.sportgermany.schule", keys: /^(schulkalender-bayern-v1|schulplaner-lokal-v1|sg-stundenplan-v1|sg-shared-calendar-sync|sg-handy-v1|sg-erinnern-v1)$/, idb: [["lernplan-dateien", "files"], ["lernplan-dateien", "inbox"]] },
     // Training mit Mobility, Atmung, Bahnplan (Bilder), Sportwissenschaft; pre = Sprungziel-Vorsilbe in der Training-App (#mobility/…, #wissen/…)
     training: { pkg: "de.sportgermany.training", keys: /^(wk_.*|rodelmobility\.v1|pulsplan\.v1|bahnplan\.v1|sg-wissen-v1|sg-training-akk-v1|sg-shared-calendar-sync|sg-handy-v1|sg-erinnern-v1)$/, idb: [["bahnplan", "img"]],
@@ -147,9 +147,12 @@
     var part = opt.sub || (kid && (kid.h || kid.s)) || (sec && (sec.h || sec.s)) || "", pre = E.pre && sec && v === (app || v) && E.pre[sec.id];
     var o = { pkg: E.pkg, ziel: pre ? pre + (part ? "/" + part : "") : part };
     var prep = Promise.resolve();
-    if (!done[app || v]) {
+    // Stand von Cloud-Zugang und Farbwelt (geht bei der ersten Übergabe mit, später nur bei Änderung)
+    var zk = {}; ["sg-shared-calendar-sync", "sg-design", "sg-design-v3", "sg-monet-v1"].forEach(function (key) { var val = localStorage.getItem(key); if (val != null) zk[key] = val; });
+    var sig = JSON.stringify(zk).length + ":" + (zk["sg-shared-calendar-sync"] || "").slice(-24) + (zk["sg-design"] || "");
+    if (!done[app || v]) { o.zsig0 = sig;
       var keys = {};
-      for (var i = 0; i < localStorage.length; i++) { var key = localStorage.key(i); if (E.keys.test(key) || key === "sg-design-v3" || key === "sg-monet-v1") keys[key] = localStorage.getItem(key); }
+      for (var i = 0; i < localStorage.length; i++) { var key = localStorage.key(i); if (E.keys.test(key) || key === "sg-design" || key === "sg-design-v3" || key === "sg-monet-v1") keys[key] = localStorage.getItem(key); }
       var pay = { von: "planer", at: Date.now(), keys: keys, idb: {}, stores: {} };
       // Ablagen wie beim Umzug (Dateien als data:-Adresse); stores = Aufbau der Datenbank, damit die Seite ihn wiederfindet
       prep = Promise.all((E.idb || []).map(function (x) {
@@ -157,9 +160,12 @@
         return idbAll(x[0], x[1]).then(function (rows) { return Promise.all(rows.map(function (rw) { return enc(rw[1]).then(function (val) { return [rw[0], val]; }); })); })
           .then(function (rows) { if (rows.length) pay.idb[x[0] + "/" + x[1]] = rows; });
       })).then(function () { o.daten = JSON.stringify(pay); });
+    } else if (done[(app || v) + "#z"] !== sig) {
+      // später: nur Cloud-Zugang und Farbwelt mitgeben, wenn sie sich seit dem letzten Öffnen geändert haben
+      o.daten = JSON.stringify({ von: "planer", zugang: true, at: Date.now(), keys: zk }); o.zsig = sig;
     }
     prep.then(function () { return P.openApp(o); }).then(function (r) {
-      if (r && r.opened) { if (o.daten) { done[app || v] = Date.now(); try { localStorage.setItem("sg-uebergabe-v1", JSON.stringify(done)); } catch (e) {} } }
+      if (r && r.opened) { if (o.zsig || o.zsig0) done[(app || v) + "#z"] = o.zsig || o.zsig0; if (o.daten) { if (!o.zsig) done[app || v] = Date.now(); try { localStorage.setItem("sg-uebergabe-v1", JSON.stringify(done)); } catch (e) {} } }
       else { delete extOn[app || v]; if (ohne(v, s)) appMissing(app || v); else go(v, s, k, Object.assign({}, opt, { intern: true })); }
     }).catch(function () { delete extOn[app || v]; if (ohne(v, s)) appMissing(app || v); else go(v, s, k, Object.assign({}, opt, { intern: true })); });
     return true;

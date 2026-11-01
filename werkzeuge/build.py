@@ -63,7 +63,7 @@ for path,(aid,dm,sid,extra) in PAGES.items():
     tail=''
     if aid=='training': tail+='<!-- training-suite:start -->\n<script src="'+src('training-suite.js')+'"></script>\n<!-- training-suite:end -->\n'
     if aid=='wissen': pass  # eigenständige Seite: nur Design, kein Kalender-Knopf
-    elif aid=='bibel': pass  # Einzel-App: kein PWA-Installieren, kein alter App-Wechsler (install.js) – nur Design + Basis
+    elif aid=='bibel': tail+='<!-- gemeinsamer-kalender:start -->\n<script defer data-app="bibel" data-fab="off" src="'+src('verbund.js')+'"></script>\n<!-- gemeinsamer-kalender:end -->\n'  # Cloud-Abgleich (Datengruppe bibel), nach dem Seitenaufbau
     else: tail+=f'<!-- gemeinsamer-kalender:start -->\n<script data-app="{aid}"{extra} src="{src("verbund.js")}"></script>\n<!-- gemeinsamer-kalender:end -->\n'
     i=s.rindex('</body>'); s=s[:i]+tail+s[i:]
     # eigene ausgelagerte Skripte der Seite: Version anhängen (neue Fassung umgeht alte Zwischenspeicher)
