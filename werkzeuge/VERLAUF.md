@@ -24,6 +24,9 @@ So geht nichts verloren, wenn ein Chat voll ist.
 - Fehler (Emulator 5.1.0, „Keine Fehler in der App“): 404 für training/, training/mobility/, training/atmung/, schule/.
   Ursache: die Hülle lädt diese Bereiche im Leerlauf vor – im schlanken Planer fehlen sie. Lösung: Vorladen überspringt `SGOhne`;
   neuer Test in apk.js (schlanker Planer von Anfang an, 12 s warten, keine Vorlade-Rahmen).
+- Fehler (Emulator, 2. Lauf): noch eine 404 für schule/. Ursache: die alte Seite /planer/ (Bereich „Aufgaben“) lädt Schule und Pause
+  selbst im Leerlauf vor (js/1-app.js `MODS`). Lösung: dort ebenfalls `SGOhne` (bzw. `parent.SGOhne`) beachten; apk.js tippt alle
+  Bereiche wie der Emulator an und meldet jede Anfrage an fehlende Ordner.
 - Fehler (große Suite, Sonntag ab 18 Uhr): Hinweis „Zeit für die Wochenplanung“ lag über Knöpfen (4 Tests rot). Gewolltes Verhalten;
   Tests setzen jetzt „Später“ für heute, wenn keine Wochenplan-Einstellung gespeichert ist (suite3.js `ctxFor`).
 

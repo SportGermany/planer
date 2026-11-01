@@ -257,9 +257,18 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
   ok(!e2.length, 'Keine Fehler ' + e2.join(' | '));
   // schlanker Planer von Anfang an: im Leerlauf keine Seiten der eigenen Apps vorladen (fehlen in der APK → 404, Emulator 5.1.0)
   const sp = await n2.newPage(); await sp.addInitScript(() => { window.SGOhne = ['training', 'schule', 'bibel', 'wissen']; });
+  const spReq = []; sp.on('request', r => { if (/\/planer\/(training|schule|bibel|wissen)\//.test(r.url())) spReq.push(r.url().replace(/^.*\/planer\//, '')); });
   await sp.goto(APP + '#kalender'); await sp.waitForTimeout(12000);
   const spf = await sp.evaluate(() => [...document.querySelectorAll('#stage iframe')].map(f => f.dataset.p).filter(p => /^(training|schule|bibel|wissen)\//.test(p)));
   ok(!spf.length, 'Schlanker Planer lädt keine fehlenden Bereiche vor ' + spf.join());
+  // gleiche Reihenfolge wie der Emulator-Test: alle Bereiche antippen – keine Anfrage an fehlende Ordner
+  for (const h of ['training/heute', 'training/rodeln', 'training/wissen', 'training/mobility', 'training/atmung', 'schule', 'mehr', 'bibel', 'pause', 'notizen', 'aufgaben']) {
+    await sp.evaluate(h => { location.hash = h; }, h); await sp.waitForTimeout(1500);
+    await sp.evaluate(() => { const b = document.querySelector('#sheet.on [data-s=x]'); if (b) b.click(); }); await sp.waitForTimeout(400);
+    if (h === 'aufgaben') await sp.waitForTimeout(9000);   // die alte Seite /planer/ (Aufgaben) lädt im Leerlauf vor
+    if (spReq.length && !spReq.wo) spReq.wo = h;
+  }
+  ok(!spReq.length, 'Schlanker Planer: keine Anfrage an fehlende Ordner ' + spReq.join() + (spReq.wo ? ' (bei ' + spReq.wo + ')' : ''));
   await b.close();
   console.log(bad ? bad + ' FEHLER' : 'APK-Modus grün'); process.exit(bad ? 1 : 0);
 })();

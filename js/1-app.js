@@ -778,7 +778,9 @@ function showModule(id) {
 // Schneller wechseln: Schule und Pause im Leerlauf schon im Hintergrund laden
 (window.requestIdleCallback || function (f) { return setTimeout(f, 2500); })(function () {
   // nach dem Start nacheinander vorladen, damit das Öffnen der App flüssig bleibt
-  var ids = Object.keys(MODS);
+  // schlanker Planer (APK): Schule ist eine eigene App, ihr Ordner fehlt – nicht vorladen (sonst 404)
+  var ohne = window.SGOhne || (function () { try { return parent.SGOhne; } catch (e) { return null; } })() || [];
+  var ids = Object.keys(MODS).filter(function (id) { return ohne.indexOf(id) < 0; });
   (function next(i) {
     if (i >= ids.length) return;
     setTimeout(function () { if (document.hidden) return next(i); if (S.tab !== ids[i]) loadModule(ids[i], true); next(i + 1); }, i ? 3000 : 4500);
