@@ -18,6 +18,9 @@ So geht nichts verloren, wenn ein Chat voll ist.
 - Fehler (Sonntag): Hinweis „Zeit für die Wochenplanung“ des Kalender-Kerns lag über „Rückgängig“ und über offenen Blättern.
   Lösung: Rückgängig-Meldung höher gelegt, Hinweis ausgeblendet, solange ein Blatt offen ist.
 - Fehler: `pkill -f <Muster>` beendet die eigene Shell, weil das Muster in deren Befehlszeile steht – nie mehr so aufräumen.
+- Fehler (GitHub-Emulator, 5.0.0 und 5.1.0 rot): App mitten im Test beendet. Ursache: Google-Play-Dienste im Emulator stürzten ab,
+  Android beendete die App mit („depends on provider …FontsProvider in dying proc“). Der vorhandene Neustart-Versuch galt nur für
+  Bereiche, die laden – nicht für die ausgelagerten (Hinweis-Blatt). Lösung: gleicher einmaliger Neustart auch dort (emulator.js).
 
 ## 5.0.0 – schlanker Planer (Schritt 6)
 - Planer-APK ohne `training/`, `schule/`, `bibel/`, `wissen/` (0,9 statt 6,7 MB). Diese Bereiche öffnen die eigene App; fehlt sie,

@@ -94,8 +94,16 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   const ohne = await page.evaluate(() => window.SGOhne || []);
   for (const h of ['kalender', 'training/heute', 'training/rodeln', 'training/wissen', 'training/mobility', 'training/atmung', 'schule', 'mehr', 'bibel', 'pause', 'notizen', 'aufgaben']) {
     if (ohne.includes(h.split('/')[0])) {
-      await page.evaluate(h => { location.hash = h; }, h); await wait(1500);
-      const t = await page.evaluate(() => [location.hash, document.getElementById('sheet').classList.contains('on') ? document.querySelector('#sheet h3').textContent : '']);
+      let t = null;
+      for (let tries = 0; tries < 2 && !t; tries++) {
+        try {
+          await page.evaluate(h => { location.hash = h; }, h); await wait(1500);
+          t = await page.evaluate(() => [location.hash, document.getElementById('sheet').classList.contains('on') ? document.querySelector('#sheet h3').textContent : '']);
+        } catch (e) {
+          if (tries === 0 && restarts < 2 && playDied()) { restarts++; ok(true, 'Play-Dienste im Emulator neu gestartet – App neu geöffnet, Schritt ' + h + ' wiederholt'); await reopen(); continue; }
+          ok(false, 'Bereich ' + h + ': Verbindung zur App weg (' + e.message + ')'); await logcat('abbruch-' + h.replace(/\//g, '_')); throw e;
+        }
+      }
       ok(t[0] === '#kalender' && /eigene App/.test(t[1]), 'Bereich ' + h + ': eigene App – Hinweis statt leerer Seite (' + t[1] + ')');
       await page.evaluate(() => { const b = document.querySelector('#sheet [data-s=x]'); if (b) b.click(); }); await wait(500);
       continue;
