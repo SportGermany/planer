@@ -14,6 +14,9 @@
   /* ---------- Symbole ---------- */
   var P = {
     play: '<path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
+    check: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.5 6l1.2 1.2L6.8 5M3.5 12l1.2 1.2 2.1-2.2M3.5 18l1.2 1.2 2.1-2.2"/>',
+    book: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/>',
     cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
     run: '<circle cx="14.5" cy="4.5" r="2"/><path d="M8 21l3-6 3 2 1 4M10.5 15l1-5 4 2 3-1M8 10l3-2"/>',
     stretch: '<circle cx="12" cy="4.5" r="2"/><path d="M12 7v6l-4 7M12 13l4 7M5 10l7-1 7 1"/>',
@@ -70,6 +73,7 @@
     mehr: { t: "Mehr", tab: "mehr", native: "mehr" },
     // über „Mehr“ erreichbar (Zurück führt dorthin)
     aufgaben: { t: "Aufgaben", tab: "mehr", up: "mehr", secs: [{ id: "alle", t: "Aufgaben", p: "", h: "tasks" }] },
+    // (schlanker Planer: Aufgaben ist ein eigener Reiter – Anpassung direkt nach der Tabelle)
     notizen: { t: "Notizen", tab: "mehr", up: "mehr", native: "notizen" },
     bibel: { t: "Bibel", tab: "mehr", up: "mehr", nav: "tabs", vis: 3, c: "var(--c-bibel)", secs: [
       { id: "heute", t: "Heute", p: "bibel/", h: "heute" }, { id: "lesen", t: "Weiterlesen", st: "Lesen", p: "bibel/", h: "lesen" },
@@ -81,6 +85,10 @@
     tset: { t: "Training einstellen", tab: "mehr", up: "mehr", secs: [{ id: "einst", t: "Einstellungen", p: "training/", h: "einst" }] }
   };
   var TABS = [["kalender", "Heute", "cal"], ["training", "Training", "run"], ["schule", "Schule", "school"], ["mehr", "Mehr", "more"]];
+  // Schlanker Planer (APK, PLAN-EINZEL.md Schritt 2): Training, Schule, Bibel sind eigene Apps – die Leiste zeigt nur, was der Planer
+  // selbst kann. „Kalender“ ist die Monats-/Wochenansicht (calMon), „Aufgaben“ die Aufgabenliste.
+  var SLIM = !!(window.SGOhne && window.SGOhne.length);
+  if (SLIM) { TABS = [["kalender", "Heute", "sun"], ["monat", "Kalender", "cal"], ["aufgaben", "Aufgaben", "check"], ["mehr", "Mehr", "more"]]; V.aufgaben.tab = "aufgaben"; V.aufgaben.up = null; }
   // frühere Adressen #mobility/… (Lesezeichen, Erinnerungen, Verknüpfungen) landen jetzt unter Training
   function alias(v, s) { return v === "mobility" ? ["training", s || "mobility"] : [v, s]; }
 
@@ -230,7 +238,8 @@
     if (!dw && drawerOpen) closeDrawer();
     if (lostFocus) (v.up ? backEl : titleEl).focus({ preventScroll: true });
     // Navigation
-    Array.prototype.forEach.call(navEl.children, function (b) { b.classList.toggle("on", b.dataset.tab === v.tab); });
+    var tabOn = SLIM ? (cur.v === "kalender" ? (calMon ? "monat" : "kalender") : cur.v === "aufgaben" ? "aufgaben" : v.tab) : v.tab;
+    Array.prototype.forEach.call(navEl.children, function (b) { b.classList.toggle("on", b.dataset.tab === tabOn); });
     mehrBadge();
     // Kopf-Aktionen
     actsEl.innerHTML = (cur.v === "kalender" ? '<button class="ib" data-act="month" aria-pressed="' + calMon + '" aria-label="' + (calMon ? "Zurück zur Tagesansicht" : "Monatskalender") + '">' + ico(calMon ? "list" : "cal") + "</button>" : "") +
@@ -337,6 +346,9 @@
   navEl.addEventListener("click", function (e) {
     var b = e.target.closest("[data-tab]"); if (!b) return;
     var t = b.dataset.tab;
+    if (SLIM && t === "monat") { if (cur.v !== "kalender") go("kalender"); setMon(true); return; }
+    if (SLIM && t === "kalender" && cur.v === "kalender" && calMon) { setMon(false); return; }
+    if (SLIM && t === "aufgaben") { if (cur.v !== "aufgaben") go("aufgaben", null, null, { push: false }); return; }
     if (t === "kalender" && cur.v !== "kalender" && history.state && history.state.app && history.length > 1 && pushedFromCal) { history.back(); return; }
     if (t === cur.v) { if (t === "kalender") { setSel(today()); renderCal(); $("n-kalender").scrollTop = 0; } else if (hasDw(V[t])) openDrawer(); return; }
     pushedFromCal = cur.v === "kalender";
@@ -1526,12 +1538,30 @@
         r("backup", "download", "var(--muted)", "Sicherung als Datei", "sichern oder einspielen", "") + (big ? "" : umz),
       set: r("design", "palette", "#8f7cf7", "Design", "Farbwelt und Glaseffekt", "") +
         (er ? r("erinnern", "bell", "#e5a04b", "Erinnerungen", "Benachrichtigungen, auch offline", er) : "") +
-        r("tset", "gear", "var(--c-training)", "Training einstellen", "Ziele, Ruhetage – Hauptort Training", link) +
+        (SLIM ? "" : r("tset", "gear", "var(--c-training)", "Training einstellen", "Ziele, Ruhetage – Hauptort Training", link)) +
         (window.SGInstallEvt && !nat ? r("install", "download", "var(--muted)", "App installieren", "auf den Startbildschirm", "") : "") +
         r("update", "download", "var(--muted)", "Version " + esc(window.SGVersion || ""), nat ? "neue Version von GitHub holen" : "Version aktualisieren", newVer ? '<em class="hi">Neu: ' + esc(newVer) + "</em>" : "") +
         r("neu", "star", "var(--muted)", "Was ist neu", "Änderungen der letzten Versionen", "") +
         r("diag", "pulse", "var(--muted)", "Fehlerprotokoll", "für die Fehlersuche am Handy", (window.SGShellDiag() || []).length || "")
     };
+    if (SLIM) {
+      // Schlanker Planer: oben die eigenen Apps (Öffnen bzw. Installieren), dann nur, was der Planer selbst kann
+      var appT = function (a, ic, col, n) { return '<button class="gl" data-m="app:' + a + '" style="--c:' + col + '"><i>' + ico(ic) + "</i><b>" + n + "</b><small>" + (extOn[a] ? "Öffnen" : "Installieren") + "</small></button>"; };
+      $("n-mehr").firstElementChild.innerHTML =
+        '<button class="msearch" id="mehrq" data-m="suche">' + ico("search") + "<span>Einstellungen und Seiten suchen</span></button>" +
+        (big ? '<div class="grp"><div class="cells">' + umz + "</div></div>" : "") +
+        '<h2 class="mh">Deine Apps</h2><div class="glance mtiles mapps">' + appT("training", "run", "var(--c-training)", "Training") + appT("schule", "school", "var(--c-schule)", "Schule") + appT("bibel", "book", "var(--c-bibel)", "Bibel") + "</div>" +
+        '<h2 class="mh">Im Planer</h2><div class="grp"><div class="cells">' +
+        r("notizen", "note", "var(--c-notiz)", "Notizen", notes ? notes + " offen" : "schnell festhalten", "") +
+        r("week", "wand", "var(--c-training)", "Woche planen", "Standardwoche mit 1 Tipp", "") +
+        r("pause", "coffee", "#e5a04b", "Pause", "Ablenken, Wissen, Quiz", "") + "</div></div>" +
+        '<h2 class="mh">Einstellungen</h2><div class="grp"><div class="cells">' +
+        r("g:conn", "cal", "var(--c-termin)", "Kalender verbinden", "Handykalender, Webkalender (Google)", conn) +
+        r("g:safe", "cloud", "#5ac8fa", "Sicherung", "Cloud, Datei", cl.warn ? '<em class="bad">! ' + cl.val + "</em>" : "") +
+        r("g:set", "gear", "#8f7cf7", "Design und mehr", "Farbwelt, Erinnerungen · Version " + esc(window.SGVersion || ""), newVer ? '<em class="hi">Neu: ' + esc(newVer) + "</em>" : (er && /bad/.test(er) ? er : "")) + "</div></div>";
+      mehrBadge();
+      return;
+    }
     $("n-mehr").firstElementChild.innerHTML =
       // Knopf im Aussehen eines Suchfelds: öffnet die Suche (dort wird getippt – keine zweite Suche, keine Tastatur-Probleme)
       '<button class="msearch" id="mehrq" data-m="suche">' + ico("search") + "<span>Einstellungen und Seiten suchen</span></button>" +
@@ -1589,6 +1619,7 @@
   function mehrAct(m) {
     var c = C();
     if (m.indexOf("g:") === 0) return mehrGroup(m.slice(2));
+    if (m.indexOf("app:") === 0) { var ap = m.slice(4); return ap === "bibel" ? go("bibel", "lesen", null, { push: true }) : go(ap, null, null, { push: true }); }
     if (m === "kshow") return calShowSheet();
     if (m === "week") c.weekPlan();
     else if (m === "std") c.weekPlanStd();

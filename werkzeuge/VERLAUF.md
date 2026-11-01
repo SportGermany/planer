@@ -5,6 +5,14 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Planer neu (Schritt 2, Vorschau)
+- Leiste im schlanken Planer: Heute · Kalender (Monat/Woche) · Aufgaben · Mehr – vorher Training/Schule, die nur „eigene App“ zeigten.
+  Leiste als Raster mit gleich breiten Spalten (gemessen 4 × 101 px, Symbol-Mitte 0 px).
+- Mehr: „Deine Apps“ (Training, Schule, Bibel – Öffnen bzw. Installieren), Im Planer (Notizen, Woche planen, Pause), Einstellungen.
+  Entfällt im schlanken Planer: Bibel-/Sportwissenschaft-Kacheln, „Training einstellen“, Aufgaben-Kachel (jetzt Reiter).
+- Aufgaben: keine Hausaufgaben-Kopie der Schule mehr (gehören zur Schul-App); Plus-Knopf saß 76 px zu hoch (Platz für die
+  eigene Leiste der eingebetteten Seite, die es in der Hülle nicht gibt) → 16 px.
+
 ## Bibel neu (Schritt 1, Vorschau) + gemeinsame Basis (Schritt 0, Teil 1)
 - Nutzerin: „Leiste verrutscht, nicht mathematisch gleich, kein Unterschied zur alten Bibel.“ Ursache: Leiste als Flex mit
   `space-around` und Emojis unterschiedlicher Breite; Einstellungen standen als 4 Umschaltreihen auf „Heute“.

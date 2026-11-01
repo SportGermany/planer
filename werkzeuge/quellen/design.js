@@ -264,7 +264,7 @@
     bibel: ".quote-card,.passage.show,.settings-section,.stat-box"
   };
   // Was in der Hülle zusätzlich entfällt (die Hülle hat eine Navigation für alles)
-  var SHELLHIDE = { kalender: ".side,.bar .menu-btn,.bar .back,.sgappb,#bar[data-tab=tasks]{display:none!important}#view{padding-bottom:0!important}", panel: "#s-heute>.brand{display:none!important}" };
+  var SHELLHIDE = { kalender: ".side,.bar .menu-btn,.bar .back,.sgappb,#bar[data-tab=tasks]{display:none!important}#view{padding-bottom:0!important}.fab{bottom:calc(16px + env(safe-area-inset-bottom,0px))!important}", panel: "#s-heute>.brand{display:none!important}" };
   var GLASS_NAV = {
     kalender: [".tabbar", ".tabbar button.on"],
     // die Schule zeigt ab 900 px (und im Querformat) eine Leiste am linken Rand – die bleibt unverändert

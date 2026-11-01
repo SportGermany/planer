@@ -141,6 +141,8 @@ function extItems(from, to, withLessons) {
 }
 
 function homework() {
+  // schlanker Planer (APK): Hausaufgaben gehören zur Schul-App – hier keine Kopie mehr (PLAN-EINZEL.md)
+  if ((window.SGOhne || []).indexOf("schule") >= 0) return [];
   var db = lpDb(); if (!db) return [];
   var t0 = addDays(today(), -14);
   return (db.homework || []).filter(function (h) { return h.due && (!h.done || h.due >= t0); }).map(function (h) {
