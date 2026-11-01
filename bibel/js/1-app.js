@@ -230,6 +230,7 @@ function findChunkContainingVerse(chapterRef, num){
 }
 function markReadAndHistory(r){
   state.readChunks[r.id] = true;
+  if(state.lp && state.lp.id){ state.lp.read = state.lp.read || {}; state.lp.read[r.id] = 1; }   // Leseplan: gelesen seit Planstart
   const last = state.history[0];
   if(!last || last.id !== r.id){
     state.history.unshift({ id:r.id, ts: Date.now() });
@@ -439,7 +440,7 @@ function openOverlay(reading, chapterPool){
   overlayPassage.show(reading, chapterPool || READINGS);
 }
 document.getElementById("overlayClose").addEventListener("click", () => {
-  overlayEl.classList.remove("show");
+  overlayEl.classList.remove("show"); renderPlan();
   if(speechSynthesis.speaking) speechSynthesis.cancel();
 });
 overlayEl.addEventListener("click", (e) => { if(e.target === overlayEl){ overlayEl.classList.remove("show"); if(speechSynthesis.speaking) speechSynthesis.cancel(); } });
@@ -872,7 +873,57 @@ tabButtons.forEach(b => {
 /* =========================================================================
    Initiales Rendern
    ========================================================================= */
+/* =========================================================================
+   Lesepläne (Bibel 2.0): fester Tagesabschnitt mit Fortschritt – state.lp = { id, start, read: {Abschnitt-ID: 1} }
+   ========================================================================= */
+const LPLANS = [
+  { id: "jahr", t: "Bibel in 1 Jahr", d: 365, f: () => READINGS },
+  { id: "nt90", t: "Neues Testament in 90 Tagen", d: 90, f: () => READINGS.filter(r => r.test === "NT") },
+  { id: "pss", t: "Psalmen und Sprüche in 60 Tagen", d: 60, f: () => READINGS.filter(r => ["Psalm", "Sprüche"].includes(BOOKS[r.book].name)) },
+  { id: "evang", t: "Evangelien in 30 Tagen", d: 30, f: () => READINGS.filter(r => ["Matthäus", "Markus", "Lukas", "Johannes"].includes(BOOKS[r.book].name)) }
+];
+function lpInfo(){
+  const lp = state.lp, P = lp && LPLANS.find(x => x.id === lp.id); if(!P) return null;
+  const all = P.f(), per = Math.ceil(all.length / P.d), read = lp.read || {};
+  const day = Math.max(0, Math.round((new Date(todayStr()) - new Date(lp.start)) / 864e5));
+  const di = Math.min(P.d - 1, day), part = all.slice(di * per, (di + 1) * per);
+  const done = all.filter(r => read[r.id]).length, expected = Math.min(all.length, (di + 1) * per);
+  // Rückstand: erst der älteste ungelesene Abschnitt bis einschließlich heute
+  const firstOpen = all.slice(0, expected).find(r => !read[r.id]);
+  return { P, all, per, di, part, done, expected, behind: Math.max(0, expected - done - part.filter(r => !read[r.id]).length), firstOpen, todayDone: part.every(r => read[r.id]), finished: done >= all.length };
+}
+function renderPlan(){
+  const card = document.getElementById("lpCard"), list = document.getElementById("lpList"), I = lpInfo();
+  if(card){
+    if(!I){ card.hidden = true; }
+    else {
+      card.hidden = false;
+      const pct = Math.round(I.done / I.all.length * 100), mins = I.part.reduce((a, r) => a + minutesFor(r.words), 0);
+      card.innerHTML = `<span class="sg-kicker">Leseplan · Tag ${I.di + 1} von ${I.P.d}</span><b style="font-size:17px;font-weight:500">${escapeHtml(I.P.t)}</b>` +
+        `<div class="progress-outer"><div class="progress-inner" style="width:${pct}%"></div></div>` +
+        `<p class="sg-note">${I.finished ? "Geschafft – der ganze Plan ist gelesen." : I.todayDone ? "Heute erledigt ✓" + (I.behind ? " · " + I.behind + " Abschnitte Rückstand" : "") : escapeHtml(I.part[0] ? I.part[0].ref : "") + (I.part.length > 1 ? " … " + escapeHtml(I.part[I.part.length - 1].ref) : "") + " · " + I.part.filter(r => (state.lp.read || {})[r.id]).length + " von " + I.part.length + " gelesen · ca. " + mins + " Min." + (I.behind ? " · " + I.behind + " Abschnitte Rückstand" : "")}</p>` +
+        (I.finished || (I.todayDone && !I.behind) ? "" : `<div class="sg-btns"><button class="sg-btn p" type="button" data-lp="read">${I.todayDone ? "Rückstand lesen" : "Tagesabschnitt lesen"}</button></div>`);
+    }
+  }
+  if(list){
+    list.innerHTML = LPLANS.map(P => {
+      const on = state.lp && state.lp.id === P.id, I2 = on ? I : null;
+      return `<button class="sg-row" type="button" data-lpset="${P.id}"><span class="tx"><b>${escapeHtml(P.t)}</b><small>${on ? "läuft · Tag " + (I2.di + 1) + " · " + Math.round(I2.done / I2.all.length * 100) + " % gelesen" : P.d + " Tage · ca. " + Math.round(P.f().reduce((a, r) => a + minutesFor(r.words), 0) / P.d) + " Min. am Tag"}</small></span><span class="end">${on ? "aktiv" : ""}</span></button>`;
+    }).join("") + (state.lp ? `<button class="sg-row" type="button" data-lpset=""><span class="tx"><b>Leseplan beenden</b><small>Fortschritt im Plan wird gelöscht, Gelesenes bleibt</small></span></button>` : "");
+  }
+}
+document.addEventListener("click", e => {
+  const a = e.target.closest && e.target.closest("[data-lp], [data-lpset]"); if(!a) return;
+  if(a.dataset.lp === "read"){ const I = lpInfo(); if(!I) return; const pool0 = I.todayDone ? I.all.slice(0, I.expected).filter(r => !(state.lp.read || {})[r.id]) : I.part; const first = pool0.find(r => !(state.lp.read || {})[r.id]) || pool0[0]; if(first) openOverlay(first, pool0); return; }
+  if("lpset" in a.dataset){
+    const id = a.dataset.lpset;
+    if(!id){ if(!confirm("Leseplan beenden?")) return; state.lp = null; }
+    else if(!state.lp || state.lp.id !== id){ if(state.lp && !confirm("Neuen Leseplan starten? Der Fortschritt im bisherigen Plan wird zurückgesetzt.")) return; state.lp = { id, start: todayStr(), read: {} }; showToast("Leseplan gestartet – die Karte steht auf „Heute“."); }
+    saveState(); renderPlan();
+  }
+});
 function fullRerender(){
+  renderPlan();
   applyDisplaySettings();
   renderStats();
   renderCalendarStrip();

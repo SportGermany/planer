@@ -121,8 +121,8 @@ body[data-fontstyle="sans"] .verse-text, body[data-fontstyle="sans"] .quote-text
 .sg-themes button.active .sw { border-color: var(--acc); }
 </style>
 <!-- verbund-design:start -->
-<link rel="stylesheet" href="../sg/basis.css?v=5.1.0.9bec24">
-<script data-design="basis" data-sync="" src="../sg/design.js?v=5.1.0.9bec24"></script>
+<link rel="stylesheet" href="../sg/basis.css?v=5.1.0.6b0e71">
+<script data-design="basis" data-sync="" src="../sg/design.js?v=5.1.0.6b0e71"></script>
 <!-- verbund-design:end -->
 </head>
 <body data-fontsize="md" data-fontstyle="serif">
@@ -139,6 +139,7 @@ body[data-fontstyle="sans"] .verse-text, body[data-fontstyle="sans"] .quote-text
 <p class="next-hint" id="nextHint"></p>
 <button class="sg-btn p big" id="goBtn" type="button">Heute lesen</button>
 </div>
+<div class="sg-card" id="lpCard" hidden></div>
 <div class="passage" id="passageHeute"></div>
 <div class="sg-card">
 <div class="bib-streak">
@@ -184,7 +185,9 @@ body[data-fontstyle="sans"] .verse-text, body[data-fontstyle="sans"] .quote-text
 
 <!-- ================= EINSTELLUNGEN ================= -->
 <section class="sg-view view" id="view-mehr">
-<h2 class="sg-h">Leseplan</h2>
+<h2 class="sg-h">Lesepläne</h2>
+<div class="sg-list" id="lpList"></div>
+<h2 class="sg-h">Täglich lesen</h2>
 <div class="sg-card">
 <div class="sg-field"><span>Was lesen</span>
 <div class="sg-seg" id="testToggle"><button data-filter="AT" type="button">AT</button><button data-filter="ALL" class="active" type="button">Ganze Bibel</button><button data-filter="NT" type="button">NT</button></div></div>
@@ -264,6 +267,6 @@ body[data-fontstyle="sans"] .verse-text, body[data-fontstyle="sans"] .quote-text
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", draw); else draw();
 })();
 </script>
-<script src="js/1-app.js?v=5.1.0.9bec24"></script>
+<script src="js/1-app.js?v=5.1.0.6b0e71"></script>
 </body>
 </html>

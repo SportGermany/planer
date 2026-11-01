@@ -5,6 +5,11 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Neue Funktion Bibel: Lesepläne (Schritt 6)
+- Bibel in 1 Jahr (≈ 16 Min./Tag), NT in 90 Tagen, Psalmen & Sprüche in 60 Tagen, Evangelien in 30 Tagen; Wahl in Einstellungen ›
+  Lesepläne, Karte auf „Heute“ (Tag x von n, Fortschritt, „x von y gelesen“, Rückstand, „Tagesabschnitt lesen“ öffnet die Abschnitte).
+  Gespeichert in state.lp (zweiminutenbibel_v2) → Datei-Sicherung und Cloud nehmen ihn mit.
+
 ## Neue Funktionen Planer (Schritt 6)
 - Wiederkehrende Aufgaben: Feld `every` (d/w/m) an Aufgaben; beim Abhaken legt verbund.js die nächste an (einmal je Erledigung,
   `nextId`; Monatsende korrekt, z. B. 31.1. → 28.2.). Auswahl „Wiederholen“ im Aufgabenblatt und im Aufgaben-Panel, Anzeige „↻ …“.
