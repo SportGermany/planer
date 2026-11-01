@@ -5,6 +5,13 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## 4.4.0 + Training 1.0.0 (Schritt 5)
+- Training als eigene APK (`training/` mit Mobility, Atmung, Bahnplan + `wissen/`). Sportwissenschaft über „Dazu heute“ › Sportwissenschaft
+  bzw. `#wissen/…`. Fehler gefunden: Zurück aus der Sportwissenschaft sprang wieder hinein (Adresse behielt #wissen) – Adresse vorher ersetzen.
+- Sync „erledigt“: Training-App schreibt Tagebuch, Aktivitäten und Atemübungen als „✓ … erledigt“ in den (Google-)Kalender;
+  der Planer zählt sie (`doneArea`) wie früher das Tagebuch und hakt die geplanten Einheiten ab. Eigene alte Tagebuchkopie zählt dann nicht.
+- In Einzel-Apps werden Planer-Einträge aus Google nicht angezeigt (die kommen dort über die Cloud mit Status, sonst doppelt).
+
 ## 4.3.0 + Schule 1.0.0 (Schritt 4)
 - Schule als eigene APK. Übergabe jetzt als Datei (FileProvider + Leserecht nur für die Ziel-App): im Startaufruf erlaubt Android
   nur etwa 1 MB, die Ablage mit PDFs ist größer. Ablagen (IndexedDB) wie beim Umzug kodiert, `stores` = Aufbau der Datenbank.

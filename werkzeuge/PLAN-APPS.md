@@ -33,7 +33,8 @@ veröffentlichten App. Die bestehende Planer-App bleibt bis zum Schluss voll nut
 - [x] **4 App Schule** – Stundenplan, Aufgaben/Prüfungen, Lernplan, Ferien; Prüfungen/Lernblöcke in Google.
   Übergabe als Datei (FileProvider, bis 64 MB) inkl. Ablage (IndexedDB) und Handy-Einstellung; Planer setzt `sg-ausgelagert-v1`
   → verbund.js liest/exportiert die alte Schulkopie nicht mehr; Einträge anderer Apps kommen über `fromApp` aus Google zurück.
-- [ ] **5 App Training** – Training, Mobility, Atmung, Auswertung, Sportwissenschaft, Bahnplan (unverändert); Trainings in Google.
+- [x] **5 App Training** – Training, Mobility, Atmung, Auswertung, Sportwissenschaft, Bahnplan (unverändert); Trainings in Google.
+  „✓ … erledigt“-Einträge (Beschreibung „Planer · … erledigt“) → Planer `doneArea` hakt geplante Trainings ab; `#wissen/…` öffnet ../wissen/.
 - [ ] **6 Planer schlank** – nur Kalender, Aufgaben, Notizen, Woche planen, Web-/Handykalender; Bereiche als Kacheln zu den Apps.
 - [ ] **7 Abnahme** – je App alt/neu-Vergleich, offline, Emulator; Bericht an den Nutzer.
 - [ ] **8 Verbesserungen** – Widgets; App-Verknüpfungen (langer Druck); Benachrichtigungen je App; Trainingsergebnis im

@@ -60,5 +60,42 @@
     "net": [
       "openholidaysapi.org"
     ]
+  },
+  "training": {
+    "id": "de.sportgermany.training",
+    "name": "Training",
+    "start": "training/",
+    "dirs": [
+      "training",
+      "wissen",
+      "sg"
+    ],
+    "ver": "1.0.0",
+    "probe": {
+      "keys": {
+        "wk_onboarded": "1",
+        "pulsplan.v1": "{\"sessions\":[]}"
+      },
+      "ziel": "kraft",
+      "check": "document.getElementById('s-lauf').classList.contains('active') && document.getElementById('s-lauf').getAttribute('data-part') === 'kraft'",
+      "idb": {
+        "bahnplan/img": [
+          [
+            "map-test",
+            {
+              "__blob": "data:image/png;base64,iVBORw0KGgo=",
+              "type": "image/png",
+              "name": "plan.png"
+            }
+          ]
+        ]
+      },
+      "stores": {
+        "bahnplan": [
+          "img"
+        ]
+      },
+      "open": "location.hash = 'einst'"
+    }
   }
 }

@@ -91,7 +91,10 @@
   // in denselben Gist sichert (je Bereich eine eigene Datei, siehe DATA in verbund.js)
   // idb: Datenbanken/Ablagen, die mitgehen (Dateien der Schul-Ablage); sg-handy-v1: Handy-/Google-Kalender gleich eingerichtet
   var EXT = { bibel: { pkg: "de.sportgermany.bibel", keys: /^zweiminutenbibel_/ },
-    schule: { pkg: "de.sportgermany.schule", keys: /^(schulkalender-bayern-v1|schulplaner-lokal-v1|sg-stundenplan-v1|sg-shared-calendar-sync|sg-handy-v1)$/, idb: [["lernplan-dateien", "files"], ["lernplan-dateien", "inbox"]] } }, extOn = {};
+    schule: { pkg: "de.sportgermany.schule", keys: /^(schulkalender-bayern-v1|schulplaner-lokal-v1|sg-stundenplan-v1|sg-shared-calendar-sync|sg-handy-v1)$/, idb: [["lernplan-dateien", "files"], ["lernplan-dateien", "inbox"]] },
+    // Training mit Mobility, Atmung, Bahnplan (Bilder), Sportwissenschaft; pre = Sprungziel-Vorsilbe in der Training-App (#mobility/…, #wissen/…)
+    training: { pkg: "de.sportgermany.training", keys: /^(wk_.*|rodelmobility\.v1|pulsplan\.v1|bahnplan\.v1|sg-wissen-v1|sg-training-akk-v1|sg-shared-calendar-sync|sg-handy-v1)$/, idb: [["bahnplan", "img"]],
+      pre: { mobility: "mobility", atmung: "atmung", rodeln: "bahnplan", wissen: "wissen" } } }, extOn = {};
   function sysP() { try { var Cp = window.Capacitor; return Cp && Cp.isNativePlatform && Cp.isNativePlatform() && Cp.Plugins.PlanerSystem || null; } catch (e) { return null; } }
   function extCheck() {
     var P = sysP(); if (!P || !P.installed) return;
@@ -105,10 +108,11 @@
   }
   extCheck();
   document.addEventListener("visibilitychange", function () { if (!document.hidden) extCheck(); });
-  function openExt(v, s, opt) {
-    var P = sysP(), E = EXT[v], sec = secOf(V[v], s), done = {};
+  function openExt(v, s, opt, k) {
+    var P = sysP(), E = EXT[v], sec = secOf(V[v], s), kid = kidOf(sec, k), done = {};
     try { done = JSON.parse(localStorage.getItem("sg-uebergabe-v1") || "{}") || {}; } catch (e) {}
-    var o = { pkg: E.pkg, ziel: opt.sub || (sec && (sec.h || sec.s)) || "" };
+    var part = opt.sub || (kid && (kid.h || kid.s)) || (sec && (sec.h || sec.s)) || "", pre = E.pre && sec && E.pre[sec.id];
+    var o = { pkg: E.pkg, ziel: pre ? pre + (part ? "/" + part : "") : part };
     var prep = Promise.resolve();
     if (!done[v]) {
       var keys = {};
@@ -123,8 +127,8 @@
     }
     prep.then(function () { return P.openApp(o); }).then(function (r) {
       if (r && r.opened) { if (o.daten) { done[v] = Date.now(); try { localStorage.setItem("sg-uebergabe-v1", JSON.stringify(done)); } catch (e) {} } }
-      else { delete extOn[v]; go(v, s, null, Object.assign({}, opt, { intern: true })); }
-    }).catch(function () { delete extOn[v]; go(v, s, null, Object.assign({}, opt, { intern: true })); });
+      else { delete extOn[v]; go(v, s, k, Object.assign({}, opt, { intern: true })); }
+    }).catch(function () { delete extOn[v]; go(v, s, k, Object.assign({}, opt, { intern: true })); });
     return true;
   }
 
@@ -263,7 +267,7 @@
     opt = opt || {};
     if (drawerOpen) return closeDrawer(function () { go(v, s, k, opt); });
     var al = alias(v, s); v = al[0]; s = al[1];
-    if (extOn[v] && !opt.intern && openExt(v, s, opt)) return;
+    if (extOn[v] && !opt.intern && openExt(v, s, opt, k)) return;
     if (!V[v]) v = "kalender";
     var push = opt.push != null ? opt.push : (cur.v === "kalender" && v !== "kalender") || (V[v].up === cur.v);
     if (calMon && v !== "kalender") { calMon = false; calModeCls(); if (history.state && history.state.mon) history.replaceState({ app: 1, from: history.state.from }, "", location.hash); }
@@ -1379,6 +1383,8 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["4.4.0", ["Neu: eigene Training-App (Release „Training 1.0.0“) mit Mobility, Atmung, Bahnplan und Sportwissenschaft. Ist sie installiert, öffnet der Planer sie – beim ersten Mal mit allen Trainingsdaten",
+      "Erledigte Einheiten trägt die Training-App als „✓ … erledigt“ in deinen (Google-)Kalender ein – der Planer hakt damit die geplanten Trainings ab"]],
     ["4.3.0", ["Neu: eigene Schul-App (Release „Schule 1.0.0“). Ist sie installiert, öffnet der Planer sie – beim ersten Mal mit Stundenplan, Prüfungen, Aufgaben und den Dateien der Ablage",
       "Prüfungen, Lernblöcke und Stundenplan trägt dann die Schul-App selbst in deinen (Google-)Kalender ein; der Planer zeigt sie von dort an"]],
     ["4.2.0", ["Neu: eigene Bibel-App (Release „Bibel 1.0.0“ auf GitHub). Ist sie installiert, öffnet der Planer beim Tippen auf Bibel die App – beim ersten Mal mit deinem Lesestand"]],

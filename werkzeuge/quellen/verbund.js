@@ -231,13 +231,14 @@
       });
     }
     // Atemübungen aus Atmung & HRV (dort geplant – auch von der Wochenplanung)
-    var pp = jkey("pulsplan.v1");
+    var tOut = outsourced("training");   // Training-App installiert: Atmung/Training kommen aus deren Einträgen im (Google-)Kalender
+    var pp = tOut ? null : jkey("pulsplan.v1");
     if (pp && pp.entries) pp.entries.forEach(function (e) {
       if (!e.date || e.date < from || e.date > to) return;
       out.push(Object.assign({ id: "pp-" + e.id, title: e.type || "Atemübung", date: e.date, time: e.time || "", end: e.time ? addMin(e.time, +e.dur || 10) : "", app: "Atmung", note: e.note || "", ro: "Atmung & HRV", status: e.status || "", why: e.why || "" }, where("training", "#atmung")));
     });
     // Training: erledigte Einheiten und Aktivitäten
-    var log = jkey("wk_log") || {}, acts = jkey("wk_activities") || [];
+    var log = tOut ? {} : jkey("wk_log") || {}, acts = tOut ? [] : jkey("wk_activities") || [];
     Object.keys(log).forEach(function (k) {
       var l = log[k]; if (!l || !l.done || k < from || k > to) return;
       var label = l.type === "rest" ? "Ruhetag" : l.type === "run" ? "Lauf erledigt" : "Training erledigt";
@@ -293,8 +294,10 @@
    * wie es dort gibt (nie doppelt). Die Zeile „✓ Training erledigt“ entfällt dann, der geplante Eintrag trägt das ✓. */
   var PLAN_AREAS = { training: 1, mobility: 1, atmung: 1, schule: 1 };
   function withStatus(list) {
-    var log = jkey("wk_log") || {}, pp = jkey("pulsplan.v1") || {}, have = {}, slots = {}, drop = {};
+    var tOut = outsourced("training"), log = tOut ? {} : jkey("wk_log") || {}, pp = tOut ? {} : jkey("pulsplan.v1") || {}, have = {}, slots = {}, drop = {};
     list.forEach(function (x) {
+      // „✓“-Einträge der Training-App (über den Google-Kalender) zählen wie das Tagebuch
+      if (x.doneArea) { have[x.doneArea + "@" + x.date] = (have[x.doneArea + "@" + x.date] || 0) + 1; if (x.doneArea === "training") x.dropKey = "tb-" + x.date; }
       if (/^ta-/.test(x.id)) { var a = x.app === "Mobility" ? "mobility" : "training"; have[a + "@" + x.date] = (have[a + "@" + x.date] || 0) + 1; }
       x.plan = !x.ro || /^pp-/.test(x.id) ? PLAN_AREAS[areaOf(x)] === 1 && !x.phone && !(x.of > 1) : false;   // mehrtägige: über „Bearbeiten“
       if (x.plan && x.sid) { var so = (x.stx || {})[x.date]; x.status = so ? so.s : ""; x.why = so && so.w || ""; }   // Serie: Status je Tag
@@ -309,7 +312,7 @@
       xs.forEach(function (x) { if (x.st === "done" || x.status === "open") n--; });   // „Wieder offen“ verbraucht den Eintrag aus dem Tagebuch, der Haken wandert nicht weiter
       xs.forEach(function (x) { if (!x.st && x.status !== "open" && n > 0) { x.st = "done"; x.auto = true; n--; if (k.indexOf("training@") === 0) drop["tb-" + x.date] = 1; } });
     });
-    return list.filter(function (x) { return !drop[x.id]; });
+    return list.filter(function (x) { return !drop[x.id] && !(x.dropKey && drop[x.dropKey]); });
   }
   // Nächster wichtiger Termin: eigene mit Stern (nur diese ausrollen) und Prüfungen aus der Schule; zwischengespeichert bis zur nächsten Änderung
   var NI = { k: "", v: null };
@@ -2412,6 +2415,12 @@
       add(e, (e.note ? e.note + "\n" : "") + "Planer · " + e.app);
     });
     var ext = []; try { ext = externalItems(from, to, true); } catch (x) {}
+    // Training-App: erledigte Einheiten, Aktivitäten und Atemübungen als „✓ …“ – der Planer hakt damit seine geplanten Trainings ab
+    if (SOLO === "training") {
+      ext.forEach(function (x) { if (/^(tb|ta)-/.test(x.id)) add(x, (x.note ? x.note + "\n" : "") + "Planer · " + (x.app === "Mobility" ? "Mobility" : "Training") + " erledigt"); });
+      var ps = jkey("pulsplan.v1") || {};
+      (ps.sessions || []).forEach(function (q, i) { if (q && q.date && q.date >= from && q.date <= to) add({ id: "ps-" + q.date + "-" + i, title: "✓ Atemübung" + (q.min ? " · " + q.min + " Min." : ""), date: q.date }, "Planer · Atmung erledigt"); });
+    }
     ext.forEach(function (x) {
       if (x.learn) return;
       if ((x.app === "Lernplan" && opt.schule) || (x.app === "Atmung" && opt.atmung)) add(x, (x.note ? x.note + "\n" : "") + "Planer · " + (x.app === "Lernplan" ? "Schule" : x.app));
@@ -2508,7 +2517,9 @@
     if (!s || !s.on || !s.cache || !HP()) return [];
     var off = s.off || {};
     // mehrtägige Handytermine wie eigene: je Tag ein Eintrag („Tag 2 von 4“)
-    return occurrences(from, to, (s.cache.events || []).filter(function (e) { return !off[e.cal]; }));
+    // Einträge anderer Planer-Apps immer (auch wenn ihr Kalender sonst ausgeblendet ist); in einer Einzel-App nicht die des Planers –
+    // dessen Kalender kommt dort über die Cloud-Sicherung (mit Status), sonst stünde alles doppelt da
+    return occurrences(from, to, (s.cache.events || []).filter(function (e) { return e.fromApp ? !(SOLO && e.fromApp === "planer") : !off[e.cal]; }));
   }
   var hBusy = false, hAgain = false, hLastOut = "";
   function hSync(force) {
@@ -2542,8 +2553,12 @@
           if (ed === date) end = et; else if (et === "00:00" && plusDays(ed, -1) === date) end = "23:59"; else { endDate = et === "00:00" ? plusDays(ed, -1) : ed; end = et === "00:00" ? "" : et; }
         }
         // Einträge einer anderen Planer-App (z. B. Prüfungen aus der Schul-App): wie deren Bereich, nur lesbar (bearbeitet wird in der App)
-        if (e.fromApp) return { id: "ap-" + e.fromApp + "-" + e.eventId + "-" + e.begin, fromApp: e.fromApp, title: e.title || "(ohne Titel)", date: date, endDate: endDate, time: time, end: end,
-          app: e.fromApp === "schule" ? "Lernplan" : e.fromApp === "training" ? "Training" : e.fromApp === "bibel" ? "Bibel" : "Handy", note: e.description || "", ro: { schule: "Schul-App", training: "Training-App", bibel: "Bibel-App" }[e.fromApp] || "andere App" };
+        if (e.fromApp) {
+          var dsc = e.description || "", sub = /· Mobility/.test(dsc) ? "Mobility" : /· Atmung/.test(dsc) ? "Atmung" : "";
+          return { id: "ap-" + e.fromApp + "-" + e.eventId + "-" + e.begin, fromApp: e.fromApp, title: e.title || "(ohne Titel)", date: date, endDate: endDate, time: time, end: end,
+            app: e.fromApp === "schule" ? "Lernplan" : e.fromApp === "training" ? (sub || "Training") : e.fromApp === "bibel" ? "Bibel" : "Handy", note: dsc, ro: { schule: "Schul-App", training: "Training-App", bibel: "Bibel-App" }[e.fromApp] || "andere App",
+            doneArea: e.fromApp === "training" && / erledigt$/.test(dsc) ? (sub ? sub.toLowerCase() : "training") : "" };
+        }
         return { id: "hd-" + e.eventId + "-" + e.begin, fromApp: e.fromApp || "", title: e.title || "(ohne Titel)", date: date, endDate: endDate, time: time, end: end, app: "Handy", color: e.color, cal: String(e.calendarId), calName: e.calendar,
           note: [e.location ? "Ort: " + e.location : "", e.description || ""].filter(Boolean).join("\n"), ro: "Handykalender", phone: { eventId: e.eventId, recurring: !!e.recurring, begin: e.begin, end: e.end, allDay: !!e.allDay } };
       });

@@ -110,7 +110,7 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
         // „Öffnen mit Planer“: Android legt die Datei ab, die App holt sie (Ereignis fileOpened)
         takeFile: () => { const f = st.file || {}; st.file = null; return Promise.resolve(f); },
         // eigene Apps (PLAN-APPS.md): Bibel-App ist installiert, openApp merkt sich den Aufruf
-        installed: o => Promise.resolve({ installed: o.pkgs.filter(x => x === 'de.sportgermany.bibel' || (st.schuleApp && x === 'de.sportgermany.schule')) }),
+        installed: o => Promise.resolve({ installed: o.pkgs.filter(x => x === 'de.sportgermany.bibel' || (st.schuleApp && x === 'de.sportgermany.schule') || (st.trainingApp && x === 'de.sportgermany.training')) }),
         openApp: o => { (st.opened = st.opened || []).push(o); return Promise.resolve({ opened: true }); },
         takeHandover: () => Promise.resolve({}),
         addListener: (ev, fn) => { (st.ls = st.ls || {})[ev] = fn; return Promise.resolve({ remove() {} }); } },
@@ -176,6 +176,20 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
   });
   ok(sc.before > 0 && sc.after === 0 && sc.outB > 0 && sc.outA === 0 && sc.pkg === 'de.sportgermany.schule' && sc.ziel === 'plan' && sc.keys.includes('schulkalender-bayern-v1') && sc.back === sc.before,
     'Schul-App installiert: Planer ohne alte Schulkopie, öffnet die App mit Daten, ohne App wieder wie vorher ' + JSON.stringify(sc).slice(0, 220));
+  // Training-App installiert: Tagebuch des Planers zählt nicht mehr; „✓ … erledigt“ aus der Training-App (über Google) hakt das geplante Training ab
+  const tr = await q.evaluate(async () => {
+    const d = new Date(), k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'), b = new Date(d); b.setHours(7, 0, 0, 0);
+    const n = SharedCalendar.add({ title: 'Plan-Einheit', date: k, time: '18:00', end: '19:00', app: 'Training' });
+    window.__sim.trainingApp = true; document.dispatchEvent(new Event('visibilitychange')); await new Promise(r => setTimeout(r, 300));
+    const pre = SharedCalendar.allItems(k, k).filter(x => x.st === 'done' && x.auto && /training/i.test(x.app)).length;
+    window.__sim.phone.push({ eventId: 990, calendarId: 5, title: '✓ Training erledigt · 25 Min.', begin: b.getTime(), end: b.getTime() + 36e5, allDay: false, calendar: 'Diana', color: '#4285F4', description: 'Planer · Training erledigt', fromApp: 'training' });
+    await SharedCalendar.handy.sync(true); await new Promise(r => setTimeout(r, 1200)); await SharedCalendar.handy.sync(true);
+    const items = SharedCalendar.allItems(k, k), plan = items.filter(x => x.title === 'Plan-Einheit');
+    const res = { pre, post: plan.map(x => (x.st || '-') + (x.auto ? '*' : '')).join(), autoDone: items.filter(x => x.st === 'done' && x.auto && /training/i.test(x.app)).length, shown: items.filter(x => /^ap-training/.test(x.id)).length, tb: items.filter(x => /^tb-/.test(x.id)).length };
+    window.__sim.phone.pop(); window.__sim.trainingApp = false; SharedCalendar.remove(n.id); document.dispatchEvent(new Event('visibilitychange')); await new Promise(r => setTimeout(r, 300)); await SharedCalendar.handy.sync(true);
+    return res;
+  });
+  ok(tr.pre === 0 && tr.autoDone === 1 && tr.tb === 0, 'Training-App installiert: „✓ erledigt“ aus Google hakt das geplante Training ab ' + JSON.stringify(tr));
   // Kalenderdatei direkt öffnen („Öffnen mit Planer“)
   await q.evaluate(() => { const s = window.__sim; s.file = { name: 'Quali-Lehrgang.ics', text: 'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:q1@x\r\nDTSTART;TZID=Europe/Berlin:20991023T160000\r\nDTEND;TZID=Europe/Berlin:20991023T173000\r\nSUMMARY:Training G1\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:q2@x\r\nDTSTART;VALUE=DATE:20991023\r\nDTEND;VALUE=DATE:20991029\r\nSUMMARY:Quali-Lehrgang\r\nEND:VEVENT\r\nEND:VCALENDAR' }; s.ls.fileOpened(); });
   await q.waitForTimeout(900);

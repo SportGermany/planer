@@ -89,6 +89,9 @@
   function fromHash() {
     var h = location.hash.replace("#", "").split("/");
     if (MODS[h[0]]) { openMod(h[0], h[1]); return; }
+    // eigene Training-App: Sportwissenschaft ist eine eigene Seite daneben (im Planer öffnet sie die Hülle)
+    // vorher die Adresse ohne #wissen merken – sonst führt „Zurück“ gleich wieder hinein
+    if (h[0] === "wissen" && window.top === window) { history.replaceState(null, "", location.pathname); location.href = "../wissen/" + (h[1] ? "#" + h.slice(1).join("/") : ""); return; }
     if (openId) closeMod();
     if (h[0] === "start" || SCREENS[h[0]]) {
       history.replaceState(null, "", location.pathname);
@@ -196,6 +199,7 @@
     else h += row(b.sessions > 0, b.sessions ? "Atemübung erledigt" : "Atmung", b.sessions ? "✓ " + b.sessions + " Einheit" + (b.sessions > 1 ? "en" : "") + " heute" : "5–10 Min. im 6er-Takt senken den Stress messbar", "atmung");
     if (b.morning) h += row(true, "Morgen-HRV: RMSSD " + b.morning.rmssd + " ms", b.hrv ? b.hrv.text + (b.hrv.adj ? " (Bereitschaft " + (b.hrv.adj > 0 ? "+" : "") + b.hrv.adj + ")" : "") : "Puls " + b.morning.hr, "atmung");
     else h += row(false, "Morgen-HRV messen", "2 Min. nach dem Aufwachen – fließt in deine Trainingsbereitschaft ein", "atmung");
+    if (window.SGApp === "training") h += row(false, "Sportwissenschaft", "Lehrbuch, Karteikarten, Quiz", "wissen");
     return h + "</div>";
   }
   function trainingHTML() {
