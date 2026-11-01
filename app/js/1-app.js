@@ -557,11 +557,31 @@
   function dayRoll() { var t = today(); if (t === calToday) return false; if (calSel === calToday) setSel(t); calToday = t; return true; }
   function calBox() {
     var w = $("n-kalender").firstElementChild;
-    if (!$("cal-strip")) w.innerHTML = '<div id="cal-strip"></div><div id="cal-up"></div><div id="cal-day"></div><div id="cal-next"></div><div id="cal-month"></div>';
+    if (!$("cal-strip")) w.innerHTML = '<div id="cal-strip"></div><div id="cal-up"></div><div id="cal-eve"></div><div id="cal-day"></div><div id="cal-next"></div><div id="cal-month"></div>';
     calModeCls();
     return w;
   }
-  function renderCal() { dayRoll(); calBox(); calData(); renderStrip(); renderUp(); renderDay(); renderNext(); if (calMon) renderMonth(); widget(); }
+  function renderCal() { dayRoll(); calBox(); calData(); renderStrip(); renderUp(); renderEve(); renderDay(); renderNext(); if (calMon) renderMonth(); widget(); }
+  /* Abend-Rückblick (schlanker Planer, ab 18 Uhr): was heute erledigt ist, was offen blieb – Offenes mit einem Tipp auf morgen */
+  function renderEve() {
+    var el = $("cal-eve"), t = today(); if (!el) return;
+    var seen = ""; try { seen = localStorage.getItem("sg-abend-v1") || ""; } catch (e) {}
+    if (!SLIM || calSel !== t || new Date().getHours() < 18 || seen === t) { el.innerHTML = ""; return; }
+    var c = C(), tasks = c.tasks.list(), t0 = parse(t).getTime();
+    var done = tasks.filter(function (q) { return q.done && q.doneAt >= t0; }).length + (CD.by[t] || []).filter(function (x) { return x.st === "done"; }).length;
+    var open = tasks.filter(function (q) { return !q.done && q.due && q.due <= t; }).slice(0, 5);
+    el.innerHTML = '<div class="grp eve"><header><span>Tagesrückblick</span><button class="lnk" data-eve="ok">Fertig</button></header><div class="cells">' +
+      '<div class="evs"><b>' + done + '</b> erledigt · <b>' + open.length + "</b> offen" + (open.length ? "" : " – alles geschafft") + "</div>" +
+      open.map(function (q) { return '<div class="evo"><span>' + esc(q.title) + '</span><button class="btn" data-eve="' + q.id + '">Morgen</button></div>'; }).join("") +
+      (open.length > 1 ? '<div class="btns"><button class="btn p" data-eve="all">Alle auf morgen</button></div>' : "") + "</div></div>";
+    el.onclick = function (e) {
+      var b = e.target.closest("[data-eve]"); if (!b) return;
+      var k = b.dataset.eve, tm = plus(t, 1);
+      if (k === "ok") { try { localStorage.setItem("sg-abend-v1", t); } catch (x) {} return renderEve(); }
+      (k === "all" ? open.map(function (q) { return q.id; }) : [k]).forEach(function (id) { c.tasks.update(id, { due: tm }); });
+      snack(k === "all" ? open.length + " Aufgaben auf morgen" : "Auf morgen verschoben"); refresh(); renderCal();
+    };
+  }
   // Widget auf dem Startbildschirm: der nächste Eintrag von heute, sonst der nächste in den kommenden Tagen (nur in der Android-App)
   function widget() {
     if (!window.SGWidget || !CD) return;
@@ -641,14 +661,39 @@
       if (e.time) {
         var a = tmin(e.time);
         if (!nowDone && now < a) { out += nowLine(now); nowDone = true; }
-        if (lastEnd >= 0 && a - lastEnd >= 45) out += '<div class="gap" role="note">Frei ' + hm(lastEnd) + " bis " + hm(a) + "</div>";
+        if (lastEnd >= 0 && a - lastEnd >= 45) out += freeGap(lastEnd, a);
         out += evRow(e, isT);
         if (e.st !== "skip") lastEnd = Math.max(lastEnd, endMin(e));
       } else out += evRow(e, isT);
     });
     if (!nowDone && day.some(function (e) { return e.time; })) out += nowLine(now);
+    // schlanker Planer: auch der freie Abend bis 21 Uhr (ab jetzt bzw. nach dem letzten Eintrag)
+    if (SLIM && lastEnd >= 0) { var from = Math.max(lastEnd, isT ? Math.ceil(nowMin() / 15) * 15 : 0); if (21 * 60 - from >= 45) out += freeGap(from, 21 * 60); }
     return out;
   }
+  // „Frei 14:00 bis 16:30“ – im schlanken Planer antippbar: eine offene Aufgabe in die Lücke legen
+  function freeGap(a, b) {
+    if (!SLIM) return '<div class="gap" role="note">Frei ' + hm(a) + " bis " + hm(b) + "</div>";
+    return '<button class="gap fz" data-free="' + a + "-" + b + '">Frei ' + hm(a) + " bis " + hm(b) + "<em>Einplanen</em></button>";
+  }
+  function freeSheet(a, b) {
+    var c = C(), sel = calSel, open = c.tasks.list().filter(function (q) { return !q.done; })
+      .sort(function (x, y) { return (x.prio ? 0 : 1) - (y.prio ? 0 : 1) || (x.due || "9999").localeCompare(y.due || "9999"); }).slice(0, 8);
+    var len = Math.min(60, b - a);
+    sheet("<h3>Frei " + hm(a) + " bis " + hm(b) + "</h3><p class=\"s\">Aufgabe auswählen – sie kommt als Termin (" + len + " Min.) in die Lücke.</p>" +
+      (open.length ? '<div class="grp"><div class="cells">' + open.map(function (q) { return '<button class="row" data-s="t:' + q.id + '"><span class="tx"><b>' + esc(q.title) + "</b><small>" + (q.due ? "fällig " + esc(q.due.split("-").reverse().join(".")) : "ohne Datum") + "</small></span></button>"; }).join("") + "</div></div>" : '<p class="s">Keine offenen Aufgaben.</p>') +
+      '<label class="f"><span>Oder eigener Eintrag</span><input type="text" id="fzT" placeholder="z. B. Lernen, Laufen, Pause"></label><div class="btns"><button class="btn" data-s="x">Abbrechen</button><button class="btn p" data-s="neu">Eintragen</button></div>', function (act) {
+      if (act === "x") return closeSheet();
+      var title = "", tid = "";
+      if (act.indexOf("t:") === 0) { tid = act.slice(2); var q = open.filter(function (x) { return x.id === tid; })[0]; title = q ? q.title : ""; }
+      else if (act === "neu") { title = $("fzT").value.trim(); if (!title) { $("fzT").focus(); return; } }
+      else return;
+      c.add({ title: title, date: sel, time: hm(a), end: hm(a + len), note: tid ? "eingeplante Aufgabe" : "" });
+      if (tid) c.tasks.update(tid, { due: sel });
+      closeSheet(); refresh(); renderCal(); snack("„" + title + "“ um " + hm(a) + " eingeplant");
+    });
+  }
+  document.addEventListener("click", function (e) { var f = e.target.closest && e.target.closest("[data-free]"); if (!f) return; var p = f.dataset.free.split("-"); freeSheet(+p[0], +p[1]); });
   function nowLine(m) { return '<div class="nowl" role="note" aria-label="Jetzt, ' + hm(m) + ' Uhr"><span>' + hm(m) + "</span><i></i></div>"; }
   // Zeitraster 06–22 Uhr: Blöcke nach Dauer, Überschneidungen nebeneinander
   function timeGrid(day, isT) {
@@ -1069,10 +1114,11 @@
   }
   function taskSheet(pre) {
     sheet('<h3>Neue Aufgabe</h3><label class="f"><span>Was ist zu tun?</span><input type="text" id="tq" autocomplete="off" enterkeyhint="done" value="' + esc(pre && pre.title || "") + '"></label>' +
-      '<label class="f"><span>Fällig</span><input type="date" id="td" value="' + (pre ? pre.due || "" : calSel) + '"></label><div class="btns"><button class="btn" data-s="x">Abbrechen</button><button class="btn p" data-s="save">Speichern</button></div>', function (act) {
+      '<label class="f"><span>Fällig</span><input type="date" id="td" value="' + (pre ? pre.due || "" : calSel) + '"></label>' +
+      '<label class="f"><span>Wiederholen</span><select id="tev"><option value="">nie</option><option value="d">täglich</option><option value="w">wöchentlich</option><option value="m">monatlich</option></select></label><div class="btns"><button class="btn" data-s="x">Abbrechen</button><button class="btn p" data-s="save">Speichern</button></div>', function (act) {
       if (act === "x") return closeSheet();
       var t = $("tq").value.trim(); if (!t) { $("tq").focus(); return; }
-      C().tasks.add({ title: t, due: $("td").value }); closeSheet(); snack("Aufgabe gespeichert"); renderCal();
+      var ev = $("tev").value; C().tasks.add({ title: t, due: $("td").value, every: ev }); closeSheet(); snack(ev ? "Wiederkehrende Aufgabe gespeichert" : "Aufgabe gespeichert"); renderCal();
     });
     setTimeout(function () { $("tq").focus(); }, 80);
   }
@@ -1334,12 +1380,37 @@
       P.takeFile().then(function (f) {
         if (!f || !f.text) return;
         if (cur.v !== "kalender") go("kalender");
+        // geteilter Text ohne Kalenderdatei (WhatsApp, Mail, Browser …) → als Termin, Aufgabe oder Notiz übernehmen
+        if (!/BEGIN:V(CALENDAR|EVENT)/i.test(f.text)) return setTimeout(function () { sharedTextSheet(f.text); }, 300);
         setTimeout(function () { importSheet(C().phone.parse(f.text, f.name), f.name || "der Kalenderdatei"); }, 300);
       }).catch(function () {});
     };
     if (P.addListener) P.addListener("fileOpened", take);
     take();
   }
+  /* Text aus einer anderen App geteilt („Teilen › Planer“): Datum/Uhrzeit wie in der Schnelleingabe erkennen
+   * („morgen 17 Uhr Training“, „Fr 14:30 Zahnarzt“) und als Termin, Aufgabe oder Notiz übernehmen. */
+  function sharedTextSheet(text) {
+    text = String(text || "").replace(/\r/g, "").trim(); if (!text) return;
+    var first = text.split("\n").filter(function (l) { return l.trim(); })[0] || text;
+    var r = window.SGQuick ? window.SGQuick.parseQuick(first.slice(0, 200), new Date()) : {};
+    var title = (r && r.title) || first.slice(0, 120), date = (r && r.date) || "", time = (r && r.time) || "";
+    var rest = text.length > first.length ? text.slice(first.length).trim().slice(0, 1000) : "";
+    sheet('<h3>Geteilt – übernehmen als</h3><label class="f"><span>Titel</span><input type="text" id="shT" value="' + esc(title) + '"></label>' +
+      '<div class="frow"><label class="f"><span>Datum</span><input type="date" id="shD" value="' + esc(date) + '"></label><label class="f"><span>Uhrzeit</span><input type="time" id="shZ" value="' + esc(time) + '"></label></div>' +
+      (rest ? '<p class="s">' + esc(rest.slice(0, 160)) + (rest.length > 160 ? " …" : "") + "</p>" : "") +
+      '<div class="btns"><button class="btn" data-s="notiz">Notiz</button><button class="btn" data-s="aufgabe">Aufgabe</button><button class="btn p" data-s="termin">Termin</button></div>', function (act) {
+      if (act === "x") return closeSheet();
+      var c = C(), t = $("shT").value.trim() || "Geteilt", d = $("shD").value, z = $("shZ").value;
+      if (act === "termin") { var ev = c.add({ title: t, date: d || today(), time: z, end: "", note: rest }); setSel(d || today()); }
+      else if (act === "aufgabe") c.tasks.add({ title: t, due: d, note: rest });
+      else if (act === "notiz") c.notes.add({ text: t + (rest ? "\n" + rest : ""), at: d && z ? d + "T" + z : "" });
+      else return;
+      closeSheet(); refresh(); if (cur.v === "kalender") renderCal();
+      snack({ termin: "Termin", aufgabe: "Aufgabe", notiz: "Notiz" }[act] + " gespeichert");
+    });
+  }
+  window.SGShellShared = sharedTextSheet;   // für Tests
   // Geteiltes aus dem Handy (Share Target): sw.js legt es im Cache „sg-teilen“ ab und öffnet #teilen
   function takeShared() {
     if (!("caches" in window)) return;
@@ -1545,6 +1616,12 @@
         r("selbsttest", "pulse", "var(--muted)", "Selbsttest", "App einmal komplett prüfen, Bericht teilen", "") +
         r("diag", "pulse", "var(--muted)", "Fehlerprotokoll", "für die Fehlersuche am Handy", (window.SGShellDiag() || []).length || "")
     };
+    function gRow() {
+      if (!(c && c.handy && c.handy.available())) return "";
+      var hs2 = c.handy.state(), cal = (hs2.cals || []).filter(function (k) { return String(k.id) === String(hs2.target); })[0];
+      var sub = !hs2.on ? "Noch aus – einschalten, dann stehen neue Termine auch in Google" : cal ? (cal.type === "com.google" ? "Google · " : "") + (cal.name || "Kalender") : "nur auf diesem Handy (Kalender „Planer“) – Google wählen";
+      return '<div class="grp"><div class="cells">' + r(hs2.on ? "ziel" : "handy", "cal", "#4285F4", "Neue Termine landen in", sub, hs2.on && cal && cal.type === "com.google" ? "" : '<em class="hi">Einrichten</em>') + "</div></div>";
+    }
     if (SLIM) {
       // Schlanker Planer: oben die eigenen Apps (Öffnen bzw. Installieren), dann nur, was der Planer selbst kann
       var appT = function (a, ic, col, n) { return '<button class="gl" data-m="app:' + a + '" style="--c:' + col + '"><i>' + ico(ic) + "</i><b>" + n + "</b><small>" + (extOn[a] ? "Öffnen" : "Installieren") + "</small></button>"; };
@@ -1552,6 +1629,8 @@
         '<button class="msearch" id="mehrq" data-m="suche">' + ico("search") + "<span>Einstellungen und Seiten suchen</span></button>" +
         (big ? '<div class="grp"><div class="cells">' + umz + "</div></div>" : "") +
         '<h2 class="mh">Deine Apps</h2><div class="glance mtiles mapps">' + appT("training", "run", "var(--c-training)", "Training") + appT("schule", "school", "var(--c-schule)", "Schule") + appT("bibel", "book", "var(--c-bibel)", "Bibel") + "</div>" +
+        // Wohin neue Termine gehen (Google-Kalender) – sichtbar statt versteckt im Handykalender-Blatt
+        gRow() +
         '<h2 class="mh">Im Planer</h2><div class="grp"><div class="cells">' +
         r("notizen", "note", "var(--c-notiz)", "Notizen", notes ? notes + " offen" : "schnell festhalten", "") +
         r("week", "wand", "var(--c-training)", "Woche planen", "Standardwoche mit 1 Tipp", "") +
@@ -1625,6 +1704,7 @@
     if (m === "week") c.weekPlan();
     else if (m === "std") c.weekPlanStd();
     else if (m === "handy") phoneSheet();
+    else if (m === "ziel") zielSheet();
     else if (m === "abo") aboSheet();
     else if (m === "wissen") go("training", "wissen");
     else if (m === "design") c.openDesign();

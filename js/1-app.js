@@ -404,6 +404,7 @@ function taskRow(t) {
   return "<div class='task" + (t.done ? " done" : "") + (t.prio ? " prio" : "") + "' style='--c:" + colorT(t) + "'><button class='ck' data-check='" + esc(t.id) + "' aria-label='Erledigt'>✓</button><div class='bd' data-task='" + esc(t.id) + "'>" +
     "<div class='tt'>" + esc(t.title) + "</div><div class='meta'>" +
     (t.due ? "<span class='" + (late ? "late" : "") + "'>" + (late ? "überfällig · " : "") + rel(t.due) + "</span>" : "") +
+    (t.every ? "<span class='rep'>↻ " + ({ d: "täglich", w: "wöchentlich", m: "monatlich" })[t.every] + "</span>" : "") +
     "<span><span class='dot'></span>" + esc(t.app === "Lernplan" ? "Schule" : t.app) + "</span>" + (t.note ? "<span class='nt'>" + esc(t.note.split("\n")[0].slice(0, 60)) + "</span>" : "") + "</div></div>" +
     (own && !t.done ? "<button class='fl" + (t.prio ? " on" : "") + "' data-a='flag' data-v='" + esc(t.id) + "' aria-label='Wichtig'>⚑</button>" : "") + "</div>";
 }
@@ -867,6 +868,7 @@ function renderPanel() {
     if (rep && !E.isNew && E.occ) h += "<div class='hint'>Änderungen gelten für die ganze Serie. Geöffnet am " + short(E.occ) + ".</div>";
   } else {
     h += "<div class='fl'><span>Fällig</span><input type='date' data-f='due' value='" + esc(d.due) + "'></div>";
+    h += "<div class='fl'><span>Wiederholen</span><select data-f='every'>" + [["", "nie"], ["d", "täglich"], ["w", "wöchentlich"], ["m", "monatlich"]].map(function (o) { return "<option value='" + o[0] + "'" + ((d.every || "") === o[0] ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select></div>";
     h += "<label class='toggle'><input type='checkbox' data-f='prio'" + (d.prio ? " checked" : "") + "> Wichtig</label>";
     if (!E.isNew) h += "<label class='toggle'><input type='checkbox' data-f='done'" + (d.done ? " checked" : "") + "> Erledigt</label>";
   }
@@ -909,7 +911,7 @@ function savePanel() {
     if (E.isNew) { var n = C.add(v); if (v.rep) C.update(n.id, { rep: v.rep }); } else C.update(d.id, v);
     if (S.tab === "cal" && (d.date < range()[0] || d.date > range()[1])) S.anchor = d.date;
   } else {
-    var t = { title: d.title, due: d.due || "", prio: d.prio ? 1 : 0, note: d.note || "", app: d.app };
+    var t = { title: d.title, due: d.due || "", prio: d.prio ? 1 : 0, note: d.note || "", app: d.app, every: d.every || "" };
     if (E.isNew) C.tasks.add(t); else { t.done = !!d.done; C.tasks.update(d.id, t); }
   }
   closePanel();

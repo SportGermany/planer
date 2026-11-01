@@ -5,6 +5,15 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Neue Funktionen Planer (Schritt 6)
+- Wiederkehrende Aufgaben: Feld `every` (d/w/m) an Aufgaben; beim Abhaken legt verbund.js die nächste an (einmal je Erledigung,
+  `nextId`; Monatsende korrekt, z. B. 31.1. → 28.2.). Auswahl „Wiederholen“ im Aufgabenblatt und im Aufgaben-Panel, Anzeige „↻ …“.
+- Aus anderen Apps teilen: geteilter Text ohne Kalenderdatei landete in „Nichts gefunden“ → jetzt Blatt „Geteilt – übernehmen als“
+  (Termin/Aufgabe/Notiz, Datum und Uhrzeit wie in der Schnelleingabe erkannt; weitere Zeilen als Notiz).
+- Abend-Rückblick (ab 18 Uhr auf „Heute“): erledigt/offen, offene Aufgaben einzeln oder alle auf morgen; „Fertig“ blendet bis morgen aus.
+- Freie Zeit: „Frei … bis …“ (auch der freie Abend bis 21 Uhr) ist antippbar → offene Aufgabe oder eigener Eintrag als Termin in die Lücke.
+- Google: Mehr zeigt „Neue Termine landen in …“ (Google-Kalender bzw. Hinweis zum Einrichten) statt versteckt im Handykalender-Blatt.
+
 ## Selbsttest in jeder App (Schritt 0b)
 - `werkzeuge/quellen/selbsttest.js` (→ sg/, erst beim Öffnen geladen) + Fehler-Sammler in design.js (SGFehler: Fehler, Konsole,
   fehlende Dateien, lange Aufgaben ab Start). Einstieg: Einzel-Apps Einstellungen › Abschnitt „App“ › „Selbsttest“, Planer

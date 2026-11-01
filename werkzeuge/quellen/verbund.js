@@ -466,6 +466,7 @@
         return mutate(function (d) {
           var n = { id: uid(), title: String(t.title || "Aufgabe"), due: t.due || "", done: false, prio: t.prio ? 1 : 0,
             note: t.note || "", app: t.app || APP, created: Date.now(), changed: Date.now() };
+          if (/^(d|w|m)$/.test(t.every || "")) n.every = t.every;   // wiederkehrend: täglich, wöchentlich, monatlich
           d.events.push(n); return n;
         }, "todo");
       },
@@ -475,6 +476,15 @@
           if (!e) return null;
           Object.keys(patch).forEach(function (k) { if (k !== "id") e[k] = patch[k]; });
           if ("done" in patch) e.doneAt = patch.done ? Date.now() : 0;
+          // Wiederkehrende Aufgabe erledigt → die nächste anlegen (einmal je Erledigung; die erledigte bleibt im Verlauf)
+          if (patch.done && e.every && !e.nextId) {
+            var from = e.due || iso(new Date()), nd = parse(from);
+            if (e.every === "d") nd.setDate(nd.getDate() + 1); else if (e.every === "w") nd.setDate(nd.getDate() + 7); else { var dd = nd.getDate(); nd.setDate(1); nd.setMonth(nd.getMonth() + 1); nd.setDate(Math.min(dd, new Date(nd.getFullYear(), nd.getMonth() + 1, 0).getDate())); }
+            var t0 = iso(new Date()), nx = iso(nd); while (nx < t0 && e.every === "d") { nd.setDate(nd.getDate() + 1); nx = iso(nd); }
+            var nn = { id: uid(), title: e.title, due: nx, done: false, prio: e.prio || 0, note: e.note || "", app: e.app, every: e.every, created: Date.now(), changed: Date.now() };
+            d.events.push(nn); e.nextId = nn.id;
+          }
+          if ("every" in patch && !/^(d|w|m)$/.test(patch.every || "")) delete e.every;
           e.changed = Date.now(); return e;
         }, "todo");
       },
