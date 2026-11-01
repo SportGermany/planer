@@ -6,6 +6,20 @@ import re, os
 # Versionsnummer der ganzen App: steht in sw.js (Cache-Name), in jeder Seite (window.SGVersion) und an jeder Skriptdatei.
 # Bei jeder Veröffentlichung erhöhen – dann holt „Version aktualisieren“ die neue Fassung.
 VERSION=os.environ.get('SGV','5.1.0')
+# Datei-Stempel für die Adressen (?v=…): ändert sich mit dem Inhalt, auch ohne neue Versionsnummer – sonst zeigen Browser
+# und alte Offline-Speicher nach einem Vorschau-Upload weiter die alten Dateien (PLAN-EINZEL.md, Vorschau). App-Version bleibt VERSION.
+import hashlib, glob as _g
+def _stamp():
+    import os as _o, re as _r
+    root=_o.path.dirname(_o.path.dirname(_o.path.abspath(__file__)))+'/'
+    h=hashlib.md5()
+    files=sorted(_g.glob(root+'werkzeuge/quellen/*')+[f for d in ['app','js','bibel','schule','training','wissen','pause'] for f in _g.glob(root+d+'/**/*.*',recursive=True) if f.endswith(('.html','.js','.css'))]+[root+'index.html'])
+    for f in files:
+        if '/sg/' in f or f.endswith('csv-worker.js'): continue
+        try: h.update(_r.sub(r'\?v=[0-9A-Za-z.\-]*','',open(f,encoding='utf8').read()).encode())
+        except Exception: pass
+    return h.hexdigest()[:6]
+QV=VERSION+'.'+_stamp()
 HERE=os.path.dirname(os.path.abspath(__file__))
 SP=os.path.join(HERE,'quellen')+'/'  # Quellen der gemeinsamen Skripte und des Sportwissenschafts-Generators
 R=os.path.dirname(HERE)+'/'  # Wurzel des Repositorys
@@ -40,7 +54,7 @@ def strip(s):
 for path,(aid,dm,sid,extra) in PAGES.items():
     p=R+path; s=strip(open(p).read())
     up='../'*path.count('/')
-    src=lambda f: up+'sg/'+f+'?v='+VERSION
+    src=lambda f: up+'sg/'+f+'?v='+QV
     s=re.sub(r'<link rel="preconnect" href="https://fonts\.g[^>]*>\n|<link rel="stylesheet" href="https://fonts\.googleapis[^>]*>\n','',s)
     MAIN=path=='app/index.html'  # die Hülle: eine Navigation für alles (ersetzt die frühere Übersicht)
     block='<!-- verbund-design:start -->\n'+('<link rel="stylesheet" href="'+src('basis.css')+'">\n' if dm=='basis' else '')+'<script data-design="'+dm+'" data-sync="'+sid+'"'+(' data-dir="1"' if MAIN else '')+' src="'+src('design.js')+'"></script>\n<!-- verbund-design:end -->\n'
@@ -53,13 +67,13 @@ for path,(aid,dm,sid,extra) in PAGES.items():
     else: tail+=f'<!-- gemeinsamer-kalender:start -->\n<script data-app="{aid}"{extra} src="{src("verbund.js")}"></script>\n<!-- gemeinsamer-kalender:end -->\n'
     i=s.rindex('</body>'); s=s[:i]+tail+s[i:]
     # eigene ausgelagerte Skripte der Seite: Version anhängen (neue Fassung umgeht alte Zwischenspeicher)
-    s=re.sub(r'(src="js/[^"?]+)\?v=[^"]*"',r'\1?v='+VERSION+'"',s)
+    s=re.sub(r'(src="js/[^"?]+)\?v=[^"]*"',r'\1?v='+QV+'"',s)
     open(p,'w').write(s); print(path,'ok',len(s))
 # Training: Datei-Import (CSV, GPX, TCX) rechnet in einem Worker – er lädt dieselben Rechenteile wie die Seite
 t=open(R+'training/index.html').read()
 parts=[re.search(r'<script id="'+i+r'" src="js/([^"?]+)',t).group(1) for i in ['coreScript','poolsScript','sportsScript','stretchScript','analysisScript']]
 open(R+'training/js/csv-worker.js','w').write('/* Rechnet den Datei-Import (CSV, GPX, TCX) im Hintergrund – die Oberfläche bleibt flüssig. Wird von build.py erzeugt. */\n' +
-  'importScripts(' + ', '.join("'"+x+'?v='+VERSION+"'" for x in parts) + ');\n' +
+  'importScripts(' + ', '.join("'"+x+'?v='+QV+"'" for x in parts) + ');\n' +
   'self.onmessage = function (ev) {\n  try { var r = self.WK.parseFitnessFile(ev.data.name, ev.data.text); self.postMessage({ ok: true, res: r }); }\n  catch (e) { self.postMessage({ ok: false, err: String(e) }); }\n};\n')
 # Service Worker: Version und vollständige Liste aller Dateien für den Offline-Speicher
 files=['./app/','./','./index.html','./schule/','./pause/','./training/','./training/mobility/','./training/atmung/','./training/bahnplan/','./bibel/','./bibel/elb1905.json','./wissen/',
@@ -68,9 +82,16 @@ for d,_,fs in sorted(os.walk(R)):
     if '/.git' in d or '/werkzeuge' in d: continue  # Werkzeugkoffer (auch die APK-Kopie) gehört nicht in den Offline-Speicher
     rel=d[len(R):]
     if rel=='sg' or rel.endswith('js') and os.path.basename(rel)=='js':
-        files+=['./'+(rel+'/' if rel else '')+f+'?v='+VERSION for f in sorted(fs) if f.endswith('.js')]
+        files+=['./'+(rel+'/' if rel else '')+f+'?v='+QV for f in sorted(fs) if f.endswith('.js')]
 sw=R+'sw.js'; t=open(sw).read()
 t=re.sub(r"const VERSION = 'planer-[^']*';","const VERSION = 'planer-"+VERSION+"';",t)
 shell='const SHELL = [\n'+',\n'.join('  '+', '.join("'"+x+"'" for x in files[i:i+6]) for i in range(0,len(files),6))+'\n];'
 t=re.sub(r'const SHELL = \[.*?\];',shell,t,flags=re.S)
 open(sw,'w').write(t); print('sw.js',VERSION,len(files),'Dateien')
+
+# Vorschau: Stand der Dateien anzeigen (gleicher Stempel wie an den Adressen)
+import datetime as _dt
+_vp=R+'vorschau/index.html'
+if os.path.exists(_vp):
+    _t=open(_vp).read(); _n=re.sub(r'data-stand="[^"]*"','data-stand="'+QV+'"',_t)
+    if _n!=_t: open(_vp,'w').write(_n)

@@ -38,7 +38,7 @@ aside{flex:1 1 300px;max-width:420px;display:flex;flex-direction:column;gap:12px
 </head>
 <body>
 <header>
-<h1>Apps – Vorschau (echter App-Code)</h1>
+<h1>Apps – Vorschau (echter App-Code) <small id="stand" data-stand="5.1.0.3a2451" style="font-size:13px;font-weight:400;color:var(--mut)"></small></h1>
 <div class="seg" id="wahl" role="group" aria-label="App wählen"></div>
 </header>
 <main>
@@ -114,7 +114,15 @@ Handykalender/Google-Kalender, Benachrichtigungen, Widget, App-Verknüpfungen un
     }).catch(function () { alert("Testdaten konnten nicht geladen werden."); });
   });
   addEventListener("resize", fit);
-  show((location.hash || "#planer").slice(1));
+  // Stand der Dateien (setzt build.py) – zum Vergleichen: steht hier ein neuer Stempel, ist die neue Fassung da
+  var st = $("stand"); if (st.dataset.stand) st.textContent = "Stand " + st.dataset.stand;
+  // alte Offline-Speicher (Service Worker aus der Web-App-Zeit) liefern sonst alte Dateien – vor dem Laden wegräumen
+  var clean = Promise.resolve();
+  try {
+    if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) clean = navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); });
+    if (window.caches) clean = clean.then(function () { return caches.keys(); }).then(function (ks) { return Promise.all(ks.filter(function (k) { return k !== "sg-teilen"; }).map(function (k) { return caches.delete(k); })); });
+  } catch (e) {}
+  clean.catch(function () {}).then(function () { show((location.hash || "#planer").slice(1)); });
 })();
 </script>
 </body>

@@ -5,6 +5,12 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Fehler: Vorschau zeigte alte Fassung (01.11.)
+- Nutzerin: „Du hast es wieder nicht aktualisiert.“ Pages war aktuell (22:23), aber alle Adressen hießen weiter `?v=5.1.0` (keine neue
+  Versionsnummer für Vorschau-Stände) → Browser-Zwischenspeicher und ein alter Service Worker aus der Web-App-Zeit lieferten Altes.
+- Lösung: build.py hängt einen Inhalts-Stempel an (`?v=5.1.0.<md5>`; App-Version bleibt 5.1.0, ändert sich nur bei neuem Inhalt);
+  die Vorschau entfernt alte Service Worker/Caches vor dem Laden und zeigt „Stand <Stempel>“ oben an.
+
 ## Training neu (Schritt 4, Vorschau)
 - Leiste: Heute · Training · Fortschritt · Kalender (vorher 6 Reiter). Fortschritt = Stand (Fitness) + Analyse mit Umschalter;
   Einstellungen über das Zahnrad in jeder Kopfzeile. Knöpfe „Analyse“/„Einstellungen“ bleiben unsichtbar für Sprünge erhalten.
