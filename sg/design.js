@@ -409,13 +409,18 @@
   }
   // check(status): status(text) meldet den Fortschritt; Ergebnis "neu" | "aktuell" | "offline" | "fehler"
   // APK: neue Fassungen liegen als Release auf GitHub (Bau: .github/workflows/apk.yml) – Download öffnet im Browser, dann installieren
-  var REL = "https://api.github.com/repos/SportGermany/planer/releases/latest", apkUrl = "";
+  // Mehrere Apps aus einem Repo (werkzeuge/PLAN-APPS.md): jede App sucht nur ihr eigenes Release –
+  // Planer „v4.1.0“, die anderen „<app>-v1.0.0“ (window.SGApp setzt der APK-Bau, werkzeuge/apk/www.js)
+  var REL = "https://api.github.com/repos/SportGermany/planer/releases?per_page=40", apkUrl = "";
+  function relTag(t) { var a = window.SGApp && window.SGApp !== "planer" ? window.SGApp + "-v" : "v"; return t.indexOf(a) === 0 && /^\d/.test(t.slice(a.length)) ? t.slice(a.length) : null; }
   function nativeCheck(status, auto) {
     if (!navigator.onLine) { status("Ohne Internet kann nicht nach einer neuen Version gesucht werden. Die App läuft offline ganz normal weiter."); return Promise.resolve("offline"); }
     status("Suche nach einer neuen Version …");
-    return fetch(REL, { cache: "no-store", headers: { Accept: "application/vnd.github+json" } }).then(function (r) { if (r.status === 404) return {}; if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (j) {
-      // 404 = noch kein Release veröffentlicht → nichts Neueres
-      var v = String(j.tag_name || "").replace(/^v/, ""), a = (j.assets || []).find(function (x) { return /\.apk$/.test(x.name); });
+    return fetch(REL, { cache: "no-store", headers: { Accept: "application/vnd.github+json" } }).then(function (r) { if (r.status === 404) return []; if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (list) {
+      // neuestes eigenes Release mit APK (Entwürfe und Vorabversionen zählen nicht); keins = nichts Neueres
+      var j = (Array.isArray(list) ? list : [list]).filter(function (x) { return x && !x.draft && !x.prerelease && relTag(String(x.tag_name || "")) && (x.assets || []).some(function (y) { return /\.apk$/.test(y.name); }); })
+        .sort(function (x, y) { return newer(relTag(x.tag_name), relTag(y.tag_name)) ? -1 : 1; })[0] || {};
+      var v = j.tag_name ? relTag(j.tag_name) : "", a = (j.assets || []).find(function (x) { return /\.apk$/.test(x.name); });
       if (!a || !newer(v, window.SGVersion)) { status("Du hast die neueste Version (" + window.SGVersion + ")."); return "aktuell"; }
       apkUrl = a.browser_download_url;
       if (auto) { status("Version " + v + " ist da."); return v; }

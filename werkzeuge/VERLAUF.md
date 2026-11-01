@@ -5,6 +5,13 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Mehrere Apps – Schritt 0 Grundlagen (Plan: `werkzeuge/PLAN-APPS.md`)
+- `werkzeuge/apps.json` beschreibt die Apps; `node www.js <app>` kopiert nur deren Ordner, setzt Paketname/Name und schreibt
+  Version + `window.SGApp` in die kopierte `sg/design.js`. Gradle nimmt `-PappId`. Workflow `apps.yml` baut je App ohne Release.
+- Update-Prüfung: statt `releases/latest` die Release-Liste, nur Tags der eigenen App (`v…` bzw. `<app>-v…`) mit APK.
+  Grund: Sonst hielte die Planer-App ein Bibel-Release für ihr Update. App-Releases zusätzlich mit `--latest=false`.
+- Schnelltest `schnell-app.js`: Planer 3,4 min (6 Kern-Tests + APK-Simulation) statt 35 min Gesamtsuite.
+
 ## 4.0.0 – Aufgeräumt (Wunsch: „überfüllt, Startseite sieht schlecht aus, Seitenmenü kommt immer“)
 
 Entscheidungen des Nutzers (Rückfrage): Entwurf „Aufgeräumt“ umsetzen · Training ohne Seitenmenü · Mobility unter Training · Monat hinter ein Symbol.

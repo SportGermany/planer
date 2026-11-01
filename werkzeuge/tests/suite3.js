@@ -20,7 +20,7 @@ async function ctxFor(opt, seed = true) {
 function watch(p) { const e = []; p.on('pageerror', x => e.push('pageerror: ' + x.message)); p.on('console', m => { const u = (m.location() || {}).url || ''; if (m.type() === 'error' && !(/^Failed to load resource: net::ERR_/.test(m.text()) && !/^http:\/\/localhost/.test(u))) e.push('console: ' + m.text() + ' @ ' + ((m.location() || {}).url || '')); }); return e; }
 function assert(c, m) { if (!c) throw new Error(m); }
 async function test(name, fn) {
-  if (ONLY && !name.toLowerCase().includes(ONLY.toLowerCase())) return;
+  if (ONLY && !(ONLY.includes('|') ? new RegExp(ONLY, 'i').test(name) : name.toLowerCase().includes(ONLY.toLowerCase()))) return;   // mehrere Filter mit |
   const t0 = Date.now();
   try { await fn(); results.push([true, name, Date.now() - t0]); console.log('✓', name); }
   catch (e) { results.push([false, name, e.message]); console.log('✗', name, '–', e.message.split('\n')[0]); }

@@ -8,7 +8,8 @@ android {
     namespace = "de.sportgermany.planer"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "de.sportgermany.planer"
+        // mehrere Apps aus einem Projekt: -PappId=de.sportgermany.bibel (werkzeuge/apps.json), ohne Angabe die Planer-App
+        applicationId((project.findProperty("appId") ?: "de.sportgermany.planer").toString())
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode planerCode

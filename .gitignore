@@ -4,3 +4,4 @@ werkzeuge/tests/suite-result.json
 /w-*.png
 /bahnplan-druck*.pdf
 /fakemap.png
+werkzeuge/apk/app.env

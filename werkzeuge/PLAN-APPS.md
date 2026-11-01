@@ -21,7 +21,8 @@ veröffentlichten App. Die bestehende Planer-App bleibt bis zum Schluss voll nut
 - Tests: `node schnell-app.js <app>` (< 3 min) bei jeder Änderung; große Suite (`suite3.js`) nur vor einem Release der Planer-App.
 
 ## Schritte
-- [ ] **0 Grundlagen** – Schnelltest; `apps.json`; Build/Workflow je App (Matrix, nur geänderte App); diese Datei.
+- [x] **0 Grundlagen** – `schnell-app.js` (Planer 3,4 min), `apps.json`, `www.js <app>`, Gradle `-PappId`, Workflow `apps.yml`
+  (baut nur Apps ohne Release, Emulator `emulator-app.js`, Release `--latest=false`), Update-Prüfung sucht nur das eigene Release.
 - [ ] **1 Google-Kalender-Ziel im Planer** – Zielkalender wählbar (Google-Konto statt lokal), Aufgaben-Schalter; Release 4.1.0.
 - [ ] **2 App Bibel** – eigene APK, Import aus Planer, Vergleichstest alt/neu, Planer-Kachel öffnet die App; Release `bibel-v1.0.0`.
 - [ ] **3 App Pause** – wie 2.

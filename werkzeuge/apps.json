@@ -1,0 +1,4 @@
+{
+  "_hinweis": "Apps aus diesem Repo (werkzeuge/PLAN-APPS.md). Planer: Version aus build.py, Release v<ver>. Andere: Release <app>-v<ver>; dirs = Ordner, die in die APK kommen (Dateien im Hauptordner immer).",
+  "planer": { "id": "de.sportgermany.planer", "name": "Planer", "start": "app/" }
+}

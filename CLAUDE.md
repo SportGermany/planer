@@ -27,7 +27,7 @@ Sprache in App, Commits, Doku: Deutsch. Ausführliches Wissen: `werkzeuge/WISSEN
 | `.github/workflows/apk.yml` | Bauen, Emulator-Test, Release (nur wenn Release `v<Version>` fehlt) |
 
 ## Testen (Server: `cd /home/user && python3 -m http.server 8765 &`, `NODE_PATH=/opt/node-tools/node_modules`)
-`cd werkzeuge/tests` · `node suite3.js [Filter]` (Gesamt, Filter z. B. „P7“) · `node apk.js` (APK nachgestellt) · `node offline3.js` (beendet den Server – danach neu starten) ·
+**Bei jeder Änderung nur `node schnell-app.js <app>` (< 4 min); große Suite nur vor einem Planer-Release.** `cd werkzeuge/tests` · `node suite3.js [Filter, mehrere mit |]` (Gesamt, Filter z. B. „P7“) · `node apk.js` (APK nachgestellt) · `node offline3.js` (beendet den Server – danach neu starten) ·
 `node schnell.js` · `node suche-kern.js` · `node bahnplan-1.js` / `bahnplan-2.js` · `node upd.js`. Vor dem Commit Testbilder zurücksetzen: `git checkout -- werkzeuge/tests/*.png werkzeuge/tests/*.pdf`.
 Lange Läufe im Hintergrund in eine Datei schreiben. Datum in Tests immer als Ortsdatum, nie `toISOString()`.
 

@@ -37,7 +37,10 @@ const PH = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: tr
   const n = await b.newContext(PH); await n.addInitScript(FAKE); const p = await n.newPage();
   const errs = []; p.on('pageerror', e => errs.push(e.message)); const dialogs = []; p.on('dialog', d => { dialogs.push(d.message()); d.dismiss().catch(() => {}); });
   const nav = []; await p.route(/^https:\/\/(github\.com|de\.wikipedia\.org)\//, r => { nav.push(r.request().url()); r.fulfill({ status: 204 }); }); // 204 = Seite bleibt (wie in der APK: Android öffnet den Browser)
-  await p.route('https://api.github.com/repos/SportGermany/planer/releases/latest', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ tag_name: 'v9.9.9', assets: [{ name: 'planer-9.9.9.apk', browser_download_url: 'https://github.com/SportGermany/planer/releases/download/v9.9.9/planer-9.9.9.apk' }] }) }));
+  // Release-Liste: fremde App-Releases (bibel-v…) und neuere Planer-Releases ohne APK dürfen nicht zählen
+  await p.route(/api\.github\.com\/repos\/SportGermany\/planer\/releases/, r => r.fulfill({ contentType: 'application/json', body: JSON.stringify([
+    { tag_name: 'bibel-v20.0.0', assets: [{ name: 'bibel-20.0.0.apk', browser_download_url: 'https://x/bibel.apk' }] }, { tag_name: 'v10.0.0', assets: [] },
+    { tag_name: 'v9.9.9', assets: [{ name: 'planer-9.9.9.apk', browser_download_url: 'https://github.com/SportGermany/planer/releases/download/v9.9.9/planer-9.9.9.apk' }] }]) }));
   await p.goto(APP); await p.waitForTimeout(2500);
   ok(await p.evaluate(() => !!window.SGNative && document.documentElement.classList.contains('sg-native')), 'APK erkannt (SGNative)');
   ok(await p.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length === 0), 'APK: kein Service Worker');
