@@ -37,7 +37,7 @@
     { id: "lernplan", name: "Schule (Lernplan)", keys: ["schulkalender-bayern-v1"], own: function () {
       try { var l = JSON.parse(localStorage.getItem("schulplaner-lokal-v1") || "{}"); return !!(l.sync && l.sync.owner && l.sync.repo && l.sync.token); } catch (e) { return false; } } },
     { id: "denkpause", name: "Pause (Denkpause)", keys: ["denkpause.v1"] },
-    { id: "training", name: "Training", keys: ["wk_settings", "wk_log", "wk_activities", "wk_runs", "wk_body", "wk_colors", "wk_custom_ex", "wk_custom_gym", "wk_freezes", "wk_gymlog", "wk_illness_active", "wk_injury_active", "wk_injurydays", "wk_onboarded", "wk_race", "wk_rests", "wk_sections", "wk_sickdays", "wk_skin", "wk_swaps", "wk_trainedoverride", "wk_vacation", "wk_weekgoal", "wk_widgets"] },
+    { id: "training", name: "Training", keys: ["wk_settings", "wk_log", "wk_activities", "wk_runs", "wk_body", "wk_colors", "wk_custom_ex", "wk_custom_gym", "wk_freezes", "wk_gymlog", "wk_illness_active", "wk_injury_active", "wk_injurydays", "wk_onboarded", "wk_race", "wk_comps", "wk_rests", "wk_sections", "wk_sickdays", "wk_skin", "wk_swaps", "wk_trainedoverride", "wk_vacation", "wk_weekgoal", "wk_widgets"] },
     { id: "rodeln", name: "Mobility", keys: ["rodelmobility.v1"] },
     { id: "puls", name: "Atmung & HRV", keys: ["pulsplan.v1"] },
     { id: "bahnplan", name: "Bahnplan", keys: ["bahnplan.v1"] }

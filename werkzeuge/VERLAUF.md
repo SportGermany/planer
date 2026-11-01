@@ -5,6 +5,11 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Neue Funktion Training: Wettkampf-Countdown (Schritt 6)
+- training/js/15-wettkampf.js: Wettkämpfe in `wk_comps` (Cloud-Datengruppe Training ergänzt), Karte oben auf „Heute“ mit Countdown
+  und Phase (Aufbau > 21 Tage, wettkampfnah 8–21, Tapering 2–7: Umfang −40 %, Vortag, Wettkampftag) samt Hinweis, Checkliste
+  (7 Punkte, abhakbar), Liste/Bearbeiten/Löschen. Jeder Wettkampf als ★-Termin im gemeinsamen Kalender → Planer und Google.
+
 ## Neue Funktion Bibel: Lesepläne (Schritt 6)
 - Bibel in 1 Jahr (≈ 16 Min./Tag), NT in 90 Tagen, Psalmen & Sprüche in 60 Tagen, Evangelien in 30 Tagen; Wahl in Einstellungen ›
   Lesepläne, Karte auf „Heute“ (Tag x von n, Fortschritt, „x von y gelesen“, Rückstand, „Tagesabschnitt lesen“ öffnet die Abschnitte).

@@ -92,7 +92,7 @@ die Vorschau reicht `top.SGShell/SharedCalendar/…` an die gezeigte App weiter.
   - Bibel: [x] Lesepläne (Vorschau 01.11.) (Bibel in 1 Jahr, NT in 90 Tagen, Psalmen & Sprüche, Evangelien) mit Fortschritt, Tagesabschnitt auf „Heute“.
   - Schule: [ ] Lernkarten je Fach (Wiederholung 1/3/7 Tage, aus Prüfungsthemen) · [ ] Dateien (PDF, Fotos) direkt an Aufgaben,
     Prüfungen und Fächer hängen (Ablage-Speicher mitnutzen).
-  - Training: [ ] Wettkampf-Countdown (Wettkampf eintragen, Countdown auf Heute, Tapering der letzten Tage, Checkliste Wettkampftag).
+  - Training: [x] Wettkampf-Countdown (Vorschau 01.11.) (Wettkampf eintragen, Countdown auf Heute, Tapering der letzten Tage, Checkliste Wettkampftag).
 - [ ] **7 Code schneller** – je App nur ihre Skripte; Selten-Genutztes nach Bedarf laden; Altlasten (alte Hülle-Teile, PWA, Wechsler)
   aus den Einzel-APKs; Ladezeit vorher/nachher messen (Selbsttest „Start“).
 - [ ] **5 Abschluss** – Sync-Test über alle Apps (zwei Geräte nachgestellt + Emulator), Ladezeiten vorher/nachher, Bericht.
