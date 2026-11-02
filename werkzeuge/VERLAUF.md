@@ -5,6 +5,11 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Release Planer 6.0.0 + Bibel/Schule/Training 2.0.0
+- Große Suite 90/91 → Fehler: Farbwelt-Reihe der Bibel wischte seitlich (feste Regel: keine seitlich wischenden Knopf-Reihen).
+  Ursache: `.sg-themes`/`.sg-chips` mit overflow-x; ebenso die Schul-Unterpunkte (Wischleiste aus Schritt 3). Lösung: alle umbrechend
+  (Raster bzw. flex-wrap). Danach Suite-Teil, Schnelltests aller Apps (Selbsttest 0 ✗) und offline3 grün.
+
 ## Gemeinsamer Cloud-Abgleich (Schritt 0, Rest)
 - Vorher: Bibel ohne Cloud; jede App glich alle Datengruppen ab (auch fremde, alte Kopien); Zugang je App einzeln einzutragen.
 - Jetzt: verbund.js `OWN`/`syncsGroup` – Training: training, rodeln, puls, bahnplan, wissen; Schule: lernplan; Bibel: bibel (neue

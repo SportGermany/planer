@@ -113,16 +113,15 @@ body[data-fontstyle="sans"] .verse-text, body[data-fontstyle="sans"] .quote-text
 
 .sg-stack { display: flex; flex-direction: column; gap: 12px; }
 /* Farbwelt als eine Reihe */
-.sg-themes { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px 2px; }
-.sg-themes::-webkit-scrollbar { display: none; }
+.sg-themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 4px; }
 .sg-themes button { flex: none; width: 72px; display: flex; flex-direction: column; align-items: center; gap: 6px; border: 0; background: none; color: var(--ink); cursor: pointer; padding: 4px 0; font-size: 12px; }
 .sg-themes .sw { width: 44px; height: 44px; border-radius: 22px; border: 2px solid transparent; display: flex; align-items: center; justify-content: center; }
 .sg-themes .sw i { width: 20px; height: 20px; border-radius: 10px; }
 .sg-themes button.active .sw { border-color: var(--acc); }
 </style>
 <!-- verbund-design:start -->
-<link rel="stylesheet" href="../sg/basis.css?v=5.1.0.982756">
-<script data-design="basis" data-sync="" src="../sg/design.js?v=5.1.0.982756"></script>
+<link rel="stylesheet" href="../sg/basis.css?v=6.0.0.84ff8e">
+<script data-design="basis" data-sync="" src="../sg/design.js?v=6.0.0.84ff8e"></script>
 <!-- verbund-design:end -->
 </head>
 <body data-fontsize="md" data-fontstyle="serif">
@@ -267,9 +266,9 @@ body[data-fontstyle="sans"] .verse-text, body[data-fontstyle="sans"] .quote-text
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", draw); else draw();
 })();
 </script>
-<script src="js/1-app.js?v=5.1.0.982756"></script>
+<script src="js/1-app.js?v=6.0.0.84ff8e"></script>
 <!-- gemeinsamer-kalender:start -->
-<script defer data-app="bibel" data-fab="off" src="../sg/verbund.js?v=5.1.0.982756"></script>
+<script defer data-app="bibel" data-fab="off" src="../sg/verbund.js?v=6.0.0.84ff8e"></script>
 <!-- gemeinsamer-kalender:end -->
 </body>
 </html>
