@@ -41,7 +41,7 @@
       "schule",
       "sg"
     ],
-    "ver": "2.0.0",
+    "ver": "2.0.1",
     "probe": {
       "keys": {
         "schulplaner-lokal-v1": "{\"homeMore\":true}"

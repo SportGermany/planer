@@ -2903,7 +2903,7 @@ window.addEventListener('appinstalled', () => { deferredPrompt = null; toast('In
 
 // ---------- Start ----------
 $('#btnPrev').innerHTML = ICON.left; $('#btnNext').innerHTML = ICON.right;
-$('#btnSettings').innerHTML = ICON.sliders; $('#fab').innerHTML = ICON.plus;
+$('#btnSettings').innerHTML = (window.SGIcon && SGIcon('einst')) || ICON.sliders;   // Zahnrad wie in Training/Bibel – Regler-Symbol wurde nicht als Einstellungen erkannt $('#fab').innerHTML = ICON.plus;
 document.querySelectorAll('.tab .i').forEach(el => { el.outerHTML = ({ heute: ICON.home, plan: ICON.plan, aufgaben: ICON.tasks, kalender: ICON.month, lehrgang: ICON.sled })[el.closest('.tab').dataset.v]; });
 applyTheme(); applyFont(); buildFerien();
 const params = new URLSearchParams(location.search);

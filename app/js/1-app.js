@@ -1541,6 +1541,8 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["6.0.1", ["Selbsttest: Kacheln unter Mehr wurden fälschlich als verdeckt gemeldet, wenn die Seite gescrollt war",
+      "Schule: Einstellungen jetzt mit Zahnrad oben rechts (wie in Training und Bibel)"]],
     ["6.0.0", ["Neu aufgebaut: Leiste Heute · Kalender · Aufgaben · Mehr; unter Mehr stehen deine Apps (Training, Schule, Bibel) als Kacheln",
       "Wiederkehrende Aufgaben: beim Anlegen „Wiederholen“ wählen – nach dem Abhaken steht die nächste schon drin",
       "Aus anderen Apps teilen (WhatsApp, Mail …) → Planer: wird Termin, Aufgabe oder Notiz, „morgen 17 Uhr“ wird erkannt",

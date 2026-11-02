@@ -5,7 +5,7 @@
 import re, os
 # Versionsnummer der ganzen App: steht in sw.js (Cache-Name), in jeder Seite (window.SGVersion) und an jeder Skriptdatei.
 # Bei jeder Veröffentlichung erhöhen – dann holt „Version aktualisieren“ die neue Fassung.
-VERSION=os.environ.get('SGV','6.0.0')
+VERSION=os.environ.get('SGV','6.0.1')
 # Datei-Stempel für die Adressen (?v=…): ändert sich mit dem Inhalt, auch ohne neue Versionsnummer – sonst zeigen Browser
 # und alte Offline-Speicher nach einem Vorschau-Upload weiter die alten Dateien (PLAN-EINZEL.md, Vorschau). App-Version bleibt VERSION.
 import hashlib, glob as _g

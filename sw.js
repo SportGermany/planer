@@ -3,18 +3,18 @@
  * und werden im Hintergrund aufgefrischt; eine neue Version lädt „Version aktualisieren“ sofort.
  * Die Cloud-Sicherung ist nur ein Zusatz –
  * ohne Netz läuft alles mit den Daten auf dem Gerät weiter. */
-const VERSION = 'planer-6.0.0';
+const VERSION = 'planer-6.0.1';
 const SHELL = [
   './app/', './', './index.html', './schule/', './pause/', './training/',
   './training/mobility/', './training/atmung/', './training/bahnplan/', './bibel/', './bibel/elb1905.json', './wissen/',
   './manifest.json', './inter.woff2', './icon-192.png', './icon-512.png', './icon-maskable-192.png', './icon-maskable-512.png',
-  './apple-touch-icon.png', './favicon.png', './app/js/1-app.js?v=6.0.0.84ff8e', './app/js/suche-worker.js?v=6.0.0.84ff8e', './bibel/js/1-app.js?v=6.0.0.84ff8e', './js/1-app.js?v=6.0.0.84ff8e',
-  './pause/js/1-app.js?v=6.0.0.84ff8e', './schule/js/1-app.js?v=6.0.0.84ff8e', './schule/js/2-karten.js?v=6.0.0.84ff8e', './sg/bibelstelle.js?v=6.0.0.84ff8e', './sg/design.js?v=6.0.0.84ff8e', './sg/install.js?v=6.0.0.84ff8e',
-  './sg/schnell.js?v=6.0.0.84ff8e', './sg/selbsttest.js?v=6.0.0.84ff8e', './sg/suche-daten.js?v=6.0.0.84ff8e', './sg/suche.js?v=6.0.0.84ff8e', './sg/training-suite.js?v=6.0.0.84ff8e', './sg/verbund.js?v=6.0.0.84ff8e',
-  './training/atmung/js/1-app.js?v=6.0.0.84ff8e', './training/bahnplan/js/1-app.js?v=6.0.0.84ff8e', './training/js/1-core.js?v=6.0.0.84ff8e', './training/js/10-app.js?v=6.0.0.84ff8e', './training/js/11-app.js?v=6.0.0.84ff8e', './training/js/12-app.js?v=6.0.0.84ff8e',
-  './training/js/13-app.js?v=6.0.0.84ff8e', './training/js/14-app.js?v=6.0.0.84ff8e', './training/js/15-wettkampf.js?v=6.0.0.84ff8e', './training/js/2-pools.js?v=6.0.0.84ff8e', './training/js/3-sports.js?v=6.0.0.84ff8e', './training/js/4-stretch.js?v=6.0.0.84ff8e',
-  './training/js/5-rodeln.js?v=6.0.0.84ff8e', './training/js/6-gym.js?v=6.0.0.84ff8e', './training/js/7-weather.js?v=6.0.0.84ff8e', './training/js/8-github.js?v=6.0.0.84ff8e', './training/js/9-analysis.js?v=6.0.0.84ff8e', './training/js/csv-worker.js?v=6.0.0.84ff8e',
-  './training/mobility/js/1-app.js?v=6.0.0.84ff8e', './wissen/js/1-app.js?v=6.0.0.84ff8e', './wissen/js/buch.js?v=6.0.0.84ff8e'
+  './apple-touch-icon.png', './favicon.png', './app/js/1-app.js?v=6.0.1.35267b', './app/js/suche-worker.js?v=6.0.1.35267b', './bibel/js/1-app.js?v=6.0.1.35267b', './js/1-app.js?v=6.0.1.35267b',
+  './pause/js/1-app.js?v=6.0.1.35267b', './schule/js/1-app.js?v=6.0.1.35267b', './schule/js/2-karten.js?v=6.0.1.35267b', './sg/bibelstelle.js?v=6.0.1.35267b', './sg/design.js?v=6.0.1.35267b', './sg/install.js?v=6.0.1.35267b',
+  './sg/schnell.js?v=6.0.1.35267b', './sg/selbsttest.js?v=6.0.1.35267b', './sg/suche-daten.js?v=6.0.1.35267b', './sg/suche.js?v=6.0.1.35267b', './sg/training-suite.js?v=6.0.1.35267b', './sg/verbund.js?v=6.0.1.35267b',
+  './training/atmung/js/1-app.js?v=6.0.1.35267b', './training/bahnplan/js/1-app.js?v=6.0.1.35267b', './training/js/1-core.js?v=6.0.1.35267b', './training/js/10-app.js?v=6.0.1.35267b', './training/js/11-app.js?v=6.0.1.35267b', './training/js/12-app.js?v=6.0.1.35267b',
+  './training/js/13-app.js?v=6.0.1.35267b', './training/js/14-app.js?v=6.0.1.35267b', './training/js/15-wettkampf.js?v=6.0.1.35267b', './training/js/2-pools.js?v=6.0.1.35267b', './training/js/3-sports.js?v=6.0.1.35267b', './training/js/4-stretch.js?v=6.0.1.35267b',
+  './training/js/5-rodeln.js?v=6.0.1.35267b', './training/js/6-gym.js?v=6.0.1.35267b', './training/js/7-weather.js?v=6.0.1.35267b', './training/js/8-github.js?v=6.0.1.35267b', './training/js/9-analysis.js?v=6.0.1.35267b', './training/js/csv-worker.js?v=6.0.1.35267b',
+  './training/mobility/js/1-app.js?v=6.0.1.35267b', './wissen/js/1-app.js?v=6.0.1.35267b', './wissen/js/buch.js?v=6.0.1.35267b'
 ];
 
 self.addEventListener('install', e => {

@@ -54,6 +54,12 @@
       var af = getComputedStyle(el, "::after"), hitW = Math.max(r.width, parseFloat(af.width) || 0), hitH = Math.max(r.height, parseFloat(af.height) || 0);
       if ((hitH < 32 || hitW < 32) && el.tagName !== "INPUT" && el.tagName !== "TEXTAREA" && !/^(sup|span)$/i.test(el.tagName)) small.push(label(el) + " (" + Math.round(r.width) + "×" + Math.round(r.height) + ")");
       var cx = Math.min(innerWidth - 1, Math.max(0, r.left + r.width / 2)), cy = Math.min(innerHeight - 1, Math.max(0, r.top + r.height / 2));
+      // in einer Bildlaufliste weggescrollt (z. B. unter die Kopfzeile)? Das ist nicht verdeckt, sondern nur außer Sicht
+      for (var a = el.parentElement; a && a !== document.body; a = a.parentElement) {
+        var ov = getComputedStyle(a).overflowY; if (ov === "visible") continue;
+        var ar = a.getBoundingClientRect(); if (cy < ar.top || cy > ar.bottom) { cy = -1; break; }
+      }
+      if (cy < 0) return;
       var hit = document.elementFromPoint(cx, cy);
       if (hit && hit !== el && !el.contains(hit) && !hit.contains(el)) {
         if (cy > nt - 2) return;   // liegt gerade unter der Leiste, wird beim Scrollen frei (eigene Prüfung unten)

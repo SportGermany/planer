@@ -5,6 +5,11 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Planer 6.0.1 + Schule 2.0.1 – Rückmeldung Selbsttest vom Handy (SM-A576B)
+- Fehler: Selbsttest Planer „Ansicht Mehr: 3 Element(e) verdeckt: Training/Schule/Bibel ← MehrAufgaben“. Ursache: Die Mehr-Seite war gescrollt (Einstellungen liegen unten), die App-Kacheln lagen außerhalb der Bildlaufliste unter der Kopfzeile – nicht verdeckt, nur außer Sicht. Lösung: selbsttest.js überspringt Elemente, deren Mitte außerhalb eines scrollenden Elternteils liegt (lokal nachgestellt mit `#n-mehr.scrollTop=250`: vorher ✗, nachher ✓).
+- Fehler: „Für Schule gibt's keine Einstellungen“. Ursache: Einstellungen nur hinter einem kleinen grauen Regler-Symbol (38 px) oben rechts – nicht als Einstellungen erkannt. Lösung: Zahnrad (SGIcon „einst“) wie Training, 48 px, volle Schriftfarbe. Selbsttest steht im Einstellungsblatt unten im Abschnitt „App“.
+- Hinweis aus dem Bericht: Benachrichtigungen im Planer noch nicht erlaubt (Android fragt beim ersten Erinnern) – kein Fehler.
+
 ## Release Planer 6.0.0 + Bibel/Schule/Training 2.0.0
 - Emulator (APK bauen) rot: Play-Dienste stürzten während des Tastatur-Schritts ab, Android beendete den Planer mit (bekannter
   Emulator-Effekt). Neustart-Versuch gab es nur für die Bereiche → jetzt auch für den Tastatur-Schritt (emulator.js).
