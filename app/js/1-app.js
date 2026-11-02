@@ -1541,6 +1541,14 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["6.0.0", ["Neu aufgebaut: Leiste Heute · Kalender · Aufgaben · Mehr; unter Mehr stehen deine Apps (Training, Schule, Bibel) als Kacheln",
+      "Wiederkehrende Aufgaben: beim Anlegen „Wiederholen“ wählen – nach dem Abhaken steht die nächste schon drin",
+      "Aus anderen Apps teilen (WhatsApp, Mail …) → Planer: wird Termin, Aufgabe oder Notiz, „morgen 17 Uhr“ wird erkannt",
+      "Abends ab 18 Uhr: Tagesrückblick auf „Heute“ – Offenes mit einem Tipp auf morgen schieben",
+      "Freie Zeit: „Frei … bis …“ im Tagesplan antippen und eine Aufgabe hineinlegen",
+      "Mehr zeigt, in welchen Google-Kalender neue Termine gehen",
+      "Cloud: Zugang nur noch einmal im Planer eintragen – die anderen Apps bekommen ihn beim Öffnen; jede App sichert nur ihre eigenen Daten",
+      "Selbsttest (Mehr › Design und mehr): prüft die App auf deinem Handy und schreibt einen Bericht zum Teilen"]],
     ["5.1.0", ["Widget für den Startbildschirm: „Als Nächstes“ (lange auf den Startbildschirm drücken › Widgets › Planer). Auch Training, Schule und Bibel haben eins",
       "Langer Druck auf das App-Symbol: Neuer Termin, Neue Aufgabe, Woche planen", "Wochenraster: im Monat oben „Woche“ wählen – alle Termine aller Apps in einer Woche",
       "Erledigte Trainings stehen im Google-Kalender mit ✓", "Training, Schule und Bibel haben jetzt eigene Symbole und Farben; Schule und Training erinnern selbst (Prüfungen, Lernblöcke, Atemübungen), die Bibel auf Wunsch täglich ans Lesen",
