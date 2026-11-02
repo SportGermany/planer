@@ -6,6 +6,8 @@ So geht nichts verloren, wenn ein Chat voll ist.
 ---
 
 ## Release Planer 6.0.0 + Bibel/Schule/Training 2.0.0
+- Emulator (APK bauen) rot: Play-Dienste stürzten während des Tastatur-Schritts ab, Android beendete den Planer mit (bekannter
+  Emulator-Effekt). Neustart-Versuch gab es nur für die Bereiche → jetzt auch für den Tastatur-Schritt (emulator.js).
 - Große Suite 90/91 → Fehler: Farbwelt-Reihe der Bibel wischte seitlich (feste Regel: keine seitlich wischenden Knopf-Reihen).
   Ursache: `.sg-themes`/`.sg-chips` mit overflow-x; ebenso die Schul-Unterpunkte (Wischleiste aus Schritt 3). Lösung: alle umbrechend
   (Raster bzw. flex-wrap). Danach Suite-Teil, Schnelltests aller Apps (Selbsttest 0 ✗) und offline3 grün.

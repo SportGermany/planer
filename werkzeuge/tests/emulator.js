@@ -124,12 +124,20 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
     ok(r.nav && r.txt > 20, 'Bereich ' + h + ': lädt (' + r.path + ', ' + r.txt + ' Zeichen), Leiste sichtbar');
     await dev.screenshot({ path: OUT + '/3-' + h.replace(/\//g, '_') + '.png' });
   }
-  // Tastatur öffnen und schließen: Leiste muss danach wieder da sein
-  await page.evaluate(() => { location.hash = 'notizen'; }); await wait(1500);
-  await page.click('#n-notizen input, #n-notizen textarea').catch(() => {}); await wait(1500);
-  await dev.screenshot({ path: OUT + '/4-tastatur.png' });
-  await dev.shell('input keyevent 4'); await wait(1500);
-  const after = await page.evaluate(() => { const n = document.getElementById('nav').getBoundingClientRect(); return [n.top, n.bottom, innerHeight]; });
+  // Tastatur öffnen und schließen: Leiste muss danach wieder da sein (bei Absturz der Play-Dienste einmal neu öffnen und wiederholen)
+  const keyboard = async () => {
+    await page.evaluate(() => { location.hash = 'notizen'; }); await wait(1500);
+    await page.click('#n-notizen input, #n-notizen textarea').catch(() => {}); await wait(1500);
+    await dev.screenshot({ path: OUT + '/4-tastatur.png' });
+    await dev.shell('input keyevent 4'); await wait(1500);
+    return page.evaluate(() => { const n = document.getElementById('nav').getBoundingClientRect(); return [n.top, n.bottom, innerHeight]; });
+  };
+  let after;
+  try { after = await keyboard(); }
+  catch (e) {
+    if (restarts < 2 && playDied()) { restarts++; ok(true, 'Play-Dienste im Emulator neu gestartet – App neu geöffnet, Tastatur-Schritt wiederholt'); await reopen(); after = await keyboard(); }
+    else throw e;
+  }
   ok(after[1] <= after[2] + 1 && after[0] > 0, 'Nach der Tastatur ist die Leiste wieder im Bild ' + JSON.stringify(after));
   ok(!errs.length, 'Keine Fehler in der App' + (errs.length ? ': ' + errs.slice(0, 5).join(' | ') : ''));
   fs.writeFileSync(OUT + '/ergebnis.txt', lines.join('\n') + '\n');
