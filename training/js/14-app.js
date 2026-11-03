@@ -689,8 +689,8 @@ function tidy(screen){
     ["stretch", "rodeln"].forEach(function(k){ var x = document.querySelector('#s-lauf [data-sec="' + k + '"]'); if (x) x.classList.toggle("ts-merged", merged); });
     // Kopf passend zum Ausschnitt
     var part = $("s-lauf").getAttribute("data-part"), h1 = document.querySelector("#s-lauf .top h1");
-    if (h1) h1.textContent = part === "kraft" ? "Kraft" : part === "lauf" ? "Laufen" : "Training";
-    if ($("runDayInfo")) $("runDayInfo").hidden = part === "kraft";
+    if (h1) h1.textContent = { kraft: "Kraft", lauf: "Laufen", mob: "Mobility", rodeln: "Rodeln" }[part] || "Training";
+    if ($("runDayInfo")) $("runDayInfo").hidden = part === "kraft" || part === "mob" || part === "rodeln";
   }
   if (screen === "heute") kpis();
   if (screen === "fitness") fitKpis();
@@ -743,11 +743,14 @@ function fitKpis(){
   if (row.dataset.h !== h){ row.innerHTML = h; row.dataset.h = h; }
 }
 // welche Bereiche im Ausschnitt Laufen bzw. Kraft gar nicht vorkommen (wie die Regeln in training/index.html)
+// Neuordnung: Lauf / Mobility / Rodeln zeigen nur ihre eigenen Bereiche (wie die Regeln in training/index.html)
+var PART_ON = { lauf: ["runtrack","distance","sportlog","runstats","nextrunday","favoritesport","gym","gymhistory"],
+  mob: ["tsmob","stretch","stretchhistory","cooldownstatus"], rodeln: ["comp","rodeln","tsbreath","tsbahn","rodelnhistory"] };
 var PART_OFF = { lauf: ["stretch","rodeln","gym","rodelnhistory","gymhistory","stretchhistory","cooldownstatus","tsmob","tsbreath","tsbahn"],
   kraft: ["runtrack","distance","sportlog","runstats","nextrunday","favoritesport"] };
 function renderSectionEditorList(screen){
   var part = screen === "lauf" && $("s-lauf").getAttribute("data-part");
-  var defs = SECTION_DEFS[screen] && SECTION_DEFS[screen].filter(function(d){ return !part || PART_OFF[part].indexOf(d.id) < 0; });
+  var defs = SECTION_DEFS[screen] && SECTION_DEFS[screen].filter(function(d){ return !part || (window.SGApp === "training" && PART_ON[part] ? PART_ON[part].indexOf(d.id) >= 0 : (PART_OFF[part] || []).indexOf(d.id) < 0); });
   var host = $("sectionsList");
   host.innerHTML = "";
   if (!defs){

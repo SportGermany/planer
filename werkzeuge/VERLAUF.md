@@ -5,6 +5,22 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Schule 3.0.0 – Neuordnung (PLAN-NEUORDNUNG.md, Schritt 3)
+- Leiste **Stundenplan · Aufgaben · Prüfungen · Lehrgänge**, Start im Stundenplan (heute markiert, Einrichtung oben solange nicht erledigt). Prüfungen = Ausschnitt `ui.auf='pruef'` von Aufgaben (Reiter `data-v="pruef"`), Lehrgänge eigener Reiter ohne Kalender-Unterleiste.
+- Heute und Kalender (Ferien, Fehlzeiten, Termine) aus der Leiste raus, erhalten unter Einstellungen › „Weitere Ansichten“. Im Planer eingebettet bleibt alles wie vorher (`IN_PLANER`).
+- Fehler (Schule 2.0.1): Plus-Knopf unten rechts ohne Symbol. Ursache: beim Zahnrad-Umbau stand `$('#fab').innerHTML = ICON.plus;` hinter dem neuen Zeilenkommentar und wurde nicht mehr ausgeführt. Lösung: wieder eigene Zeile. Lehre: Kommentare nie per Ersetzen vor Code in dieselbe Zeile setzen.
+
+## Training 3.0.0 – Neuordnung nach Bedarf (PLAN-NEUORDNUNG.md, Schritt 1)
+- Leiste jetzt **Lauf · Mobility · Rodeln · Wissen** (Start: Lauf). Lauf/Mobility/Rodeln sind Ausschnitte von `#s-lauf` (`data-part`), jede zeigt nur ihre Bereiche (CSS in training/index.html, `PART_ON` in 14-app.js). `switchTab("mob")`/`("rodeln")` geht direkt.
+- Rodeln: Wettkampf-Countdown oben (15-wettkampf.js setzt `#compCard` in der eigenen App unter `#s-lauf > .top`), Rodel-Vorbereitung, Atmung & HRV, Bahnplan, Rodel-Verlauf.
+- Wissen: Reiter lädt `wissen/?in=training` als Rahmen über der Leiste; dort stehen Lesen/Karten/Quiz/Suche oben als Umschalter (`html.intraining`).
+- Gym: Schalter „Gym-Training“ in Einstellungen › Verhalten (Standard aus, `uiPrefs.gym`, Klasse `t-nogym`), Daten bleiben.
+- Heute, Fortschritt, Analyse, Trainingskalender: aus der Leiste raus, alles erhalten unter Einstellungen › „Auswertungen“.
+- Startbildschirm-Auswahl um Lauf/Mobility/Rodeln/Wissen ergänzt. Im Planer (eingebettet) bleibt alles wie vorher (alles hängt an `SGApp === "training"`).
+- Fehler: Kennzahl-Kacheln von „Lauf“ standen auch unter Mobility/Rodeln. Ursache: `#widgetArea-lauf` hat kein `data-sec`. Lösung: in mob/rodeln ausgeblendet.
+- Fehler: Selbsttest meldete Wissen als „Fenster offen“. Ursache: der Rahmen füllt die Seite. Lösung: iframe in der Bildmitte = eigene Seite, ok.
+- Fehler: „🧩 Seite bearbeiten“ mit Emoji. Lösung: Stift-Symbol.
+
 ## Planer 6.0.1 + Schule 2.0.1 – Rückmeldung Selbsttest vom Handy (SM-A576B)
 - Fehler: Selbsttest Planer „Ansicht Mehr: 3 Element(e) verdeckt: Training/Schule/Bibel ← MehrAufgaben“. Ursache: Die Mehr-Seite war gescrollt (Einstellungen liegen unten), die App-Kacheln lagen außerhalb der Bildlaufliste unter der Kopfzeile – nicht verdeckt, nur außer Sicht. Lösung: selbsttest.js überspringt Elemente, deren Mitte außerhalb eines scrollenden Elternteils liegt (lokal nachgestellt mit `#n-mehr.scrollTop=250`: vorher ✗, nachher ✓).
 - Fehler: „Für Schule gibt's keine Einstellungen“. Ursache: Einstellungen nur hinter einem kleinen grauen Regler-Symbol (38 px) oben rechts – nicht als Einstellungen erkannt. Lösung: Zahnrad (SGIcon „einst“) wie Training, 48 px, volle Schriftfarbe. Selbsttest steht im Einstellungsblatt unten im Abschnitt „App“.

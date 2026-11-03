@@ -69,6 +69,11 @@
   addEventListener("hashchange", route);
   var SH = null; try { SH = window.top !== window && window.top.SGShell; } catch (e) {}
   if (SH) document.documentElement.classList.add("inshell");
+  // Reiter „Wissen“ der Training-App: die Leiste der App bleibt unten, die eigenen Bereiche stehen oben als Umschalter
+  if (/[?&]in=training\b/.test(location.search)) {
+    SH = SH || true; document.documentElement.classList.add("intraining");
+    var bar0 = document.querySelector(".bar"), nav0 = document.querySelector(".tabs"); if (bar0 && nav0) bar0.insertAdjacentElement("afterend", nav0);
+  }
   function setBar(title, toolsHTML) {
     titleEl.textContent = title; tools.innerHTML = toolsHTML || "";
     // in der Hülle führt deren Navigation zurück – der eigene Pfeil nur in Unterseiten (Kapitel, Lernrunde, Quiz)

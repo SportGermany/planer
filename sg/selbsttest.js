@@ -43,6 +43,7 @@
     out.push(over > 1 ? ["fail", name, "Seite läuft seitlich über (" + over + " px breiter als der Bildschirm)"] : ["ok", name, "kein seitliches Überlaufen"]);
     // Liegt ein Fenster (Einrichtung, Hinweis, Blatt) über der Seite? Dann das melden statt jedes Element einzeln
     var mid = document.elementFromPoint(innerWidth / 2, innerHeight / 2), modal = null;
+    if (mid && mid.tagName === "IFRAME") { out.push(["ok", name, "eigene Seite im Rahmen (" + (mid.title || "Seite") + ")"]); return; }
     for (var m = mid; m && m !== document.body && m !== document.documentElement; m = m.parentElement || (m.getRootNode && m.getRootNode().host)) {
       var cs = getComputedStyle(m); if ((cs.position === "fixed" || cs.position === "absolute") && m.getBoundingClientRect().height > innerHeight * .4 && !m.closest(".sg-app, main")) { modal = m; break; }
     }

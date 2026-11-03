@@ -1652,22 +1652,34 @@ function finishWorkout(){
 // Ausschnitt „Laufen“ oder „Kraft“ zeigen – in der Hülle über deren Navigation, damit Pfad und Menü stimmen
 function showPart(part){
   try { var sh = window.parent !== window && window.parent.SGShell; if (sh) { sh.go("training", part, null, { push: false }); return; } } catch(e){}
-  switchTab("lauf"); $("s-lauf").setAttribute("data-part", part);
-  if (window.APP5 && window.APP5.layout) window.APP5.layout();
+  switchTab("lauf", part);
 }
-function switchTab(name){
+// Reiter der Leiste (Neuordnung): Lauf, Mobility, Rodeln sind Ausschnitte von „lauf“, Wissen ist eine eigene Seite im Rahmen
+var PARTS = { mob: 1, rodeln: 1, kraft: 1 };
+function switchTab(name, part){
+  if (PARTS[name]){ part = name; name = "lauf"; }
+  if (name === "lauf" && !part && window.SGApp === "training") part = "lauf";
   S.screen = name;
-  $("s-lauf").removeAttribute("data-part");
+  if (name === "lauf" && part) $("s-lauf").setAttribute("data-part", part); else $("s-lauf").removeAttribute("data-part");
+  if (name === "wissen") wissenOpen();
   Array.prototype.forEach.call(document.querySelectorAll(".screen"), function(s){
     s.classList.toggle("active", s.id === "s-" + name);
   });
   Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(t){
-    t.classList.toggle("on", t.dataset.t === name || (name === "daten" && t.dataset.t === "fitness"));   // Analyse gehört zu „Fortschritt“
+    t.classList.toggle("on", t.dataset.p ? (name === "lauf" && (part || "lauf") === t.dataset.p) : (t.dataset.t === name || (name === "daten" && t.dataset.t === "fitness")));   // Analyse gehört zu „Fortschritt“
   });
+  document.documentElement.classList.toggle("t-nogym", !(S.uiPrefs || {}).gym && window.SGApp === "training");
   var fab = $("fabAdd");
   if (fab) fab.style.display = (name === "lauf" && (S.uiPrefs || {}).showFab !== false) ? "flex" : "none";
   window.scrollTo(0,0);
   renderAll();
+  if (window.APP5 && window.APP5.layout) window.APP5.layout();   // Überschriften und Kopf passend zum Ausschnitt
+}
+// Sportwissenschaft: eigene Seite (wissen/), im Reiter Wissen als Rahmen über der Leiste – einmal geladen, bleibt sie offen
+function wissenOpen(){
+  var host = $("s-wissen"); if (!host || host.firstChild) return;
+  var f = document.createElement("iframe"); f.title = "Sportwissenschaft"; f.src = "../wissen/?in=training";
+  host.appendChild(f);
 }
 function renderAll(){
   var nowDate = W.ymd(new Date());
@@ -1686,7 +1698,7 @@ function renderAll(){
 
 function bind(){
   $("nav").addEventListener("click", function(e){
-    var t = e.target.closest(".tab"); if (t) switchTab(t.dataset.t);
+    var t = e.target.closest(".tab"); if (t) switchTab(t.dataset.t, t.dataset.p);
   });
 
   $("btnStartToday").addEventListener("click", startToday);
@@ -2071,21 +2083,18 @@ document.addEventListener("focus", function(e){
 }, true);
 
 grantMonthlyFreezeIfDue();
-switchTab("heute");
+switchTab(window.SGApp === "training" ? "lauf" : "heute");   // eigene App startet im Reiter Lauf
 /* App-Shortcuts vom Homescreen (siehe Manifest im <head>) springen per
    URL-Hash direkt zum gewünschten Tab, z. B. beim Antippen von
    "Kalender" im langen Drücken auf das App-Icon. */
 (function(){
-  var validTabs = ["heute","kalender","lauf","kraft","daten","fitness","einst"];
+  var validTabs = ["heute","kalender","lauf","kraft","mob","rodeln","wissen","daten","fitness","einst"];
   function applyHashNav(){
     var href = location.href;
     var hashTab = href.indexOf("#") >= 0 ? href.slice(href.indexOf("#")+1) : "";
     if (validTabs.indexOf(hashTab) < 0) return;
     // #lauf und #kraft sind zwei Ausschnitte derselben Seite (Ein- und Ausblenden über data-sec, siehe CSS)
-    var part = hashTab === "lauf" || hashTab === "kraft" ? hashTab : "";
-    switchTab(part ? "lauf" : hashTab); S.shortcutNav = true;
-    if (part) $("s-lauf").setAttribute("data-part", part);
-    if (window.APP5 && window.APP5.layout) window.APP5.layout();   // Überschriften und Kopf passend zum Ausschnitt
+    switchTab(hashTab === "lauf" ? "lauf" : hashTab, hashTab === "lauf" ? "lauf" : ""); S.shortcutNav = true;
   }
   // Direkt versuchen; zusätzlich auf "hashchange" reagieren, falls der
   // Browser den Hash bei dieser Navigation erst nachträglich setzt

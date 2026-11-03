@@ -41,7 +41,7 @@
       "schule",
       "sg"
     ],
-    "ver": "2.0.1",
+    "ver": "3.0.0",
     "probe": {
       "keys": {
         "schulplaner-lokal-v1": "{\"homeMore\":true}"
@@ -86,7 +86,7 @@
       "wissen",
       "sg"
     ],
-    "ver": "2.0.0",
+    "ver": "3.0.0",
     "probe": {
       "keys": {
         "wk_onboarded": "1",

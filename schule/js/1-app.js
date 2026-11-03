@@ -942,7 +942,8 @@ function planHTML() {
   const t = todayStr(), P = db.settings.periods, days = db.settings.days || 5, ab = db.settings.ab.on;
   const shownWeek = ab ? (ui.ttWeek || weekType(t)) : null;
   const tDow = dow(t), nm = nowMin();
-  let h = `<div class="printtitle">Stundenplan ${curSy()}${shownWeek ? ' · ' + shownWeek + '-Woche' : ''}</div>`;
+  let h = !IN_PLANER && !db.settings.setupDone ? setupCard() : '';
+  h += `<div class="printtitle">Stundenplan ${curSy()}${shownWeek ? ' · ' + shownWeek + '-Woche' : ''}</div>`;
   if (ab) h += `<div class="seg noprint">${['A', 'B'].map(w => `<button class="${shownWeek === w ? 'on' : ''}" data-a="ttWeek" data-v="${w}">${w}-Woche${weekType(t) === w ? ' (aktuell)' : ''}</button>`).join('')}</div>`;
   const used = Math.max(6, ...db.timetable.map(l => l.period));
   const rows = Math.min(P.length, used + (db.timetable.length ? 0 : 0));
@@ -2421,6 +2422,7 @@ function settingsHTML() {
     const cals = (hs.cals || []).filter(c => c.writable !== false);
     h += `<div class="sh">Stundenplan im Kalender</div><div class="switch"><span>Eigener Kalender für Stunden<small>z. B. ein Google-Kalender „Stundenplan“ – dort ein- und ausblendbar</small></span><select class="inp" id="stundenZiel" style="width:auto;max-width:55%;padding:8px 10px"><option value="">wie Prüfungen</option>${cals.map(c => `<option value="${esc(c.id)}"${hs.target2 === c.id ? ' selected' : ''}>${esc(c.name || 'Kalender')}</option>`).join('')}</select></div>`;
   }
+  if (!IN_PLANER) h += `<div class="sh">Weitere Ansichten</div><div class="rowb"><button class="btn ghost" data-a="tab" data-v="heute">Tagesübersicht</button><button class="btn ghost" data-a="tab" data-v="kalender">Kalender, Ferien, Fehlzeiten</button></div>`;
   h += `<div id="sgAppInfo" hidden></div>`;   // eigene Schul-App: Version, Aktualisieren, Planer öffnen (sg/design.js)
   return h;
 }
@@ -2490,6 +2492,7 @@ const SUBNAV = {
   // im Planer höchstens drei Einträge (Segmentschalter); Lernzeit und Ablage stehen dort im Seitenmenü
   aufgaben: ['auf', IN_PLANER ? [['offen', 'Offen'], ['pruef', 'Prüfungen'], ['erledigt', 'Erledigt']] : [['offen', 'Offen'], ['pruef', 'Prüfungen'], ['erledigt', 'Erledigt'], ['ablage', 'Ablage'], ['lernzeit', 'Lernzeit']]],
 };
+if (!IN_PLANER) { SUBNAV.aufgaben[1] = SUBNAV.aufgaben[1].filter(o => o[0] !== 'pruef'); SUBNAV.kalender[1] = SUBNAV.kalender[1].filter(o => o[0] !== 'lehrgang'); }
 // eigene Schul-App: Widget (nächste Stunde bzw. nächste Prüfung) und Verknüpfungen auf dem App-Symbol – window.SGWidget aus sg/design.js
 function schulWidget() {
   if (!window.SGWidget || IN_PLANER) return;
@@ -2507,12 +2510,14 @@ function render() {
   if (IN_PLANER && ui.view === 'kalender' && ['monat', 'woche', 'tag'].includes(ui.kal)) ui.kal = 'termine';
   const v = ui.view, c = pd(ui.cursor), t = todayStr();
   // Lehrgänge sind ein Unterpunkt des Kalenders (eigene App: 4 Reiter)
-  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x.dataset.v === (v === 'lehrgang' && !IN_PLANER ? 'kalender' : v)));
+  // eigene App (Neuordnung): Stundenplan · Aufgaben · Prüfungen · Lehrgänge; Heute und Kalender stehen unter Einstellungen › Weitere Ansichten
+  const onTab = IN_PLANER ? v : v === 'aufgaben' && ui.auf === 'pruef' ? 'pruef' : v;
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x.dataset.v === onTab));
   const calNav = v === 'kalender' && (ui.kal === 'monat' || ui.kal === 'tag' || ui.kal === 'woche');
-  $('#title').textContent = v === 'heute' ? 'Schule' : calNav ? MON[c.getMonth()] + ' ' + c.getFullYear() : { kalender: IN_PLANER ? 'Termine' : 'Kalender', plan: 'Stundenplan', aufgaben: ui.auf === 'ablage' ? 'Ablage' : ui.auf === 'lernzeit' ? 'Lernzeit' : 'Aufgaben', lehrgang: 'Lehrgänge', morgen: 'Morgen' }[v];
+  $('#title').textContent = v === 'heute' ? 'Schule' : calNav ? MON[c.getMonth()] + ' ' + c.getFullYear() : { kalender: IN_PLANER ? 'Termine' : 'Kalender', plan: 'Stundenplan', aufgaben: ui.auf === 'ablage' ? 'Ablage' : ui.auf === 'lernzeit' ? 'Lernzeit' : ui.auf === 'pruef' && !IN_PLANER ? 'Prüfungen' : 'Aufgaben', lehrgang: 'Lehrgänge', morgen: 'Morgen' }[v];
   $('#nav').hidden = !calNav;
   $('#btnToday').hidden = !(calNav && ui.cursor !== t);
-  const sn = $('#subnav'), cfg = SUBNAV[v === 'lehrgang' && !IN_PLANER ? 'kalender' : v];
+  const sn = $('#subnav'), cfg = IN_PLANER ? SUBNAV[v] : v === 'aufgaben' && ui.auf === 'pruef' ? null : SUBNAV[v];
   if (cfg) {
     const [key, opts] = cfg; sn.hidden = IN_PLANER && v === 'aufgaben' && (ui.auf === 'ablage' || ui.auf === 'lernzeit'); sn.classList.toggle('seg', IN_PLANER && opts.length <= 3);
     // Lernzeit/Ablage gehören nicht in den Schalter – dort ist keiner gewählt
@@ -2554,6 +2559,9 @@ document.addEventListener('click', e => {
     // Navigation
     case 'tab': if (sheetOpen) { sheetReturn = null; closeSheet(); } if (v === 'lehrgang' && ui.view === 'lehrgang') ui.camp = null;
       if (IN_PLANER && v === 'aufgaben' && (ui.auf === 'ablage' || ui.auf === 'lernzeit')) ui.auf = 'offen';
+      // eigene App (Neuordnung): Reiter Prüfungen ist der Ausschnitt „pruef“ von Aufgaben
+      if (!IN_PLANER && v === 'pruef') { ui.view = 'aufgaben'; ui.auf = 'pruef'; render(); window.scrollTo(0, 0); break; }
+      if (!IN_PLANER && v === 'aufgaben' && ui.auf === 'pruef') ui.auf = 'offen';
       ui.view = v; render(); window.scrollTo(0, 0);
       if (!a.classList.contains('tab')) shellSec(SHELL_SEC[v]);   // Sprung aus der Seite („Alle →“, „Plan →“)
       break;
@@ -2903,11 +2911,13 @@ window.addEventListener('appinstalled', () => { deferredPrompt = null; toast('In
 
 // ---------- Start ----------
 $('#btnPrev').innerHTML = ICON.left; $('#btnNext').innerHTML = ICON.right;
-$('#btnSettings').innerHTML = (window.SGIcon && SGIcon('einst')) || ICON.sliders;   // Zahnrad wie in Training/Bibel – Regler-Symbol wurde nicht als Einstellungen erkannt $('#fab').innerHTML = ICON.plus;
-document.querySelectorAll('.tab .i').forEach(el => { el.outerHTML = ({ heute: ICON.home, plan: ICON.plan, aufgaben: ICON.tasks, kalender: ICON.month, lehrgang: ICON.sled })[el.closest('.tab').dataset.v]; });
+$('#btnSettings').innerHTML = (window.SGIcon && SGIcon('einst')) || ICON.sliders;   // Zahnrad wie in Training/Bibel – Regler-Symbol wurde nicht als Einstellungen erkannt
+$('#fab').innerHTML = ICON.plus;
+document.querySelectorAll('.tab .i').forEach(el => { el.outerHTML = ({ heute: ICON.home, plan: ICON.plan, aufgaben: ICON.tasks, pruef: ICON.month, kalender: ICON.month, lehrgang: ICON.sled })[el.closest('.tab').dataset.v]; });
 applyTheme(); applyFont(); buildFerien();
 const params = new URLSearchParams(location.search);
 const vParam = params.get('v') || location.hash.slice(1);
+if (!IN_PLANER) ui.view = 'plan';   // eigene App startet im Stundenplan (heute markiert)
 if (START_VIEWS.some(x => x[0] === local.startView)) ui.view = local.startView;
 if (vParam === 'monat') { ui.view = 'kalender'; ui.kal = 'monat'; } else if (['kalender', 'plan', 'aufgaben', 'lehrgang', 'morgen'].includes(vParam)) ui.view = vParam;
 if (vParam === 'ablage' || vParam === 'lernzeit') { ui.view = 'aufgaben'; ui.auf = vParam; }
@@ -2915,6 +2925,7 @@ window.addEventListener('hashchange', () => {
   const h = location.hash.slice(1);
   if (h === 'ablage' || h === 'lernzeit') { if (sheetOpen) { sheetReturn = null; closeSheet(); } ui.view = 'aufgaben'; ui.auf = h; render(); window.scrollTo(0, 0); }
   // eigene Schul-App: Sprungziel aus dem Planer (#plan, #aufgaben …)
+  else if (h === 'pruef' && !IN_PLANER) { if (sheetOpen) { sheetReturn = null; closeSheet(); } ui.view = 'aufgaben'; ui.auf = 'pruef'; render(); window.scrollTo(0, 0); }
   else if (['heute', 'kalender', 'plan', 'aufgaben', 'lehrgang'].includes(h)) { if (sheetOpen) { sheetReturn = null; closeSheet(); } ui.view = h; render(); window.scrollTo(0, 0); }
 });
 document.addEventListener('toggle', e => { if (e.target.matches && e.target.matches('details.more-today')) { local.homeMore = e.target.open; saveLocal(); } }, true);

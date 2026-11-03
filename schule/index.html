@@ -508,7 +508,7 @@ code{background:var(--surface2);border-radius:5px;padding:1px 5px;font-size:12.5
 .printtitle{display:none}
 </style>
 <!-- verbund-design:start -->
-<script data-design="lernplan" data-sync="lernplan" src="../sg/design.js?v=6.0.1.35267b"></script>
+<script data-design="lernplan" data-sync="lernplan" src="../sg/design.js?v=6.0.1.aa5bf5"></script>
 <!-- verbund-design:end -->
 </head>
 <body>
@@ -531,12 +531,13 @@ code{background:var(--surface2);border-radius:5px;padding:1px 5px;font-size:12.5
 <button class="fab" id="fab" data-a="fab" aria-label="Hinzufügen"></button>
 
 <nav class="tabs" id="tabs">
-  <button class="tab" data-a="tab" data-v="heute"><span class="pill"><span class="i"></span></span><span class="lbl">Heute</span></button>
   <button class="tab" data-a="tab" data-v="plan"><span class="pill"><span class="i"></span></span><span class="lbl">Stundenplan</span></button>
   <button class="tab" data-a="tab" data-v="aufgaben"><span class="pill"><span class="i"></span></span><span class="lbl">Aufgaben</span></button>
-  <button class="tab" data-a="tab" data-v="kalender"><span class="pill"><span class="i"></span></span><span class="lbl tl">Kalender</span></button>
-  <!-- Lehrgänge: in der eigenen App Unterpunkt des Kalenders; der Knopf bleibt für Sprünge aus dem Planer (unsichtbar) -->
-  <button class="tab" data-a="tab" data-v="lehrgang" hidden><span class="pill"><span class="i"></span></span><span class="lbl">Lehrgang</span></button>
+  <button class="tab" data-a="tab" data-v="pruef"><span class="pill"><span class="i"></span></span><span class="lbl">Prüfungen</span></button>
+  <button class="tab" data-a="tab" data-v="lehrgang"><span class="pill"><span class="i"></span></span><span class="lbl">Lehrgänge</span></button>
+  <!-- Neuordnung (PLAN-NEUORDNUNG.md): Heute und Kalender unter Einstellungen › Weitere Ansichten; Knöpfe bleiben für Sprünge (unsichtbar) -->
+  <button class="tab" data-a="tab" data-v="heute" hidden><span class="pill"><span class="i"></span></span><span class="lbl">Heute</span></button>
+  <button class="tab" data-a="tab" data-v="kalender" hidden><span class="pill"><span class="i"></span></span><span class="lbl tl">Kalender</span></button>
 </nav>
 
 <div class="sheet-wrap" id="sheet" hidden></div>
@@ -547,10 +548,10 @@ code{background:var(--surface2);border-radius:5px;padding:1px 5px;font-size:12.5
 <input type="file" id="camIn" accept="image/*" capture="environment" hidden>
 <input type="file" id="galIn" accept="image/*" multiple hidden>
 <input type="file" id="ttFile" accept=".xlsx,.xlsm,.xls,.ods,.csv,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
-<script src="js/1-app.js?v=6.0.1.35267b"></script>
-<script src="js/2-karten.js?v=6.0.1.35267b"></script>
+<script src="js/1-app.js?v=6.0.1.aa5bf5"></script>
+<script src="js/2-karten.js?v=6.0.1.aa5bf5"></script>
 <!-- gemeinsamer-kalender:start -->
-<script data-app="lernplan" src="../sg/verbund.js?v=6.0.1.35267b"></script>
+<script data-app="lernplan" src="../sg/verbund.js?v=6.0.1.aa5bf5"></script>
 <!-- gemeinsamer-kalender:end -->
 </body>
 </html>

@@ -26,7 +26,8 @@
   function draw() {
     var host = document.getElementById("compCard");
     if (!host) {
-      var top = document.querySelector("#s-heute > .top"); if (!top) return;
+      // eigene App: oben im Reiter Rodeln (Ausschnitt von #s-lauf), im Planer wie bisher bei Heute
+      var top = document.querySelector(window.SGApp === "training" ? "#s-lauf > .top" : "#s-heute > .top"); if (!top) return;
       host = document.createElement("div"); host.id = "compCard"; host.className = "card"; host.setAttribute("data-sec", "comp");
       top.insertAdjacentElement("afterend", host);
     }

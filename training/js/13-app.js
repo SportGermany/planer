@@ -809,6 +809,7 @@ function renderMoreAppearance(){
 function renderMoreVerhalten(){
   if (!$("setShowFab")) return;
   sw("setShowFab", S.uiPrefs.showFab !== false);
+  if ($("setGym")) sw("setGym", !!S.uiPrefs.gym);
   seg("setTone", S.uiPrefs.tone);
   seg("setSoundStyle", S.uiPrefs.soundStyle);
   seg("setVibrationStyle", S.uiPrefs.vibrationStyle);
@@ -979,6 +980,11 @@ function bind(){
     S.uiPrefs.retentionDays = Number($("setRetention").value); saveUiPrefs();
     applyRetention(); A.renderAll();
     A.toast(S.uiPrefs.retentionDays ? "Datenaufbewahrung gesetzt" : "Unbegrenzt gespeichert");
+  });
+  if ($("setGym")) $("setGym").addEventListener("click", function(){
+    S.uiPrefs.gym = !S.uiPrefs.gym; saveUiPrefs(); renderMoreVerhalten();
+    document.documentElement.classList.toggle("t-nogym", !S.uiPrefs.gym && window.SGApp === "training");
+    A.toast(S.uiPrefs.gym ? "Gym steht jetzt im Reiter Lauf" : "Gym ausgeblendet – deine Daten bleiben");
   });
   $("setShowFab").addEventListener("click", function(){
     S.uiPrefs.showFab = !S.uiPrefs.showFab; saveUiPrefs(); renderMoreVerhalten(); applyFabVisibility();
@@ -1235,7 +1241,7 @@ if (weatherReady()) loadWeather(false);
 setInterval(ensureWeatherFresh, 5 * 60 * 1000);
 setInterval(function(){ if (S.uiPrefs.themeMode === "auto") applyAutoTheme(); }, 10 * 60 * 1000);
 if ($("setCatBar") && S.uiPrefs.startCat && S.uiPrefs.startCat !== "training") setCat(S.uiPrefs.startCat);
-if (S.uiPrefs.startScreen && S.uiPrefs.startScreen !== "heute" && !S.shortcutNav && A.switchTab) A.switchTab(S.uiPrefs.startScreen);
+if (S.uiPrefs.startScreen && S.uiPrefs.startScreen !== "heute" && S.uiPrefs.startScreen !== "lauf" && !S.shortcutNav && A.switchTab) A.switchTab(S.uiPrefs.startScreen);
 // applySkin() lief bereits vorher (in ui2.js) einmal, aber zu diesem
 // Zeitpunkt existierte S.uiPrefs (Akzentfarbe, Bewegung reduzieren) noch
 // nicht. Jetzt, wo es sicher gesetzt ist, noch einmal korrekt anwenden.

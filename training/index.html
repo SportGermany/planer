@@ -286,6 +286,19 @@
   .tab.on .pill{ background:color-mix(in srgb, var(--work) 22%, transparent); }
   .tgear{ margin-left:auto; flex:none; width:48px; height:48px; border:0; border-radius:24px; background:none; color:var(--text); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
   .tgear svg{ width:24px; height:24px; }
+
+  /* Neuordnung: Reiter Lauf / Mobility / Rodeln sind Ausschnitte von #s-lauf – nur die eigenen Bereiche zeigen */
+  #s-lauf[data-part="lauf"] [data-sec]:not([data-sec="runtrack"]):not([data-sec="distance"]):not([data-sec="sportlog"]):not([data-sec="runstats"]):not([data-sec="nextrunday"]):not([data-sec="favoritesport"]):not([data-sec="gym"]):not([data-sec="gymhistory"]){ display:none !important; }
+  #s-lauf[data-part="mob"] [data-sec]:not([data-sec="tsmob"]):not([data-sec="stretch"]):not([data-sec="stretchhistory"]):not([data-sec="cooldownstatus"]){ display:none !important; }
+  #s-lauf[data-part="rodeln"] [data-sec]:not([data-sec="comp"]):not([data-sec="rodeln"]):not([data-sec="tsbreath"]):not([data-sec="tsbahn"]):not([data-sec="rodelnhistory"]){ display:none !important; }
+  #s-lauf[data-part="mob"] .sec-label.manual, #s-lauf[data-part="rodeln"] .sec-label.manual{ display:none !important; }
+  #s-lauf[data-part="rodeln"] [data-sec="rodeln"].ts-merged{ display:block !important; }
+  #s-lauf[data-part="mob"] #widgetArea-lauf, #s-lauf[data-part="rodeln"] #widgetArea-lauf{ display:none !important; }
+  html.t-nogym #s-lauf [data-sec="gym"], html.t-nogym #s-lauf [data-sec="gymhistory"]{ display:none !important; }
+  #s-wissen iframe{ position:fixed; left:0; right:0; top:0; width:100%; height:calc(100% - var(--nav-h) - env(safe-area-inset-bottom, 0px)); border:0; background:var(--bg); }
+  #s-wissen.screen.active{ padding:0; }
+  #tAusw .ts-grid .btn{ display:flex; flex-direction:column; align-items:flex-start; height:auto; min-height:56px; padding:10px 14px; text-align:left; }
+  #tAusw .ts-grid .btn small{ font-weight:400; opacity:.75; }
   html.sg-embed .tgear, html.sg-embed .fseg{ display:none; }
   .fseg{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); border:1px solid var(--text-faint); border-radius:20px; overflow:hidden; margin:0 0 14px; }
   .fseg button{ height:40px; border:0; background:none; color:var(--text); font-size:14px; font-weight:500; cursor:pointer; }
@@ -1198,7 +1211,7 @@ html.m3 .streak-chip { border-radius: 8px; }
   }
 </style>
 <!-- verbund-design:start -->
-<script data-design="panel" data-sync="training" src="../sg/design.js?v=6.0.1.35267b"></script>
+<script data-design="panel" data-sync="training" src="../sg/design.js?v=6.0.1.aa5bf5"></script>
 <!-- verbund-design:end -->
 </head>
 <body>
@@ -1333,7 +1346,7 @@ html.m3 .streak-chip { border-radius: 8px; }
   </div>
 
   <div class="widget-area" id="widgetArea-heute"></div>
-  <button class="btn ghost block sm widget-edit-btn" data-screen="heute">🧩 Seite bearbeiten</button>
+  <button class="btn ghost block sm widget-edit-btn" data-screen="heute"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Seite bearbeiten</button>
 </section>
 
 <!-- ==================== KALENDER ==================== -->
@@ -1412,7 +1425,7 @@ html.m3 .streak-chip { border-radius: 8px; }
   </div>
 
   <div class="widget-area" id="widgetArea-kalender"></div>
-  <button class="btn ghost block sm widget-edit-btn" data-screen="kalender">🧩 Seite bearbeiten</button>
+  <button class="btn ghost block sm widget-edit-btn" data-screen="kalender"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Seite bearbeiten</button>
 </section>
 
 <!-- ==================== LAUF ==================== -->
@@ -1509,7 +1522,7 @@ html.m3 .streak-chip { border-radius: 8px; }
   <button class="fab" id="fabAdd" title="Einheit hinzufügen">+</button>
 
   <div class="widget-area" id="widgetArea-lauf"></div>
-  <button class="btn ghost block sm widget-edit-btn" data-screen="lauf">🧩 Seite bearbeiten</button>
+  <button class="btn ghost block sm widget-edit-btn" data-screen="lauf"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Seite bearbeiten</button>
 </section>
 
 <!-- ==================== DATEN ==================== -->
@@ -1659,7 +1672,7 @@ html.m3 .streak-chip { border-radius: 8px; }
 
 
   <div class="widget-area" id="widgetArea-daten"></div>
-  <button class="btn ghost block sm widget-edit-btn" data-screen="daten">🧩 Seite bearbeiten</button>
+  <button class="btn ghost block sm widget-edit-btn" data-screen="daten"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Seite bearbeiten</button>
 </section>
 
 <!-- ==================== FITNESS ==================== -->
@@ -1757,13 +1770,23 @@ html.m3 .streak-chip { border-radius: 8px; }
   </div>
 
   <div class="widget-area" id="widgetArea-fitness"></div>
-  <button class="btn ghost block sm widget-edit-btn" data-screen="fitness">🧩 Seite bearbeiten</button>
+  <button class="btn ghost block sm widget-edit-btn" data-screen="fitness"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Seite bearbeiten</button>
 </section>
 
 <!-- ==================== EINSTELLUNGEN ==================== -->
 <section class="screen" id="s-einst">
   <div class="top">
     <div><h1>Einstellungen</h1><p>Alles anpassen, kategorisiert</p></div>
+  </div>
+
+  <div class="card" id="tAusw">
+    <div class="card-h"><h2>Auswertungen</h2><span>alles, was nicht in der Leiste steht</span></div>
+    <div class="ts-grid">
+      <button class="btn" type="button" data-go="fitness">Fortschritt<small>Rekorde, Abzeichen, Erholung</small></button>
+      <button class="btn" type="button" data-go="daten">Analyse<small>Wochen, Kilometer, Export</small></button>
+      <button class="btn" type="button" data-go="kalender">Trainingskalender<small>Monat, Serien, Krankheit</small></button>
+      <button class="btn" type="button" data-go="heute">Tagesübersicht<small>Bereitschaft, Wetter, Übungen</small></button>
+    </div>
   </div>
 
   <div class="btn-row" style="margin-bottom:10px">
@@ -2011,11 +2034,12 @@ html.m3 .streak-chip { border-radius: 8px; }
       <p class="tiny" id="setHrBattery"></p>
       <p class="tiny" style="margin-top:6px">Einmal hier gekoppelt, zeigt der Trainingsbildschirm die Live-Werte automatisch mit an – erneutes Koppeln im Training ist dann nicht mehr nötig. Braucht Android mit Chrome; iOS/Safari unterstützt Web-Bluetooth nicht.</p>
       <div class="row"><div class="lab"><b>Cool-down-Vorschlag</b><span>Nach dem Training automatisch anbieten</span></div><button class="sw" id="setAutoCooldown"></button></div>
+      <div class="row"><div class="lab"><b>Gym-Training</b><span>Gym starten und Gym-Verlauf im Reiter Lauf zeigen</span></div><button class="sw" id="setGym"></button></div>
       <div class="row"><div class="lab"><b>Plus-Knopf</b><span>Schnellzugriff im Training-Tab</span></div><button class="sw" id="setShowFab"></button></div>
       <div class="row"><div class="lab"><b>Start-Bildschirm</b><span>Welcher Tab beim Öffnen zuerst zu sehen ist</span></div>
         <select id="setStartScreen">
-          <option value="heute">Heute</option><option value="kalender">Kalender</option>
-          <option value="lauf">Training</option><option value="daten">Analyse</option><option value="fitness">Fitness</option>
+          <option value="lauf">Lauf</option><option value="mob">Mobility</option><option value="rodeln">Rodeln</option><option value="wissen">Wissen</option>
+          <option value="heute">Tagesübersicht</option><option value="kalender">Kalender</option><option value="daten">Analyse</option><option value="fitness">Fortschritt</option>
         </select></div>
       <div class="row">
         <div class="lab"><b>Erinnerung</b><span id="remHint">Tägliche Benachrichtigung</span></div>
@@ -2150,17 +2174,23 @@ html.m3 .streak-chip { border-radius: 8px; }
   <p class="tiny" style="text-align:center;margin:18px 0 4px">Training &middot; 360 Übungen &middot; Mobility &middot; Atmung &amp; HRV</p>
 
   <div class="widget-area" id="widgetArea-einst"></div>
-  <button class="btn ghost block sm widget-edit-btn" data-screen="einst">🧩 Seite bearbeiten</button>
+  <button class="btn ghost block sm widget-edit-btn" data-screen="einst"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Seite bearbeiten</button>
 </section>
 
+<!-- ==================== WISSEN (Sportwissenschaft, eigene Seite im Rahmen) ==================== -->
+<section class="screen" id="s-wissen" aria-label="Sportwissenschaft"></section>
 </div><!-- /shell -->
 
 <!-- ==================== TAB-LEISTE ==================== -->
 <nav class="nav"><div class="nav-inner" id="nav">
-  <button class="tab on" data-t="heute"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span><span>Heute</span></button>
-  <button class="tab" data-t="lauf"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="15" cy="4.5" r="2"/><path d="M12 21l1.5-5.5-3-2.5.5-4 3.5 2 3 1"/><path d="M8 9l3-2.5 3.5 1.5"/><path d="M6 16l2.5-2.5"/></svg></span><span>Training</span></button>
-  <button class="tab" data-t="fitness"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-6 4 3 4-6 5 5"/></svg></span><span>Fortschritt</span></button>
-  <button class="tab" data-t="kalender"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span><span>Kalender</span></button>
+  <button class="tab on" data-t="lauf" data-p="lauf"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="15" cy="4.5" r="2"/><path d="M12 21l1.5-5.5-3-2.5.5-4 3.5 2 3 1"/><path d="M8 9l3-2.5 3.5 1.5"/><path d="M6 16l2.5-2.5"/></svg></span><span>Lauf</span></button>
+  <button class="tab" data-t="lauf" data-p="mob"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="2"/><path d="M12 7v6M5 10l7 3 7-3M9 21l3-8 3 8"/></svg></span><span>Mobility</span></button>
+  <button class="tab" data-t="lauf" data-p="rodeln"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h15a3 3 0 0 0 3-3M6 17l-2 3M15 17l-2 3"/><circle cx="9" cy="8" r="2"/><path d="M7 13.5l3-3 4 1"/></svg></span><span>Rodeln</span></button>
+  <button class="tab" data-t="wissen"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5"/></svg></span><span>Wissen</span></button>
+  <!-- Neuordnung (PLAN-NEUORDNUNG.md): Heute, Fortschritt, Analyse und Kalender stehen unter Einstellungen › Auswertungen – Knöpfe bleiben für Sprünge -->
+  <button class="tab" data-t="heute" hidden><span class="pill"></span><span>Heute</span></button>
+  <button class="tab" data-t="fitness" hidden><span class="pill"></span><span>Fortschritt</span></button>
+  <button class="tab" data-t="kalender" hidden><span class="pill"></span><span>Kalender</span></button>
   <!-- Analyse liegt unter „Fortschritt“, Einstellungen hinter dem Zahnrad oben – Knöpfe bleiben für Sprünge erhalten -->
   <button class="tab" data-t="daten" hidden><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 8l4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></span><span>Analyse</span></button>
   <button class="tab" data-t="einst" hidden><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 7 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9H1a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 2.6 7a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H7a1.7 1.7 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1A1.7 1.7 0 0 0 15 2.6a1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V7a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" transform="translate(1.5,1.5) scale(0.88)"/></svg></span><span>Einstellungen</span></button>
@@ -2607,26 +2637,26 @@ html.m3 .streak-chip { border-radius: 8px; }
   </div>
   <button class="btn accent block sm" id="btnWrappedShare" style="margin-top:16px">📤 Teilen</button>
 </div></dialog>
-<script id="coreScript" src="js/1-core.js?v=6.0.1.35267b"></script>
-<script id="poolsScript" src="js/2-pools.js?v=6.0.1.35267b"></script>
-<script id="sportsScript" src="js/3-sports.js?v=6.0.1.35267b"></script>
-<script id="stretchScript" src="js/4-stretch.js?v=6.0.1.35267b"></script>
-<script id="rodelnScript" src="js/5-rodeln.js?v=6.0.1.35267b"></script>
-<script id="gymScript" src="js/6-gym.js?v=6.0.1.35267b"></script>
-<script id="weatherScript" src="js/7-weather.js?v=6.0.1.35267b"></script>
-<script id="githubScript" src="js/8-github.js?v=6.0.1.35267b"></script>
-<script id="analysisScript" src="js/9-analysis.js?v=6.0.1.35267b"></script>
-<script src="js/10-app.js?v=6.0.1.35267b"></script>
-<script src="js/11-app.js?v=6.0.1.35267b"></script>
-<script src="js/12-app.js?v=6.0.1.35267b"></script>
-<script src="js/13-app.js?v=6.0.1.35267b"></script>
-<script src="js/14-app.js?v=6.0.1.35267b"></script>
-<script src="js/15-wettkampf.js?v=6.0.1.35267b"></script>
+<script id="coreScript" src="js/1-core.js?v=6.0.1.aa5bf5"></script>
+<script id="poolsScript" src="js/2-pools.js?v=6.0.1.aa5bf5"></script>
+<script id="sportsScript" src="js/3-sports.js?v=6.0.1.aa5bf5"></script>
+<script id="stretchScript" src="js/4-stretch.js?v=6.0.1.aa5bf5"></script>
+<script id="rodelnScript" src="js/5-rodeln.js?v=6.0.1.aa5bf5"></script>
+<script id="gymScript" src="js/6-gym.js?v=6.0.1.aa5bf5"></script>
+<script id="weatherScript" src="js/7-weather.js?v=6.0.1.aa5bf5"></script>
+<script id="githubScript" src="js/8-github.js?v=6.0.1.aa5bf5"></script>
+<script id="analysisScript" src="js/9-analysis.js?v=6.0.1.aa5bf5"></script>
+<script src="js/10-app.js?v=6.0.1.aa5bf5"></script>
+<script src="js/11-app.js?v=6.0.1.aa5bf5"></script>
+<script src="js/12-app.js?v=6.0.1.aa5bf5"></script>
+<script src="js/13-app.js?v=6.0.1.aa5bf5"></script>
+<script src="js/14-app.js?v=6.0.1.aa5bf5"></script>
+<script src="js/15-wettkampf.js?v=6.0.1.aa5bf5"></script>
 <!-- training-suite:start -->
-<script src="../sg/training-suite.js?v=6.0.1.35267b"></script>
+<script src="../sg/training-suite.js?v=6.0.1.aa5bf5"></script>
 <!-- training-suite:end -->
 <!-- gemeinsamer-kalender:start -->
-<script data-app="training" src="../sg/verbund.js?v=6.0.1.35267b"></script>
+<script data-app="training" src="../sg/verbund.js?v=6.0.1.aa5bf5"></script>
 <!-- gemeinsamer-kalender:end -->
 </body>
 </html>

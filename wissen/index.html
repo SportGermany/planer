@@ -158,10 +158,16 @@ mark { background: color-mix(in srgb, var(--acc) 35%, transparent); color: var(-
 .reading.showtabs .tabs { transform: none; }
 html.inshell body { padding-bottom: 24px; }
 html.inshell .bar { height: 52px; padding-top: 0; }
+/* im Reiter Wissen der Training-App: Bereiche oben als Umschalter (die Leiste der App liegt unten) */
+html.intraining body { padding-bottom: 24px; }
+html.intraining .tabs { position: static !important; left: auto !important; right: auto !important; bottom: auto !important; width: auto !important; max-width: 560px; margin: 0 16px 8px !important; height: 52px; border-radius: 26px; box-shadow: none !important; border: 1px solid var(--s3); z-index: 30; }
+html.intraining .tabs button { flex-direction: row; gap: 6px; font-size: 13px; margin: 5px 0; }
+html.intraining .tabs button svg { width: 18px; height: 18px; }
+html.intraining .reading .tabs, html.intraining.reading .tabs { transform: none; }
 @media print { .tabs, .bar, .pager, .progtop { display: none !important; } body { padding: 0; } }
 </style>
 <!-- verbund-design:start -->
-<script data-design="bahn" data-sync="" src="../sg/design.js?v=6.0.1.35267b"></script>
+<script data-design="bahn" data-sync="" src="../sg/design.js?v=6.0.1.aa5bf5"></script>
 <!-- verbund-design:end -->
 </head>
 <body>
@@ -175,7 +181,7 @@ html.inshell .bar { height: 52px; padding-top: 0; }
   <button data-t="suche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Suche</button>
 </nav>
 <div class="sheet" id="sheet"><div class="pn"></div></div>
-<script src="js/buch.js?v=6.0.1.35267b"></script>
-<script src="js/1-app.js?v=6.0.1.35267b"></script>
+<script src="js/buch.js?v=6.0.1.aa5bf5"></script>
+<script src="js/1-app.js?v=6.0.1.aa5bf5"></script>
 </body>
 </html>
