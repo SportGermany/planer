@@ -5,6 +5,11 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Planer 6.1.1 – Kalenderdatei-Import meldete „Schon alles im Kalender“
+- Fehler (Rückmeldung): Datei importieren → „Schon alles im Kalender“, obwohl nichts drin war. Ursache: `phone.apply` behandelte Termine mit UID `…@planer` (eigener Export, anderes Gerät, nach dem Löschen, oder von einem Werkzeug mit dieser Kennung erzeugt) als „nur aktualisieren“ – fehlte der Termin mit dieser id, wurde er stillschweigend übersprungen; 0 neu + 0 geändert ergab die Meldung. Nachgestellt: alte Fassung `added: 1` von 2, neue `added: 2`.
+- Lösung: fehlt der eigene Termin, wird er neu angelegt; Abgleich zusätzlich über den Importschlüssel (`ext`), damit ein zweiter Import nicht doppelt anlegt. Meldung nennt jetzt die Anzahl („Alle N Termine waren schon im Kalender“), und der Kalender springt zum ersten Termin der Datei.
+- Neuer Test „K Import“ in suite3.js. Hinweis Testumgebung: Chromium liegt jetzt unter /opt/pw-browsers/chromium-1243/chrome-linux64/chrome (SG_CHROME setzen).
+
 ## Planer 6.1.0 + Training 3.2.0 – Planer liest aus den anderen Apps (PLAN-NEUORDNUNG.md, Schritt 4)
 - Problem: Auf dem Handy hat jede App eigenen Speicher; der schlanke Planer sah weder Hausaufgaben noch Trainingsstand. Lösung: Cloud nur lesen – `READS.planer = ["lernplan","trainingheute"]` in verbund.js legt die Cloud-Stände als Kopie `sg-fremd-<gruppe>` ab und lädt sie nie hoch (keine App überschreibt eine andere).
 - Training schreibt `sg-training-heute` (Bereitschaft, Wetter, krank/verletzt, Ruhetag, erledigt; neue Gruppe `trainingheute`, nur die kleine Zusammenfassung statt aller Trainingsdaten). Planer › Heute zeigt die Karte „Training heute“ (nur am heutigen Tag, nur mit Stand von heute), „Öffnen“ startet Training.

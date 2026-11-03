@@ -1397,9 +1397,11 @@
       if (act === "no") return closeSheet();
       if (act !== "yes") return;
       var r = c.phone.apply(list); closeSheet();
-      if (list.length === 1 && list[0].date) { setSel(list[0].date); if (cur.v !== "kalender") go("kalender"); }
+      // zum ersten Termin springen – so sieht man sofort, was übernommen wurde (auch wenn schon alles drin war)
+      var first = list.map(function (e) { return e.date; }).filter(Boolean).sort()[0];
+      if (first) { setSel(first); if (cur.v !== "kalender") go("kalender"); }
       refresh();
-      snack((r.added ? r.added + " neu" : "") + (r.added && r.updated ? ", " : "") + (r.updated ? r.updated + " aktualisiert" : "") + (!r.added && !r.updated ? "Schon alles im Kalender" : " im Kalender"));
+      snack((r.added ? r.added + " neu" : "") + (r.added && r.updated ? ", " : "") + (r.updated ? r.updated + " aktualisiert" : "") + (!r.added && !r.updated ? (r.same === 1 ? "Der Termin war" : "Alle " + r.same + " Termine waren") + " schon im Kalender" : " im Kalender"));
     });
   }
   /* Android-App: Kalenderdatei direkt geöffnet („Öffnen mit Planer“) oder geteilt („Teilen › Planer“) –
@@ -1565,6 +1567,8 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["6.1.1", ["Kalenderdatei (.ics) importieren: Termine werden wieder übernommen – vorher meldete der Planer bei manchen Dateien „Schon alles im Kalender“, obwohl nichts drin war",
+      "Nach dem Import springt der Kalender zum ersten übernommenen Termin"]],
     ["6.1.0", ["Heute zeigt „Training heute“: Bereitschaft, Wetter, krank/verletzt und Ruhetag aus der Training-App (über die Cloud)",
       "Aufgaben: Hausaufgaben aus der Schul-App stehen wieder mit drin (über die Cloud, abhaken in der Schul-App)",
       "Pause entfällt"]],

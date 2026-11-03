@@ -4,7 +4,7 @@ const fs = require('fs');
 const U = 'http://localhost:8765/planer/', APP = U + 'app/';
 const SEED = fs.readFileSync(__dirname + '/seed.js', 'utf8');
 const ONLY = process.argv[2] || '';
-const VER = '6.1.0';
+const VER = '6.1.1';
 const results = [];
 const PAGES = ['', 'schule/', 'pause/', 'training/', 'training/mobility/', 'training/atmung/', 'training/bahnplan/', 'bibel/', 'wissen/'];
 const PHONE = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 };
@@ -979,6 +979,16 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     await p.goto(APP + '#mehr'); await wait(p, 1500);
     await mehrRow(p, 'design'); await wait(p, 400);
     assert(await p.evaluate(() => { const r = document.getElementById('sg-shared-calendar'); return /Farbwelt|Design/.test((r.shadowRoot || r).textContent); }), 'Design');
+    assert(!e.length, e.join(' | ')); await c.close();
+  });
+  await test('K Import: Kalenderdatei mit Planer-Kennung (…@planer) wird übernommen, zweimal = nicht doppelt', async () => {
+    const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
+    await open(p, '#kalender');
+    const r = await p.evaluate(() => { const ics = 'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:quali-1@planer\r\nDTSTART;TZID=Europe/Berlin:20991104T140000\r\nDTEND;TZID=Europe/Berlin:20991104T153000\r\nSUMMARY:Training G1\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:quali-2@x\r\nDTSTART;VALUE=DATE:20991104\r\nDTEND;VALUE=DATE:20991109\r\nSUMMARY:Quali-Lehrgang\r\nEND:VEVENT\r\nEND:VCALENDAR';
+      const C = SharedCalendar, l = C.phone.parse(ics), a = C.phone.apply(l), b = C.phone.apply(l); return { n: l.length, a, b, t: C.occurrences('2099-11-04', '2099-11-04').filter(x => x.title === 'Training G1').length }; });
+    assert(r.n === 2 && r.a.added === 2, 'erster Import ' + JSON.stringify(r.a));
+    assert(r.b.added === 0 && r.b.same === 2, 'zweiter Import ' + JSON.stringify(r.b));
+    assert(r.t === 1, 'Training G1 im Kalender: ' + r.t);
     assert(!e.length, e.join(' | ')); await c.close();
   });
   await test('S Zurück: Kalender → Ziel → Zurück = Kalender; zwischen Zielen wird ersetzt', async () => {

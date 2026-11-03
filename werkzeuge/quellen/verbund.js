@@ -2385,7 +2385,7 @@
       mutate(function (d) {
         list.forEach(function (x) {
           var own = /@planer$/.test(x.uid || "") ? x.uid.replace(/@planer$/, "") : null;
-          var key = phoneKey(x), e = d.events.find(function (y) { return !y.deleted && (own ? y.id === own : y.ext === key); });
+          var key = phoneKey(x), e = d.events.find(function (y) { return !y.deleted && ((own && y.id === own) || y.ext === key); });
           if (!e && !own) e = d.events.find(function (y) { return !y.deleted && y.title === x.title && y.date === x.date && (y.time || "") === (x.time || ""); });
           var patch = { title: x.title, date: x.date, time: x.time || "", end: x.end || "", note: x.note || "" };
           if (x.rep) patch.rep = x.rep;
@@ -2395,7 +2395,9 @@
           if (e) {
             var diff = Object.keys(patch).some(function (k) { return JSON.stringify(e[k] == null ? "" : e[k]) !== JSON.stringify(patch[k] == null ? "" : patch[k]); });
             if (diff) { Object.assign(e, patch); e.changed = Date.now(); if (e.app === "Handy") e.imported = e.changed; res.updated++; } else res.same++;
-          } else if (!own) {
+          } else {
+            // auch eine Datei mit UID …@planer (eigener Export, von einem anderen Gerät oder nach dem Löschen) wird neu angelegt –
+            // früher wurde sie übersprungen und die App meldete „Schon alles im Kalender“, obwohl nichts drin war
             var now = Date.now();
             d.events.push(Object.assign({ id: uid(), app: "Handy", ext: key, color: "", remind: null, created: now, changed: now, imported: now }, patch));
             res.added++;
