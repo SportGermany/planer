@@ -4,7 +4,7 @@ Android-App (Capacitor 8, WebView = Chrome) aus reinen HTML/JS-Dateien. **Nur di
 Alles läuft 100 % offline; Netz nur für Cloud-Abgleich (Gist), Webkalender, Update-Prüfung, Wikipedia im Bahnplan.
 Sprache in App, Commits, Doku: Deutsch. Ausführliches Wissen: `werkzeuge/WISSEN.md`, Geschichte und Fehler: `werkzeuge/VERLAUF.md`.
 
-**Laufend: Einzel-Apps neu gestalten – zuerst `werkzeuge/PLAN-EINZEL.md` lesen und dort weitermachen** (Aufteilung in Apps: `werkzeuge/PLAN-APPS.md`, abgeschlossen).
+**Laufend: Apps nach Bedarf neu ordnen – zuerst `werkzeuge/PLAN-NEUORDNUNG.md` lesen und dort weitermachen** (davor: `werkzeuge/PLAN-EINZEL.md`, Aufteilung: `werkzeuge/PLAN-APPS.md`).
 
 ## Feste Regeln
 - Ein Repo: alles bleibt unter `/planer/` (mehrere APKs aus denselben Dateien, siehe PLAN-APPS.md). Keine Funktion löschen. Datenformate abwärtskompatibel (alte Geräte, Cloud, Umzugsdatei).
