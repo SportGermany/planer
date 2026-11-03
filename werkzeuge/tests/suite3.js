@@ -1192,10 +1192,10 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
   /* ---------- L: Sportwissenschaft (Seite einzeln) ---------- */
   /* ---------- L: Sportwissenschaft ---------- */
   const W = U + 'wissen/?einzeln';
-  await test('L Lesen: 8 Kapitel, Fortschritt und Leseposition bleiben gespeichert', async () => {
+  await test('L Lesen: 12 Kapitel, Fortschritt und Leseposition bleiben gespeichert', async () => {
     const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
     await p.goto(W); await wait(p, 800);
-    assert((await p.$$('[data-go^="#lesen/k"]')).length === 8, 'nicht 8 Kapitel');
+    assert((await p.$$('[data-go^="#lesen/k"]')).length === 12, 'nicht 12 Kapitel');
     await p.click('[data-go="#lesen/k4"]'); await wait(p, 400);
     assert(/Dehnen/.test(await p.textContent('.book h1')), 'Kapitel 4 Titel');
     const mid = await p.evaluate(() => { const el = document.querySelector('#k4-20'); el.scrollIntoView(); return el.id; }); await wait(p, 600);
@@ -1208,7 +1208,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     await p.evaluate(() => scrollTo(0, document.documentElement.scrollHeight)); await wait(p, 900);
     assert(await p.evaluate(() => JSON.parse(localStorage.getItem('sg-wissen-v1')).read.k4.done) === true, 'Kapitel nicht als gelesen markiert');
     await p.goto(W + '#lesen'); await wait(p, 300);
-    assert(/1 von 8 Kapiteln gelesen/.test(await p.textContent('main')), 'Zähler');
+    assert(/1 von 12 Kapiteln gelesen/.test(await p.textContent('main')), 'Zähler');
     const ov = await p.evaluate(() => { location.hash = '#lesen/k2'; return new Promise(r => setTimeout(() => r(document.documentElement.scrollWidth - innerWidth), 400)); });
     assert(ov <= 2, 'waagrechtes Scrollen ' + ov);
     assert(!e.length, e.join(' | ')); await c.close();
@@ -1227,7 +1227,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
   await test('L Karteikarten: Merksätze und Mach/Lass, Nochmal kommt wieder, Gewusst wird fällig später', async () => {
     const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
     await p.goto(W + '#karten'); await wait(p, 500);
-    assert(/45 Merksätze und 88/.test(await p.textContent('main')), 'Kartenzahl');
+    assert(/69 Merksätze und 149/.test(await p.textContent('main')), 'Kartenzahl');
     await p.selectOption('[data-fsel=data-cfch]', 'k3'); await p.waitForTimeout(150); await p.click('[data-cfk="m"]');
     assert(/Lernen · 5 Karten/.test(await p.textContent('[data-a=learn]')), 'Filter Kapitel 3 Merksätze');
     await p.click('[data-a=learn]'); await wait(p, 200);

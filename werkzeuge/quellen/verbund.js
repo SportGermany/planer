@@ -2015,7 +2015,6 @@
     add("Planer", "Kalender", function () { go("planer", "#cal"); });
     add("Planer", "Aufgaben", function () { go("planer", "#tasks"); });
     add("Planer", "Schule: Stundenplan, Prüfungen, Hausaufgaben", function () { go("planer", "#schule"); });
-    add("Planer", "Pause starten", function () { go("planer", "#pause"); });
     add("Training", "Training starten", function () { go("training", "#start"); });
     add("Training", "Training-Kalender", function () { go("training", "#kalender"); });
     add("Training", "Laufen", function () { go("training", "#lauf"); });

@@ -10,6 +10,7 @@ So geht nichts verloren, wenn ein Chat voll ist.
 - Training schreibt `sg-training-heute` (Bereitschaft, Wetter, krank/verletzt, Ruhetag, erledigt; neue Gruppe `trainingheute`, nur die kleine Zusammenfassung statt aller Trainingsdaten). Planer › Heute zeigt die Karte „Training heute“ (nur am heutigen Tag, nur mit Stand von heute), „Öffnen“ startet Training.
 - Planer › Aufgaben: Hausaufgaben aus `sg-fremd-lernplan` (nur lesen, wie bisher als Schul-Einträge markiert; abhaken in der Schul-App).
 - Pause entfällt: Einträge unter Mehr und in der Suche entfernt (alte Adresse #pause bleibt gültig). Tests angepasst.
+- Tests: „Pause starten“ auch aus der alten Befehlsliste (verbund.js, install.js) entfernt; Sportwissenschaft-Tests auf 12 Kapitel, 69 Merksätze und 149 Mach/Lass-Karten umgestellt.
 - Krank/verletzt melden bleibt in Training (der Planer zeigt nur an) – zwei Apps, die denselben Zustand schreiben, würden sich über die Cloud widersprechen.
 
 ## Training 3.1.0 – Sportwissenschaft: Kapitel 9–12 (PLAN-NEUORDNUNG.md, Schritt 2)

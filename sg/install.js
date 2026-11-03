@@ -75,7 +75,7 @@
     var L = [], add = function (g, label, url) { L.push({ g: g, label: label, url: url }); };
     add("Apps", "Planer öffnen", B + ""); add("Apps", "Training öffnen", B + "training/");
     add("Bibel", "Heute lesen", "#lesen"); add("Bibel", "Bibliothek (alle Bücher)", "#bibliothek"); add("Bibel", "Zufallsvers", "#zufall"); add("Bibel", "Meine Bibel: Favoriten, Notizen", "#meinebibel"); add("Bibel", "Einstellungen", "#mehr");
-    add("Planer", "Heute (Briefing)", B + "#brief"); add("Planer", "Kalender", B + "#cal"); add("Planer", "Aufgaben", B + "#tasks"); add("Planer", "Schule", B + "#schule"); add("Planer", "Pause starten", B + "#pause"); add("Planer", "Woche planen", B + "#wochenplanung");
+    add("Planer", "Heute (Briefing)", B + "#brief"); add("Planer", "Kalender", B + "#cal"); add("Planer", "Aufgaben", B + "#tasks"); add("Planer", "Schule", B + "#schule"); add("Planer", "Woche planen", B + "#wochenplanung");
     add("Training", "Training starten", B + "training/#start"); add("Training", "Mobility-Block", B + "training/#mobility"); add("Training", "Atemübung starten", B + "training/#atmung/train"); add("Training", "Morgen-HRV messen", B + "training/#atmung");
     if (window.SGTheme) {
       SGTheme.list.forEach(function (t) { L.push({ g: "Design", label: "Design: " + t.name + " – " + t.info, run: function () { SGTheme.set(t.id); } }); });
