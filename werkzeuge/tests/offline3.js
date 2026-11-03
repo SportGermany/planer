@@ -66,8 +66,8 @@ const navOk = p => p.evaluate(() => { const n = document.getElementById('nav').g
       if (k) await p.click('#chips .crow.sub [data-kid="' + k + '"]');
       await p.waitForTimeout(1500);
     };
-    for (const t of ['training', 'schule', 'bibel', 'pause']) {
-      if (t === 'bibel' || t === 'pause') { await p.click('#nav [data-tab=mehr]'); await p.waitForTimeout(400); await p.click('#n-mehr [data-m=' + t + ']'); }
+    for (const t of ['training', 'schule', 'bibel']) {
+      if (t === 'bibel') { await p.click('#nav [data-tab=mehr]'); await p.waitForTimeout(400); await p.click('#n-mehr [data-m=' + t + ']'); }
       else await p.click('#nav [data-tab=' + t + ']');
       await p.waitForTimeout(800);
       const V = await p.evaluate(t => SGShell.V[t].secs.map(s => [s.id, (s.kids || []).map(k => k.id)]), t);

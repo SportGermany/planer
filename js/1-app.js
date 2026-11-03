@@ -142,8 +142,10 @@ function extItems(from, to, withLessons) {
 
 function homework() {
   // schlanker Planer (APK): Hausaufgaben gehören zur Schul-App – hier keine Kopie mehr (PLAN-EINZEL.md)
-  if ((window.SGOhne || []).indexOf("schule") >= 0) return [];
-  var db = lpDb(); if (!db) return [];
+  // – angezeigt werden sie trotzdem: aus der Cloud-Kopie (sg-fremd-lernplan, nur lesen; abhaken in der Schul-App)
+  var out = (window.SGOhne || []).indexOf("schule") >= 0, db = out ? null : lpDb();
+  if (!db) { try { var fr = JSON.parse(localStorage.getItem("sg-fremd-lernplan") || "null"); db = fr && fr.data && JSON.parse(fr.data[LP_KEY] || "null"); } catch (e) { db = null; } }
+  if (!db) return [];
   var t0 = addDays(today(), -14);
   return (db.homework || []).filter(function (h) { return h.due && (!h.done || h.due >= t0); }).map(function (h) {
     var sn = ((db.subjects || []).find(function (x) { return x.id === h.subject; }) || {}).short || "";

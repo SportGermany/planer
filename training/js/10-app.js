@@ -1675,6 +1675,21 @@ function switchTab(name, part){
   renderAll();
   if (window.APP5 && window.APP5.layout) window.APP5.layout();   // Überschriften und Kopf passend zum Ausschnitt
 }
+/* Tageszusammenfassung für den Planer (PLAN-NEUORDNUNG.md): Bereitschaft, Wetter, krank/verletzt, Ruhetag.
+   Liegt in „sg-training-heute“ (Cloud-Gruppe trainingheute); der Planer zeigt sie bei Heute, ohne sie zu ändern. */
+function writeHeute(){
+  var p = planToday(), rd = OS.readiness(S.log, S.activities, S.today, S.settings), w = null;
+  try {
+    if (S.weather && S.weather.enabled && S.weatherCache && S.weatherCache.data){
+      var d = S.weatherCache.data, f = WT.forecastForDate(d, S.today), info = WT.wmoInfo(d.current ? d.current.code : (f ? f.code : 0));
+      w = { temp: d.current ? d.current.temp : (f ? f.tmax : null), max: f ? f.tmax : null, min: f ? f.tmin : null, txt: info[1], ort: S.weather.place || "" };
+    }
+  } catch(e) {}
+  var o = { date: S.today, ready: rd.score, label: rd.label, sick: !!S.illnessActive, injured: !!S.injuryActive, rest: !!p.rest,
+    done: !!(S.log[S.today] && S.log[S.today].done), weather: w };
+  var j = JSON.stringify(o);
+  if (localStorage.getItem("sg-training-heute") !== j) localStorage.setItem("sg-training-heute", j);
+}
 // Sportwissenschaft: eigene Seite (wissen/), im Reiter Wissen als Rahmen über der Leiste – einmal geladen, bleibt sie offen
 function wissenOpen(){
   var host = $("s-wissen"); if (!host || host.firstChild) return;
@@ -1690,6 +1705,7 @@ function renderAll(){
   else if (S.screen === "daten") renderDaten();
   else if (S.screen === "fitness") renderFitness();
   else if (S.screen === "einst") fillSettings();
+  try { writeHeute(); } catch(e) {}
   if (window.APP2 && window.APP2.after) window.APP2.after(S.screen);
   if (window.APP3 && window.APP3.after) window.APP3.after(S.screen);
   if (window.APP4 && window.APP4.after) window.APP4.after(S.screen);

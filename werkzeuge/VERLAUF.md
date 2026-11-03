@@ -5,6 +5,13 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Planer 6.1.0 + Training 3.2.0 – Planer liest aus den anderen Apps (PLAN-NEUORDNUNG.md, Schritt 4)
+- Problem: Auf dem Handy hat jede App eigenen Speicher; der schlanke Planer sah weder Hausaufgaben noch Trainingsstand. Lösung: Cloud nur lesen – `READS.planer = ["lernplan","trainingheute"]` in verbund.js legt die Cloud-Stände als Kopie `sg-fremd-<gruppe>` ab und lädt sie nie hoch (keine App überschreibt eine andere).
+- Training schreibt `sg-training-heute` (Bereitschaft, Wetter, krank/verletzt, Ruhetag, erledigt; neue Gruppe `trainingheute`, nur die kleine Zusammenfassung statt aller Trainingsdaten). Planer › Heute zeigt die Karte „Training heute“ (nur am heutigen Tag, nur mit Stand von heute), „Öffnen“ startet Training.
+- Planer › Aufgaben: Hausaufgaben aus `sg-fremd-lernplan` (nur lesen, wie bisher als Schul-Einträge markiert; abhaken in der Schul-App).
+- Pause entfällt: Einträge unter Mehr und in der Suche entfernt (alte Adresse #pause bleibt gültig). Tests angepasst.
+- Krank/verletzt melden bleibt in Training (der Planer zeigt nur an) – zwei Apps, die denselben Zustand schreiben, würden sich über die Cloud widersprechen.
+
 ## Training 3.1.0 – Sportwissenschaft: Kapitel 9–12 (PLAN-NEUORDNUNG.md, Schritt 2)
 - Neu in wissen/buch.md: 9 Belastung steuern (Session-RPE, Monotonie, ACWR-Streit, Periodisierung, Wachstumsschub, Interferenz, Prüfungsstress), 10 Ernährung im Detail (Energieverfügbarkeit/REDs, Gewicht im Rodeln, Eiweiß, Kohlenhydrate, Trinken in Kälte, Vitamin D/Eisen/Kalzium, Supplements), 11 Rodeltechnik & Physik (Kräfte, Masse, Start, Liegeposition, Kurven/Steilkurve, Lenken), 12 Kopf (Umdeuten, Routinen, Vorstellung, Selbstgespräch, äußerer Fokus, Rückschläge/Hilfe).
 - Quellenregel wie im Buch: Vermerk je Aussage (Geprüft/Einzelquelle/Transfer/Widerspruch geklärt). Rodelspezifisches ohne Studie ist ausdrücklich als Transfer markiert. Links ohne geprüfte Einzel-URL zeigen auf die PubMed-Suche zum Titel.

@@ -14,16 +14,16 @@ Ziel: Apps nach dem ordnen, was gebraucht wird – nicht danach, wie es aussieht
       Training & Belastung · Ernährung & Körper · Rodeltechnik & Physik · Kopf & Gesundheit.
 - [x] **Fortschritt** (Rekorde, Abzeichen, Readiness, Muskelermüdung, Rückblicke, Teilen-Karte, Export): alles behalten, aber
       aus der Leiste raus → Einstellungen › „Auswertungen“.
-- [ ] **Heute-Teile** (Wetter, krank/verletzt, Bereitschaft, Ruhetag): nur noch im Planer › Heute. Tipp des Tages → Wissen.
+- [x] **Heute-Teile** (Planer 6.1.0: Karte „Training heute“, Cloud nur lesen; melden bleibt in Training) (Wetter, krank/verletzt, Bereitschaft, Ruhetag): nur noch im Planer › Heute. Tipp des Tages → Wissen.
 - [x] **Trainingskalender**: entfällt in Training; Termine im Planer-Kalender, Übersichten (Serien, Krankheit, Verletzung, Monat) → Auswertungen.
 
 ## Schule – Leiste: Stundenplan · Aufgaben · Prüfungen · Lehrgänge (Start: Stundenplan, heute markiert)
 - [x] Leiste umgebaut (Schule 3.0.0). Lernkarten und Dateien am Fach (Stundenplan › Fach). Kalender steht im Planer.
 
 ## Planer – Leiste: Heute · Kalender · Aufgaben · Mehr
-- [ ] Heute bekommt Wetter, krank/verletzt, Ruhetag, Bereitschaft (aus Training).
-- [ ] Aufgaben: alle an einem Ort (eigene, Hausaufgaben aus Schule, Training-To-dos).
-- [ ] Pause (Ablenken, Quiz) **entfällt**.
+- [x] Heute bekommt Wetter, krank/verletzt, Ruhetag, Bereitschaft (aus Training).
+- [x] Aufgaben: alle an einem Ort (eigene, Hausaufgaben aus Schule, Training-To-dos).
+- [x] Pause (Ablenken, Quiz) **entfällt**.
 
 ## Bibel – passt so (nur Fehler beheben)
 

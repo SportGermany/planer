@@ -42,12 +42,18 @@
     { id: "puls", name: "Atmung & HRV", keys: ["pulsplan.v1"] },
     { id: "bahnplan", name: "Bahnplan", keys: ["bahnplan.v1"] },
     // Bibel (eigene App ab 2.0): Serie, Lesepläne, Favoriten, Notizen, Markierungen, Lese-Erinnerung
-    { id: "bibel", name: "Bibel", keys: ["zweiminutenbibel_v2", "bibel-erinnern-v1"] }
+    { id: "bibel", name: "Bibel", keys: ["zweiminutenbibel_v2", "bibel-erinnern-v1"] },
+    // Tageszusammenfassung der Training-App (Bereitschaft, Wetter, krank/verletzt, Ruhetag) – der Planer zeigt sie bei Heute
+    { id: "trainingheute", name: "Training heute", keys: ["sg-training-heute"] }
   ];
   /* Einzel-Apps (PLAN-EINZEL.md): jede App gleicht nur ihre eigenen Datengruppen ab (+ Farbwelt), der schlanke Planer nicht die
    * der ausgelagerten Apps – schneller, und keine App überschreibt Daten einer anderen mit einer alten Kopie. */
-  var OWN = { training: ["training", "rodeln", "puls", "bahnplan", "wissen", "einstellungen"], schule: ["lernplan", "einstellungen"], bibel: ["bibel", "einstellungen"],
+  var OWN = { training: ["training", "rodeln", "puls", "bahnplan", "wissen", "einstellungen", "trainingheute"], schule: ["lernplan", "einstellungen"], bibel: ["bibel", "einstellungen"],
     planer: ["denkpause", "einstellungen", "wochenplan"] };
+  /* Neuordnung (PLAN-NEUORDNUNG.md): der schlanke Planer LIEST Daten anderer Apps aus der Cloud, ohne sie zu schreiben –
+   * Hausaufgaben (Schule) und die Tageszusammenfassung aus Training. Abgelegt als Kopie unter „sg-fremd-<gruppe>“. */
+  var READS = { planer: ["lernplan", "trainingheute"] };
+  function readsGroup(id) { var a = window.SGApp; return !!a && !syncsGroup(id) && (READS[a] || []).indexOf(id) > -1; }
   function syncsGroup(id) {
     var a = window.SGApp; if (!a) return true;   // Browser/alte Hülle: alles wie bisher
     if (a === "planer" && !(window.SGOhne && window.SGOhne.length)) return true;
@@ -616,6 +622,11 @@
   var EXTRA = [{ id: "einstellungen", name: "Einstellungen", keys: ["sg-design", "sg-glass", "sg-dir-v1", "sg-abos-v1"], lww: true }, { id: "wochenplan", name: "Wochenplanung", keys: ["sg-wochenplan-v1"], lww: true }, { id: "wissen", name: "Sportwissenschaft", keys: ["sg-wissen-v1"], lww: true }];
   function syncApps(g, files) {
     DATA.concat(EXTRA).forEach(function (app) {
+      if (app.keys.length && readsGroup(app.id)) {   // nur lesen: Kopie ablegen, nie hochladen
+        var rr = readJSON(g.files && g.files["app-" + app.id + ".json"]);
+        if (rr && rr.data) try { localStorage.setItem("sg-fremd-" + app.id, JSON.stringify({ changed: rr.changed, device: rr.device, data: rr.data })); try { window.dispatchEvent(new Event("sg-fremd")); } catch (x) {} } catch (e) {}
+        return;
+      }
       if (!app.keys.length || (app.own && app.own()) || !syncsGroup(app.id)) return;
       var local = snapshot(app), h = hash(local), m = meta()[app.id] || {};
       var remote = readJSON(g.files && g.files["app-" + app.id + ".json"]);

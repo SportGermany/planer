@@ -564,12 +564,36 @@
   function dayRoll() { var t = today(); if (t === calToday) return false; if (calSel === calToday) setSel(t); calToday = t; return true; }
   function calBox() {
     var w = $("n-kalender").firstElementChild;
-    if (!$("cal-strip")) w.innerHTML = '<div id="cal-strip"></div><div id="cal-up"></div><div id="cal-eve"></div><div id="cal-day"></div><div id="cal-next"></div><div id="cal-month"></div>';
+    if (!$("cal-strip")) w.innerHTML = '<div id="cal-strip"></div><div id="cal-tr"></div><div id="cal-up"></div><div id="cal-eve"></div><div id="cal-day"></div><div id="cal-next"></div><div id="cal-month"></div>';
     calModeCls();
     return w;
   }
-  function renderCal() { dayRoll(); calBox(); calData(); renderStrip(); renderUp(); renderEve(); renderDay(); renderNext(); if (calMon) renderMonth(); widget(); }
+  function renderCal() { dayRoll(); calBox(); calData(); renderStrip(); renderTr(); renderUp(); renderEve(); renderDay(); renderNext(); if (calMon) renderMonth(); widget(); }
   /* Abend-Rückblick (schlanker Planer, ab 18 Uhr): was heute erledigt ist, was offen blieb – Offenes mit einem Tipp auf morgen */
+  /* Training heute (PLAN-NEUORDNUNG.md): Bereitschaft, Wetter, krank/verletzt, Ruhetag aus der Training-App.
+     Schlanker Planer: aus der Cloud-Kopie (sg-fremd-trainingheute, nur lesen), sonst direkt aus dem gemeinsamen Speicher. */
+  function trHeute() {
+    try {
+      var fr = JSON.parse(localStorage.getItem("sg-fremd-trainingheute") || "null"), raw = SLIM ? fr && fr.data && fr.data["sg-training-heute"] : localStorage.getItem("sg-training-heute");
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function renderTr() {
+    var el = $("cal-tr"), t = today(); if (!el) return;
+    var h = trHeute();
+    if (calSel !== t || !h || h.date !== t) { el.innerHTML = ""; return; }
+    var amp = h.ready >= 70 ? "gut" : h.ready >= 40 ? "mäßig" : "schwach", chips = [];
+    if (h.sick) chips.push('<span class="trc bad">krank</span>');
+    if (h.injured) chips.push('<span class="trc bad">verletzt</span>');
+    if (h.rest && !h.sick && !h.injured) chips.push('<span class="trc">Ruhetag</span>');
+    if (h.done) chips.push('<span class="trc ok">Training erledigt</span>');
+    var w = h.weather;
+    el.innerHTML = '<div class="grp trh"><header><span>Training heute</span><button class="lnk" data-tr="open">Öffnen</button></header><div class="cells"><div class="trrow">' +
+      '<div class="trk"><b>' + (h.ready != null ? h.ready + " %" : "–") + '</b><small>Bereitschaft · ' + amp + "</small></div>" +
+      (w && w.temp != null ? '<div class="trk"><b>' + esc(String(w.temp)) + '°</b><small>' + esc(w.txt || "Wetter") + (w.max != null ? " · " + esc(String(w.min)) + "–" + esc(String(w.max)) + "°" : "") + "</small></div>" : "") +
+      "</div>" + (chips.length ? '<div class="trch">' + chips.join("") + "</div>" : "") + "</div></div>";
+    el.onclick = function (e) { if (e.target.closest("[data-tr]")) mehrAct("app:training"); };
+  }
   function renderEve() {
     var el = $("cal-eve"), t = today(); if (!el) return;
     var seen = ""; try { seen = localStorage.getItem("sg-abend-v1") || ""; } catch (e) {}
@@ -1541,6 +1565,9 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["6.1.0", ["Heute zeigt „Training heute“: Bereitschaft, Wetter, krank/verletzt und Ruhetag aus der Training-App (über die Cloud)",
+      "Aufgaben: Hausaufgaben aus der Schul-App stehen wieder mit drin (über die Cloud, abhaken in der Schul-App)",
+      "Pause entfällt"]],
     ["6.0.1", ["Selbsttest: Kacheln unter Mehr wurden fälschlich als verdeckt gemeldet, wenn die Seite gescrollt war",
       "Schule: Einstellungen jetzt mit Zahnrad oben rechts (wie in Training und Bibel)"]],
     ["6.0.0", ["Neu aufgebaut: Leiste Heute · Kalender · Aufgaben · Mehr; unter Mehr stehen deine Apps (Training, Schule, Bibel) als Kacheln",
@@ -1650,8 +1677,7 @@
         gRow() +
         '<h2 class="mh">Im Planer</h2><div class="grp"><div class="cells">' +
         r("notizen", "note", "var(--c-notiz)", "Notizen", notes ? notes + " offen" : "schnell festhalten", "") +
-        r("week", "wand", "var(--c-training)", "Woche planen", "Standardwoche mit 1 Tipp", "") +
-        r("pause", "coffee", "#e5a04b", "Pause", "Ablenken, Wissen, Quiz", "") + "</div></div>" +
+        r("week", "wand", "var(--c-training)", "Woche planen", "Standardwoche mit 1 Tipp", "") + "</div></div>" +   // Pause entfällt (PLAN-NEUORDNUNG.md)
         '<h2 class="mh">Einstellungen</h2><div class="grp"><div class="cells">' +
         r("g:conn", "cal", "var(--c-termin)", "Kalender verbinden", "Handykalender, Webkalender (Google)", conn) +
         r("g:safe", "cloud", "#5ac8fa", "Sicherung", "Cloud, Datei", cl.warn ? '<em class="bad">! ' + cl.val + "</em>" : "") +
@@ -1669,8 +1695,7 @@
       tile("bibel", "book", "var(--c-bibel)", bs.read ? "Bibel ✓" : "Bibel", bs.sub) +
       tile("week", "wand", "var(--c-training)", "Woche planen", "Standardwoche mit 1 Tipp") + "</div>" +
       '<div class="grp"><div class="cells">' +
-      r("wissen", "book", "#5ac8fa", "Sportwissenschaft", "Lehrbuch, Karten, Quiz", (w && w.sum && w.sum.due ? w.sum.due + " Karten " : w && w.sum && w.sum.pct ? w.sum.pct + " % " : "") + link) +
-      r("pause", "coffee", "#e5a04b", "Pause", "Ablenken, Wissen, Quiz", "") + "</div></div>" +
+      r("wissen", "book", "#5ac8fa", "Sportwissenschaft", "Lehrbuch, Karten, Quiz", (w && w.sum && w.sum.due ? w.sum.due + " Karten " : w && w.sum && w.sum.pct ? w.sum.pct + " % " : "") + link) + "</div></div>" +
       '<div class="grp"><div class="cells">' +
       r("g:conn", "cal", "var(--c-termin)", "Kalender verbinden", "Handykalender, Webkalender (Google)", conn) +
       r("g:safe", "cloud", "#5ac8fa", "Sicherung", "Cloud, Datei" + (nat ? "" : ", Umzug in die App"), cl.warn ? '<em class="bad">! ' + cl.val + "</em>" : "") +
@@ -1918,8 +1943,7 @@
     add("Wissen und Bibel", "Bibel: Bibliothek", "bibel bücher alle", function () { go("bibel", "bibliothek", null, { push: true }); });
     add("Wissen und Bibel", "Bibel: Zufallsvers", "bibel vers zufall", function () { openUrl("bibel/#zufall"); });
     add("Wissen und Bibel", "Meine Bibel", "bibel favoriten notizen", function () { go("bibel", "meine", null, { push: true }); });
-    add("Wissen und Bibel", "Pause starten", "pause ablenken", function () { go("pause", null, null, { push: true }); });
-    if (window.SGTheme) {
+      if (window.SGTheme) {
       window.SGTheme.list.forEach(function (th) { add("Design", "Design: " + th.name, "farbwelt thema " + (th.info || ""), function () { window.SGTheme.set(th.id); snack("Design: " + th.name); }); });
       add("Design", "Glaseffekt " + (window.SGTheme.glass() ? "ausschalten" : "einschalten"), "glas design", function () { window.SGTheme.setGlass(!window.SGTheme.glass()); }, "", true, "glas");
     }

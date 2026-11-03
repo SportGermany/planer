@@ -4,7 +4,7 @@ const fs = require('fs');
 const U = 'http://localhost:8765/planer/', APP = U + 'app/';
 const SEED = fs.readFileSync(__dirname + '/seed.js', 'utf8');
 const ONLY = process.argv[2] || '';
-const VER = '6.0.1';
+const VER = '6.1.0';
 const results = [];
 const PAGES = ['', 'schule/', 'pause/', 'training/', 'training/mobility/', 'training/atmung/', 'training/bahnplan/', 'bibel/', 'wissen/'];
 const PHONE = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 };
@@ -496,7 +496,7 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
       h: document.getElementById('n-mehr').scrollHeight, minRow: Math.min(...[...document.querySelectorAll('#n-mehr .row')].map(x => x.getBoundingClientRect().height)),
       links: [...document.querySelectorAll('#n-mehr .lnk-ic')].map(x => x.closest('[data-m]').dataset.m).join() }));
     assert(r.tiles === 'aufgaben,notizen,bibel,week', 'Kacheln ' + r.tiles);
-    const fehlt = ['aufgaben', 'notizen', 'week', 'handy', 'abo', 'bibel', 'wissen', 'pause', 'design', 'sync', 'tset', 'update', 'umzug', 'backup', 'neu', 'diag', 'g:conn', 'g:safe', 'g:set'].filter(m => r.ms.indexOf(m) < 0 && r.inGrp.indexOf(m) < 0);
+    const fehlt = ['aufgaben', 'notizen', 'week', 'handy', 'abo', 'bibel', 'wissen', 'design', 'sync', 'tset', 'update', 'umzug', 'backup', 'neu', 'diag', 'g:conn', 'g:safe', 'g:set'].filter(m => r.ms.indexOf(m) < 0 && r.inGrp.indexOf(m) < 0);
     assert(!fehlt.length, 'fehlt ' + fehlt);
     assert(r.links === 'wissen', 'Verknüpfungen ' + r.links);
     assert(r.h <= 800 && r.minRow >= 59.5, 'Höhe ' + r.h + ' Zeile ' + r.minRow);
@@ -964,15 +964,16 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     await p.click('#back'); await wait(p, 300); assert((await state(p)).hash === '#mehr', 'Zurück zu Mehr');
     assert(!e.length, e.join(' | ')); await c.close();
   });
-  await test('S Mehr: Aufgaben, Bibel, Pause, Sportwissenschaft, Training einstellen, Design, Cloud', async () => {
+  await test('S Mehr: Aufgaben, Bibel, Sportwissenschaft (Pause entfällt), Training einstellen, Design, Cloud', async () => {
     const c = await ctxFor(PHONE), p = await c.newPage(), e = watch(p);
     await open(p, '#mehr');
-    for (const [m, want, path] of [['aufgaben', '#aufgaben', ''], ['bibel', '#bibel', 'bibel/'], ['pause', '#pause', 'pause/'], ['tset', '#tset', 'training/']]) {
+    for (const [m, want, path] of [['aufgaben', '#aufgaben', ''], ['bibel', '#bibel', 'bibel/'], ['tset', '#tset', 'training/']]) {
       await mehrRow(p, m); await wait(p, 2200);
       const s = await state(p); assert(s.hash.indexOf(want) === 0 && s.frame === path, m + ' ' + s.hash + ' ' + s.frame);
       const f = frameOf(p, path); assert(f && (await f.evaluate(() => document.body.innerText.length)) > 100, m + ' leer');
       await p.goBack(); await wait(p, 400); assert((await state(p)).hash === '#mehr', 'zurück von ' + m);
     }
+    assert(!(await p.$('#n-mehr [data-m=pause]')), 'Pause entfällt');
     assert(/Aufgaben|Heute|Geplant/.test(await frameOf(p, '').evaluate(() => document.body.innerText)), 'Aufgabenliste');
     await p.click('#n-mehr [data-m=wissen]'); await wait(p, 1500); assert((await state(p)).hash.indexOf('#training/wissen') === 0, 'Wissen');
     await p.goto(APP + '#mehr'); await wait(p, 1500);

@@ -256,6 +256,12 @@ textarea.diag { display: block; width: calc(100% - 32px); margin: 0 16px; min-he
 .gl small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Abend-Rückblick */
 .eve .evs { padding: 12px 16px; font-size: 15px; }
+.trh .trrow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 12px 16px; }
+.trh .trk b { display: block; font-size: 20px; font-weight: 600; }
+.trh .trk small { display: block; font-size: 13px; color: var(--muted); }
+.trh .trch { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 12px; }
+.trc { font-size: 13px; padding: 4px 10px; border-radius: 8px; background: var(--s3, rgba(127,127,127,.15)); }
+.trc.bad { color: #ffb4ab; } .trc.ok { color: var(--c-training, #4fc18a); }
 .eve .evo { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 4px 8px 4px 16px; border-top: 1px solid var(--line); }
 .eve .evo span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .eve .btns { padding: 8px 12px 12px; }
@@ -478,13 +484,13 @@ html.m3 .ev .go em { position: absolute; width: 1px; height: 1px; overflow: hidd
 @media (min-width: 900px) { html.m3 .nav { height: auto; border-right: 0; } }
 </style>
 <!-- verbund-design:start -->
-<script data-design="bahn" data-sync="" data-dir="1" src="../sg/design.js?v=6.0.1.d7a968"></script>
+<script data-design="bahn" data-sync="" data-dir="1" src="../sg/design.js?v=6.1.0.7b392b"></script>
 <!-- verbund-design:end -->
 <!-- suche:start -->
-<script src="../sg/schnell.js?v=6.0.1.d7a968"></script>
-<script src="../sg/suche.js?v=6.0.1.d7a968"></script>
-<script src="../sg/bibelstelle.js?v=6.0.1.d7a968"></script>
-<script src="../sg/suche-daten.js?v=6.0.1.d7a968"></script>
+<script src="../sg/schnell.js?v=6.1.0.7b392b"></script>
+<script src="../sg/suche.js?v=6.1.0.7b392b"></script>
+<script src="../sg/bibelstelle.js?v=6.1.0.7b392b"></script>
+<script src="../sg/suche-daten.js?v=6.1.0.7b392b"></script>
 <!-- suche:end -->
 </head>
 <body>
@@ -501,9 +507,9 @@ html.m3 .ev .go em { position: absolute; width: 1px; height: 1px; overflow: hidd
 <div class="drawer" id="drawer"><div class="dw-pn" id="dwpn" role="dialog" aria-modal="true" aria-label="Bereichsmenü"></div></div>
 <div class="sheet" id="sheet"><div class="pn"></div></div>
 <div class="snack" id="snack"></div>
-<script src="js/1-app.js?v=6.0.1.d7a968"></script>
+<script src="js/1-app.js?v=6.1.0.7b392b"></script>
 <!-- gemeinsamer-kalender:start -->
-<script data-app="planer" data-fab="off" src="../sg/verbund.js?v=6.0.1.d7a968"></script>
+<script data-app="planer" data-fab="off" src="../sg/verbund.js?v=6.1.0.7b392b"></script>
 <!-- gemeinsamer-kalender:end -->
 </body>
 </html>
