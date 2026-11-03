@@ -154,7 +154,7 @@ for c in chapters:
     for s_ in c['sec']: s_.pop('num', None)
     for b in c['blocks']:  # Suchtext berechnet die App aus dem HTML; Hilfsfelder nur für den Generator
         for k in ('x', 'head', 'rows', 'items'): b.pop(k, None)
-data = {'title': 'Sportwissenschaft für Rennrodler', 'asof': 'Oktober 2026', 'chapters': chapters, 'cards': cards, 'quiz': quiz}
+data = {'title': 'Sportwissenschaft für Rennrodler', 'asof': 'November 2026', 'chapters': chapters, 'cards': cards, 'quiz': quiz}
 js = '/* Inhalt „Sportwissenschaft für Rennrodler“ – erzeugt von gen_wissen.py aus wissen/buch.md. Nicht von Hand ändern. */\n' + \
      'window.SW_BUCH = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';\n'
 os.makedirs(R + 'js', exist_ok=True)

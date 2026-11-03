@@ -9,7 +9,7 @@ Ziel: Apps nach dem ordnen, was gebraucht wird – nicht danach, wie es aussieht
 - [x] **Mobility**: Dehnen, Mobility-Programme (training/mobility – Inhalt unverändert), Dehn-Verlauf, Cool-down.
 - [x] **Rodeln**: Wettkampf-Countdown + Checkliste oben, Rodel-Vorbereitung (Aktivierung), Bahnplan, Atmung & HRV (training/atmung), Rodel-Verlauf.
       Lehrgänge bleiben in Schule.
-- [~] **Wissen** (Reiter steht, neue Kapitel offen): Sportwissenschaft als eigener Reiter, viel größer: Themen, Suche, Lernkarten, Quiz, Lesefortschritt, Tipp des Tages.
+- [x] **Wissen** (Reiter + Kapitel 9–12, Training 3.1.0): Sportwissenschaft als eigener Reiter, viel größer: Themen, Suche, Lernkarten, Quiz, Lesefortschritt, Tipp des Tages.
       Neue Kapitel alle auf einmal (Regel aus dem Buch: jede Kernaussage ≥ 2 seriöse Quellen):
       Training & Belastung · Ernährung & Körper · Rodeltechnik & Physik · Kopf & Gesundheit.
 - [x] **Fortschritt** (Rekorde, Abzeichen, Readiness, Muskelermüdung, Rückblicke, Teilen-Karte, Export): alles behalten, aber

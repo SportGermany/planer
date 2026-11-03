@@ -30,6 +30,10 @@ Das Buch ersetzt weder Sportarzt noch Trainer. Medizinische Fragen (Herz, Verlet
 6. Sporternährung
 7. Wettkampfvorbereitung
 8. Verletzungsprävention und Herzgesundheit
+9. Belastung steuern: messen, planen, wachsen
+10. Ernährung und Körper im Detail
+11. Rodeltechnik und Physik
+12. Kopf: Nervosität, Fokus, Routinen, Rückschläge
 
 ## Kapitel 1 – Grundlagen: Muskel, Energie, Herz
 
@@ -1094,6 +1098,437 @@ Nach einer bestätigten Myokarditis empfehlen die europäischen Sportkardiologie
 - [McClean et al. 2017: Paediatric athlete's heart, BJSM](https://bjsm.bmj.com/content/52/4/230)
 - [Heart and Athlete (PMC3466843)](https://pmc.ncbi.nlm.nih.gov/articles/PMC3466843)
 
+## Kapitel 9 – Belastung steuern: messen, planen, wachsen
+
+Training wirkt nur, wenn Belastung und Erholung zusammenpassen. Dieses Kapitel zeigt dir, wie du deine Belastung einfach misst, wie man eine Saison sinnvoll plant und warum dein Wachstum dabei mitredet. Die Training-App fragt nach jeder Einheit nach deiner Anstrengung – hier steht, was daraus wird.
+
+### 9.1 Belastung messen mit der Session-RPE
+
+Die einfachste gut untersuchte Methode: Du bewertest nach der Einheit, wie anstrengend sie insgesamt war (Skala 0–10), und multiplizierst den Wert mit der Dauer in Minuten. 60 Minuten mit Anstrengung 6 ergeben 360 Belastungseinheiten. *(Geprüft (2+): Foster et al. 2001, Journal of Strength and Conditioning Research; Haddad et al. 2017, Frontiers in Neuroscience)*
+
+Die Methode stimmt gut mit pulsbasierten Verfahren überein und funktioniert auch bei Krafttraining, Sprints und Technik, wo der Puls wenig aussagt. *(Geprüft (2+): Haddad et al. 2017; Foster et al. 2001)*
+
+Bewerte etwa 10–30 Minuten nach dem Ende, nicht direkt nach der letzten Übung – sonst bestimmt der letzte harte Satz die ganze Einheit. *(Geprüft (2+): Foster et al. 2001; Haddad et al. 2017)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| Nach jeder Einheit Anstrengung (0–10) und Dauer eintragen | Nur die „harten“ Einheiten notieren | Auch viele lockere Einheiten summieren sich |
+| Etwa eine Viertelstunde nach dem Training bewerten | Direkt nach dem letzten Sprint bewerten | Sonst zählt nur der letzte Eindruck |
+| Rodelläufe, Krafttraining und Schulsport mitzählen | Nur „Training“ zählen | Der Körper unterscheidet nicht, woher die Belastung kommt |
+
+### 9.2 Abwechslung, Spitzen und die Grenzen von Kennzahlen
+
+Aus den Tageswerten lassen sich zwei einfache Größen bilden: die **Monotonie** (Mittelwert der Woche geteilt durch die Streuung) und die **Beanspruchung** (Wochenbelastung mal Monotonie). Hohe Beanspruchung ging in Foster's Daten mit mehr Erkrankungen einher. *(Einzelquelle für die Zahlen: Foster 1998, Medicine & Science in Sports & Exercise; dass Abwechslung zwischen harten und leichten Tagen Übertraining vorbeugt, bestätigt der Konsensus Meeusen et al. 2013)*
+
+**Widerspruch geklärt: Was taugt das Verhältnis „akut zu chronisch“?** Gabbett (2016) machte das Verhältnis von Wochen- zu Monatsbelastung populär: Sprünge nach oben gingen mit mehr Verletzungen einher. Spätere Arbeiten zeigen methodische Schwächen; die Kennzahl sagt Verletzungen nicht zuverlässig voraus. *(Gabbett 2016, BJSM; Impellizzeri et al. 2020, International Journal of Sports Physiology and Performance)* Für dich heißt das: Belastung nicht sprunghaft steigern ist sinnvoll, eine einzelne Zahl ersetzt aber nicht dein Körpergefühl.
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| Harte und leichte Tage abwechseln | Jeden Tag mittelhart trainieren | Gleichförmige Belastung erhöht die Beanspruchung |
+| Wochenbelastung in kleinen Schritten steigern | Nach einer Pause sofort zum alten Umfang | Sprünge gehen mit mehr Beschwerden einher |
+| Kennzahlen als Hinweis lesen | Eine Kennzahl als Verletzungsprognose sehen | Die Vorhersagekraft ist nicht belegt |
+
+### 9.3 Die Saison planen: Periodisierung
+
+Periodisierung heißt, Training in Phasen mit unterschiedlichen Zielen zu ordnen. Eine Meta-Analyse fand für periodisiertes Krafttraining größere Zuwächse an Maximalkraft als für gleichförmiges Training. *(Geprüft (2+): Williams et al. 2017, Sports Medicine; Issurin 2010, Sports Medicine)*
+
+**Widerspruch geklärt: Welches Modell ist das beste?** Klassische (lineare) Modelle und Blockmodelle werden seit Jahrzehnten verglichen. Die Belege für ein bestimmtes Modell sind schwach; wichtiger als das Modell ist, Pläne an Rückmeldungen anzupassen. *(Kiely 2012, International Journal of Sports Physiology and Performance; Issurin 2010; Williams et al. 2017 fanden keinen klaren Sieger zwischen den Periodisierungsformen)*
+
+**Transfer auf die Rodelsaison:** Frühjahr und Sommer für Grundlagen, Kraft und Startkraft; Herbst für Schnellkraft und Starttraining auf dem Eis; im Winter Umfang senken, Qualität halten. *(Transfer aus Issurin 2010 und Kapitel 2.4, 7.1)*
+
+| Zeitpunkt | Mach das | Lass das | Warum |
+| --- | --- | --- | --- |
+| Vorbereitung (Mai–September) | Kraft, Technik, Grundlagenausdauer aufbauen | Schon jetzt jede Woche „wettkampfscharf“ trainieren | Die Grundlage trägt die Saison |
+| Vor der Saison (Oktober) | Schnellkraft und Starts in den Vordergrund | Neue schwere Übungen einführen | Neues erzeugt Muskelkater zur falschen Zeit |
+| Wettkampfphase (November–Februar) | Umfang senken, Intensität halten | Krafttraining ganz streichen | Kraft geht sonst über die Saison verloren |
+
+### 9.4 Wachstum: biologisches Alter statt Geburtsjahr
+
+Im Wachstumsschub (größte Wachstumsgeschwindigkeit, englisch *peak height velocity*) wachsen Knochen schneller als Muskeln und Sehnen folgen können. Mädchen erreichen ihn im Mittel um das 12., Jungen um das 14. Lebensjahr – mit großen Unterschieden von Person zu Person. *(Geprüft (2+): Lloyd & Oliver 2012, Strength and Conditioning Journal; Bergeron et al. 2015, IOC-Konsensus, BJSM)*
+
+In dieser Zeit treten Überlastungsbeschwerden an Sehnenansätzen häufiger auf, zum Beispiel am Knie (Morbus Osgood-Schlatter) oder an der Ferse (Morbus Sever). Der IOC-Konsensus rät, Umfang und Sprungbelastung im Wachstumsschub anzupassen und das Wachstum regelmäßig zu messen. *(Geprüft (2+): Bergeron et al. 2015; Lloyd et al. 2014, BJSM)*
+
+**Früh- und Spätentwickler:** Wer im ersten Quartal geboren ist oder früh reift, wird in Altersklassen häufiger ausgewählt (relativer Alterseffekt). Ein kleiner Rückstand mit 14 sagt wenig über die Leistung mit 20. *(Geprüft (2+): Cobley et al. 2009, Sports Medicine, Meta-Analyse; Bergeron et al. 2015)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| Alle drei Monate Größe messen und notieren | Wachstum erst bemerken, wenn die Hose zu kurz ist | Ein schneller Anstieg zeigt den Wachstumsschub an |
+| Im Wachstumsschub Sprungumfang und Gewichte vorsichtig halten | Gerade dann Umfang erhöhen | Sehnenansätze sind empfindlicher |
+| Schmerz am Knie oder an der Ferse melden | Durchbeißen | Früh behandelt, heilt es schneller |
+
+### 9.5 Ausdauer für Kraft- und Schnellkraftsportler
+
+Gute Grundlagenausdauer hilft, sich zwischen kurzen, harten Belastungen schneller zu erholen. *(Geprüft (2+): Tomlin & Wenger 2001, Sports Medicine; Bishop et al. 2011, Sports Medicine)*
+
+Ausdauer- und Krafttraining können sich gegenseitig bremsen (Interferenz). Am stärksten trifft es Schnellkraft; Laufen stört dabei mehr als Radfahren, und lange, häufige Ausdauereinheiten stören mehr als kurze. *(Geprüft (2+): Wilson et al. 2012, Journal of Strength and Conditioning Research, Meta-Analyse; Fyfe et al. 2014, Sports Medicine)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| Lockere Läufe von 20–40 Minuten für die Grundlage | Lange, harte Läufe vor Start- oder Krafttraining | Interferenz trifft vor allem die Schnellkraft |
+| Mehrere Stunden Abstand zwischen Ausdauer und Schnellkraft | Beides direkt hintereinander, Ausdauer zuerst | Müde Muskeln lernen keine Explosivität |
+| Rad oder Ergometer als Alternative nutzen | Nur Laufen | Rad stört die Kraftentwicklung weniger |
+
+### 9.6 Schule, Stress und Belastung
+
+Psychischer Stress zählt mit. In einer Studie mit College-Athleten stieg das Risiko für Erkrankung und Verletzung in Prüfungswochen. Der Übertrainings-Konsensus nennt Stress außerhalb des Trainings als wichtigen Faktor. *(Geprüft (2+): Mann et al. 2016, Journal of Strength and Conditioning Research; Meeusen et al. 2013)*
+
+**Transfer:** Prüfungswochen aus der Schule-App sind ein guter Anlass, Umfang zu senken und Schlaf zu schützen. *(Transfer aus Mann et al. 2016 und Kapitel 5.1)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| In Prüfungswochen Umfang reduzieren, Qualität halten | Training und Lernen beides auf Maximum | Stress summiert sich |
+| Schlaf vor Prüfungen und Rennen schützen | Nachts lernen, morgens trainieren | Schlafmangel kostet Leistung und Gesundheit |
+
+### Merksätze Kapitel 9
+
+- Belastung = Anstrengung (0–10) × Minuten, etwa eine Viertelstunde nach der Einheit bewertet.
+- Harte und leichte Tage abwechseln, Umfang nur in kleinen Schritten steigern.
+- Periodisierung hilft, aber kein Modell ist das einzig richtige – Pläne anpassen.
+- Im Wachstumsschub Sprung- und Gewichtsbelastung vorsichtig dosieren und alle drei Monate Größe messen.
+- Lockere Ausdauer ja, aber nicht direkt vor Start- und Schnellkrafttraining.
+- Prüfungsstress zählt mit: in Prüfungswochen Umfang runter, Schlaf rauf.
+
+### Quellen Kapitel 9
+
+- [Foster et al. 2001: A new approach to monitoring exercise training, Journal of Strength and Conditioning Research](https://pubmed.ncbi.nlm.nih.gov/?term=Foster+2001+A+new+approach+to+monitoring+exercise+training)
+- [Haddad et al. 2017: Session-RPE method for training load monitoring, Frontiers in Neuroscience](https://pubmed.ncbi.nlm.nih.gov/?term=Haddad+2017+Session-RPE+method+for+training+load+monitoring)
+- [Foster 1998: Monitoring training in athletes with reference to overtraining syndrome, Medicine & Science in Sports & Exercise](https://pubmed.ncbi.nlm.nih.gov/?term=Foster+1998+Monitoring+training+in+athletes+with+reference+to+overtraining+syndrome)
+- [Meeusen et al. 2013: Prevention, diagnosis and treatment of the overtraining syndrome, ECSS/ACSM](https://sportgeneeskunde.com/wp-content/uploads/Meeusen-et-al-2013-Overtraining-Consensus-ECSS-ACSM.pdf)
+- [Gabbett 2016: The training–injury prevention paradox, BJSM](https://pubmed.ncbi.nlm.nih.gov/?term=Gabbett+2016+training-injury+prevention+paradox)
+- [Impellizzeri et al. 2020: Acute:chronic workload ratio – conceptual issues, IJSPP](https://pubmed.ncbi.nlm.nih.gov/?term=Impellizzeri+2020+acute+chronic+workload+ratio)
+- [Williams et al. 2017: Comparison of periodized and non-periodized resistance training on maximal strength, Sports Medicine](https://pubmed.ncbi.nlm.nih.gov/?term=Williams+2017+periodized+non-periodized+resistance+training+maximal+strength+meta-analysis)
+- [Issurin 2010: New horizons for the methodology and physiology of training periodization, Sports Medicine](https://pubmed.ncbi.nlm.nih.gov/?term=Issurin+2010+New+horizons+training+periodization)
+- [Kiely 2012: Periodization paradigms in the 21st century, IJSPP](https://pubmed.ncbi.nlm.nih.gov/?term=Kiely+2012+Periodization+paradigms+21st+century)
+- [Lloyd & Oliver 2012: The Youth Physical Development Model, Strength and Conditioning Journal](https://journals.lww.com/nsca-scj/fulltext/2012/06000/the_youth_physical_development_model__a_new.11.aspx)
+- [Bergeron et al. 2015: IOC consensus statement on youth athletic development, BJSM](https://pubmed.ncbi.nlm.nih.gov/?term=Bergeron+2015+International+Olympic+Committee+consensus+statement+youth+athletic+development)
+- [Lloyd et al. 2014: Youth resistance training consensus, BJSM](https://bjsm.bmj.com/content/48/7/498)
+- [Cobley et al. 2009: Annual age-grouping and athlete development – relative age effects, Sports Medicine](https://pubmed.ncbi.nlm.nih.gov/?term=Cobley+2009+relative+age+effects+meta-analytical+review)
+- [Tomlin & Wenger 2001: Aerobic fitness and recovery from high intensity intermittent exercise, Sports Medicine](https://pubmed.ncbi.nlm.nih.gov/?term=Tomlin+Wenger+2001+aerobic+fitness+recovery+high+intensity+intermittent)
+- [Bishop et al. 2011: Repeated-sprint ability – part II, Sports Medicine](https://pubmed.ncbi.nlm.nih.gov/?term=Bishop+Girard+Mendez-Villanueva+2011+repeated-sprint+ability+part+II)
+- [Wilson et al. 2012: Concurrent training – a meta-analysis, Journal of Strength and Conditioning Research](https://pubmed.ncbi.nlm.nih.gov/?term=Wilson+2012+Concurrent+training+meta-analysis+interference)
+- [Fyfe et al. 2014: Interference between concurrent resistance and endurance exercise, Sports Medicine](https://pubmed.ncbi.nlm.nih.gov/?term=Fyfe+Bishop+Stepto+2014+interference+concurrent+resistance+endurance)
+- [Mann et al. 2016: Effect of physical and academic stress on illness and injury, Journal of Strength and Conditioning Research](https://pubmed.ncbi.nlm.nih.gov/?term=Mann+2016+physical+and+academic+stress+illness+injury+football)
+
+## Kapitel 10 – Ernährung und Körper im Detail
+
+Kapitel 6 gibt dir die Grundlagen. Hier geht es tiefer: wie viel Energie du wirklich brauchst, warum Gewicht im Rodeln eine besondere Rolle spielt, wie du Eiweiß und Kohlenhydrate verteilst, worauf du bei Kälte, Eisen und Vitamin D achtest und warum Nahrungsergänzungsmittel ein Dopingrisiko sind.
+
+### 10.1 Energieverfügbarkeit: was nach dem Training übrig bleibt
+
+Energieverfügbarkeit ist die Energie, die nach Abzug des Trainingsverbrauchs für Wachstum, Hormone, Knochen und Immunsystem übrig bleibt, bezogen auf die fettfreie Masse. Ist sie dauerhaft zu niedrig, entsteht relativer Energiemangel im Sport (REDs) – mit Folgen für Knochen, Hormone, Leistung und Psyche. *(Geprüft (2+): Mountjoy et al. 2023, IOC-Konsensus REDs, BJSM; Loucks, Kiens & Wright 2011, Journal of Sports Sciences)*
+
+**Widerspruch geklärt: Gibt es einen festen Grenzwert?** Oft liest man „unter 30 kcal pro kg fettfreie Masse und Tag“. Dieser Wert stammt aus Laborstudien mit jungen Frauen. Der IOC-Konsensus 2023 betont, dass es keinen einheitlichen Grenzwert gibt und schon kürzere oder mildere Defizite schaden können. *(Loucks et al. 2011; Mountjoy et al. 2023)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| An harten Tagen bewusst mehr essen | An Trainingstagen gleich viel wie an Ruhetagen | Der Mehrverbrauch muss ersetzt werden |
+| Warnzeichen ernst nehmen: ständige Müdigkeit, häufige Infekte, Stressbrüche, ausbleibende Periode | Diese Zeichen als „normal im Leistungssport“ abtun | Typische Zeichen von Energiemangel |
+| Bei Verdacht mit Sportarzt oder Sportdiätologin sprechen | Allein Diät halten | Energiemangel braucht fachliche Begleitung |
+
+### 10.2 Gewicht im Rodeln
+
+Physikalisch beschleunigt die Schwerkraft schwerere Rodler nicht stärker, aber der Luftwiderstand bremst sie im Verhältnis weniger (siehe 11.2). Deshalb erlaubt das Regelwerk des Internationalen Rodelverbands leichteren Athleten Zusatzgewichte in festgelegten Grenzen. *(Physik geprüft (2+): OpenStax University Physics; Transfer auf das Rodeln. Regel: Einzelquelle FIL, Internationale Rodelordnung – die genauen Werte stehen im aktuellen Regelwerk)*
+
+In gewichtsbetonten Sportarten ist das Risiko für Essstörungen und Energiemangel erhöht – egal, ob man ab- oder zunehmen will. Gewichtsziele gehören deshalb nur in Absprache mit Fachleuten in den Plan, und nie über schnelles Zu- oder Abnehmen. *(Geprüft (2+): Sundgot-Borgen et al. 2013, BJSM; Mountjoy et al. 2023)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| Gewicht über Muskelaufbau und gutes Essen langsam entwickeln | Vor der Saison schnell „Masse fressen“ | Fett bringt keine Startkraft, schnelle Zunahme belastet |
+| Zusatzgewicht nach Regelwerk nutzen | Den Körper an ein Wunschgewicht zwingen | Das Regelwerk gleicht Gewicht aus, der Körper braucht Zeit |
+| Gewicht höchstens wöchentlich, gleiche Uhrzeit, wiegen | Täglich mehrmals wiegen | Tagesschwankungen verunsichern nur |
+
+### 10.3 Eiweiß: wie viel und wann
+
+Für Kraftzuwachs und Muskelaufbau reicht bei Athleten eine Eiweißmenge von etwa 1,6 g pro kg Körpergewicht und Tag; darüber steigt der Nutzen im Mittel kaum noch. Positionspapiere nennen 1,4–2,0 g pro kg. *(Geprüft (2+): Morton et al. 2018, BJSM, Meta-Analyse; Jäger et al. 2017, ISSN-Positionspapier)*
+
+Verteilt auf 3–5 Mahlzeiten mit je etwa 0,3 g pro kg (bei 60 kg rund 20 g) wird Eiweiß besser für den Muskelaufbau genutzt als in einer großen Portion. *(Geprüft (2+): Jäger et al. 2017; Areta et al. 2013, Journal of Physiology)*
+
+Für Jugendliche gelten ähnliche Mengen; sie lassen sich mit normalem Essen erreichen. Eiweißpulver ist nicht nötig. *(Geprüft (2+): Desbrow et al. 2014, Sports Dietitians Australia; Thomas, Erdman & Burke 2016, ACSM/AND/DC)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| Zu jeder Mahlzeit eine Eiweißquelle (Milchprodukte, Eier, Fisch, Fleisch, Hülsenfrüchte) | Fast alles Eiweiß abends | Verteilt wird es besser genutzt |
+| Nach dem Krafttraining eine eiweißreiche Mahlzeit oder Snack | Nach dem Training stundenlang nichts | Erholung beginnt direkt nach der Einheit |
+| Erst normales Essen nutzen | Eiweißpulver als Grundlage | Essen reicht und enthält mehr Nährstoffe |
+
+### 10.4 Kohlenhydrate je nach Trainingstag
+
+Kohlenhydrate sind der Hauptbrennstoff für harte Einheiten. Die Empfehlungen richten sich nach dem Umfang: etwa 3–5 g pro kg an leichten Tagen, 5–7 g pro kg bei mittlerem Training, mehr nur bei sehr langen Ausdauerumfängen. *(Geprüft (2+): Thomas, Erdman & Burke 2016; Burke et al. 2011, Journal of Sports Sciences)*
+
+**Transfer auf Rodeltage:** Ein Renntag besteht aus wenigen, kurzen Läufen mit langen Pausen. Ausdauersportler-Mengen brauchst du nicht; wichtig ist, dass du gut gefüllt startest und in den Pausen kleine, gut verträgliche Snacks isst. *(Transfer aus Burke et al. 2011 und Kapitel 7.4)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| An harten Trainingstagen Kohlenhydrate zu jeder Mahlzeit | Kohlenhydrate grundsätzlich meiden | Harte Einheiten brauchen Glykogen |
+| An Renntagen kleine, vertraute Snacks zwischen den Läufen | Große, fettige Mahlzeit vor dem Lauf | Liegt schwer im Magen und bremst |
+
+### 10.5 Trinken in der Kälte
+
+In der Kälte ist das Durstgefühl abgeschwächt, und kalte Luft entzieht über die Atmung Wasser. Man trinkt deshalb leicht zu wenig. *(Einzelquelle zum Durst: Kenefick et al. 2004, Medicine & Science in Sports & Exercise; dass Flüssigkeitsverluste auch ohne starkes Schwitzen entstehen, bestätigt Sawka et al. 2007, ACSM-Positionspapier)*
+
+Ein Flüssigkeitsverlust von mehr als etwa 2 % des Körpergewichts kann die Leistung mindern. Wiegen vor und nach dem Training zeigt, wie viel du verlierst. *(Geprüft (2+): Sawka et al. 2007; Thomas, Erdman & Burke 2016)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| Warme Getränke in der Thermoskanne an die Bahn mitnehmen | Erst trinken, wenn der Durst kommt | Durst meldet sich in der Kälte später |
+| Am Urin kontrollieren: hellgelb ist gut | Den ganzen Tag kaum trinken, um nicht auf die Toilette zu müssen | Schon leichter Wassermangel kostet Konzentration |
+
+### 10.6 Eisen, Vitamin D und Kalzium
+
+**Vitamin D:** Im Winter bildet die Haut in Mitteleuropa kaum Vitamin D, und Wintersportler sind viel in Kleidung und Hallen. Niedrige Werte sind bei Athleten häufig; ein Bluttest vor einer Einnahme ist sinnvoll, weil zu viel ebenfalls schadet. *(Geprüft (2+): Owens, Allison & Close 2018, Sports Medicine; Kapitel 6.4)*
+
+**Eisen:** Wachstum, Training und – bei Mädchen – die Periode erhöhen den Bedarf. Eisenmangel auch ohne Blutarmut kann Leistung und Wohlbefinden mindern. Eisentabletten nur nach Bluttest und ärztlicher Absprache. *(Geprüft (2+): Sim et al. 2019, European Journal of Applied Physiology; Desbrow et al. 2014)*
+
+**Kalzium:** In der Jugend wird ein großer Teil der Knochenmasse für das ganze Leben aufgebaut. Die Deutsche Gesellschaft für Ernährung nennt für 13- bis 18-Jährige 1200 mg Kalzium pro Tag. *(Geprüft (2+): DGE-Referenzwerte; Desbrow et al. 2014)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| Vitamin D und Eisen einmal im Jahr prüfen lassen (Herbst) | Auf Verdacht hochdosiert einnehmen | Zu viel schadet, Mangel nur mit Test sicher |
+| Milchprodukte oder kalziumreiches Mineralwasser täglich | Milchprodukte weglassen, ohne Ersatz | Knochenaufbau in der Jugend zählt fürs Leben |
+| Eisenquellen mit Vitamin C kombinieren (z. B. Linsen mit Paprika) | Eisenreiche Mahlzeit mit schwarzem Tee | Vitamin C fördert, Tee hemmt die Aufnahme |
+
+### 10.7 Nahrungsergänzungsmittel und Doping-Risiko
+
+In einer internationalen Untersuchung enthielten fast 15 % von 634 Nahrungsergänzungsmitteln nicht angegebene verbotene Substanzen (Prohormone). Für eine positive Probe bist du selbst verantwortlich. *(Geprüft (2+): Geyer et al. 2004, International Journal of Sports Medicine; Maughan et al. 2018, IOC-Konsensus)*
+
+Für Jugendliche raten Positionspapiere vom Einsatz leistungssteigernder Mittel wie Koffein oder Kreatin ab; im Vordergrund steht gutes Essen. *(Geprüft (2+): Desbrow et al. 2014; Maughan et al. 2018)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| Nur Produkte nach ärztlicher Empfehlung und mit Prüfsiegel (z. B. Kölner Liste) | Pulver aus dem Internet oder vom Mitsportler | Verunreinigungen sind häufig |
+| Jede Einnahme mit Trainer und Arzt absprechen | Energy-Drinks vor dem Rennen | Koffein ist für Jugendliche nicht empfohlen |
+
+### Merksätze Kapitel 10
+
+- Energiemangel schadet Knochen, Hormonen und Leistung – an harten Tagen mehr essen.
+- Gewicht nur langsam und mit Fachleuten entwickeln, Zusatzgewichte nach Regelwerk nutzen.
+- Etwa 1,6 g Eiweiß pro kg und Tag, verteilt auf mehrere Mahlzeiten.
+- In der Kälte trinken, bevor der Durst kommt.
+- Vitamin D und Eisen nur nach Bluttest ergänzen.
+- Nahrungsergänzungsmittel sind ein Doping-Risiko – nur geprüft und abgesprochen.
+
+### Quellen Kapitel 10
+
+- [Mountjoy et al. 2023: IOC consensus statement on Relative Energy Deficiency in Sport (REDs), BJSM](https://pubmed.ncbi.nlm.nih.gov/37752011/)
+- [Loucks, Kiens & Wright 2011: Energy availability in athletes, Journal of Sports Sciences](https://pubmed.ncbi.nlm.nih.gov/?term=Loucks+Kiens+Wright+2011+Energy+availability+in+athletes)
+- [Sundgot-Borgen et al. 2013: How to minimise the health risks to athletes who compete in weight-sensitive sports, BJSM](https://pubmed.ncbi.nlm.nih.gov/?term=Sundgot-Borgen+2013+minimise+health+risks+weight-sensitive+sports)
+- [OpenStax University Physics, Band 1: Kräfte, Reibung, Luftwiderstand](https://openstax.org/books/university-physics-volume-1/pages/6-4-drag-force-and-terminal-speed)
+- [FIL – Internationaler Rodelverband: Regelwerk](https://www.fil-luge.org/en/regulations)
+- [Morton et al. 2018: Protein supplementation and resistance training – meta-analysis, BJSM](https://pubmed.ncbi.nlm.nih.gov/?term=Morton+2018+systematic+review+meta-analysis+protein+supplementation+resistance+training)
+- [Jäger et al. 2017: ISSN position stand – protein and exercise](https://pubmed.ncbi.nlm.nih.gov/?term=Jager+2017+International+Society+of+Sports+Nutrition+Position+Stand+protein+and+exercise)
+- [Areta et al. 2013: Timing and distribution of protein ingestion, Journal of Physiology](https://pubmed.ncbi.nlm.nih.gov/?term=Areta+2013+timing+distribution+protein+ingestion+myofibrillar)
+- [Desbrow et al. 2014: Sports nutrition for the adolescent athlete, SDA](https://sportsdietitians.com.au/wp-content/uploads/2020/07/15432742-International-Journal-of-Sport-Nutrition-and-Exercise-Metabolism-Sports-Dietitians-Australia-Position-Statement_-Sports-Nutrition-for-the-Adolescent-Athlete.pdf)
+- [Thomas, Erdman & Burke 2016: Nutrition and athletic performance, ACSM/AND/DC](https://pubmed.ncbi.nlm.nih.gov/?term=Thomas+Erdman+Burke+2016+Nutrition+and+Athletic+Performance)
+- [Burke et al. 2011: Carbohydrates for training and competition, Journal of Sports Sciences](https://pubmed.ncbi.nlm.nih.gov/?term=Burke+2011+Carbohydrates+for+training+and+competition)
+- [Kenefick et al. 2004: Thirst sensations and AVP responses during exercise-cold exposure, MSSE](https://pubmed.ncbi.nlm.nih.gov/?term=Kenefick+2004+thirst+cold+exposure)
+- [Sawka et al. 2007: ACSM position stand – exercise and fluid replacement](https://pubmed.ncbi.nlm.nih.gov/?term=Sawka+2007+American+College+of+Sports+Medicine+position+stand+exercise+and+fluid+replacement)
+- [Owens, Allison & Close 2018: Vitamin D and the athlete, Sports Medicine](https://pubmed.ncbi.nlm.nih.gov/?term=Owens+Allison+Close+2018+Vitamin+D+and+the+athlete)
+- [Sim et al. 2019: Iron considerations for the athlete, European Journal of Applied Physiology](https://pubmed.ncbi.nlm.nih.gov/?term=Sim+2019+Iron+considerations+for+the+athlete+narrative+review)
+- [DGE: Referenzwerte Kalzium](https://www.dge.de/wissenschaft/referenzwerte/calcium/)
+- [Geyer et al. 2004: Analysis of non-hormonal nutritional supplements for anabolic-androgenic steroids, International Journal of Sports Medicine](https://pubmed.ncbi.nlm.nih.gov/?term=Geyer+2004+non-hormonal+nutritional+supplements+anabolic-androgenic+steroids)
+- [Maughan et al. 2018: IOC consensus statement – dietary supplements and the high-performance athlete](https://pubmed.ncbi.nlm.nih.gov/29540367/)
+- [Kölner Liste](https://www.koelnerliste.com/)
+
+## Kapitel 11 – Rodeltechnik und Physik
+
+Rodeln ist angewandte Physik: Schwerkraft zieht, Eis und Luft bremsen, Kurven drücken dich in den Schlitten. Wer versteht, welche Kräfte wirken, versteht, warum Position, Linie und frühes Lenken so viel ausmachen. Zum Rodeln selbst gibt es wenig Forschung; die Physik dahinter ist dagegen gut gesichert. Die Kurvennummern aus dem Bahnplan der App passen zu den Beispielen hier.
+
+### 11.1 Welche Kräfte wirken
+
+Drei Kräfte bestimmen deine Fahrt *(Geprüft (2+): OpenStax University Physics; Halliday, Resnick & Walker, Grundlagen der Physik)*:
+
+| Kraft | Formel | Was sie bedeutet |
+| --- | --- | --- |
+| Hangabtrieb | m · g · sin α | Zieht dich bergab, wächst mit Masse und Gefälle |
+| Gleitreibung der Kufen | μ · m · g · cos α | Sehr klein auf Eis, wächst mit der Masse |
+| Luftwiderstand | ½ · ρ · c_w · A · v² | Wächst mit dem Quadrat der Geschwindigkeit, nicht mit der Masse |
+
+Stahl auf Eis gleitet so gut, weil sich durch Reibungswärme und Druck ein dünner Wasserfilm bildet. Wie stark die Reibung ist, hängt von Temperatur, Geschwindigkeit und Kufenoberfläche ab. *(Geprüft (2+): Kietzig, Hatzikiriakos & Englezos 2010, Journal of Applied Physics; Rosenberg 2005, Physics Today)*
+
+**Doppelt so schnell = vierfacher Luftwiderstand.** Bei hohen Geschwindigkeiten ist die Luft deshalb die wichtigste Bremse. Kalte Luft ist außerdem dichter als warme und bremst etwas mehr. *(Geprüft (2+): OpenStax; Halliday et al.)*
+
+### 11.2 Warum Gewicht schneller macht
+
+Teilt man alle Kräfte durch die Masse, sieht man: Hangabtrieb und Reibung wirken auf jedes Kilogramm gleich. Der Luftwiderstand hängt aber nicht von der Masse ab – pro Kilogramm bremst er einen schwereren Rodler weniger. *(Geprüft (2+): OpenStax; Halliday et al. – Transfer auf das Rodeln)*
+
+Genau deshalb gibt es im Rodeln Regeln zu Zusatzgewichten (siehe 10.2). Für dich heißt das: Im Rennen zählen vor allem kleine Stirnfläche und wenig Bremsbewegungen; Gewicht ist durch das Regelwerk weitgehend ausgeglichen. *(Transfer; Regel: Einzelquelle FIL)*
+
+### 11.3 Der Start: wo die meiste Zeit gutzumachen ist
+
+Am Start ist die Geschwindigkeit klein und der Luftwiderstand gering. Jede Zehntelsekunde, die du hier durch Kraft und Technik gewinnst, nimmst du mit höherer Geschwindigkeit in die Bahn mit. Welche körperlichen Merkmale den Start bestimmen, steht in Kapitel 3. *(Belege in Kapitel 3: Platzer et al. 2009; physikalische Begründung: OpenStax)*
+
+Der Start besteht aus zwei Teilen: dem Abstoß an den Startgriffen (vor allem Zug aus Rücken, Schultern und Armen) und dem Paddeln mit den Spikehandschuhen. Messungen an Spitzenrodlern zeigen, dass beide Phasen trainierbar sind und gezielte Rückmeldung hilft. *(Geprüft (2+): Lembert, Schachner & Raschner 2011, Sports Engineering; Platzer et al. 2009)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| Starts im Training häufig, aber frisch üben | Starts am Ende einer müden Einheit | Technik lernt man nur frisch |
+| Zug aus dem ganzen Körper: Beine, Rumpf, Arme in einer Linie | Nur aus den Armen ziehen | Der Rumpf überträgt die meiste Kraft |
+| Nach dem Paddeln schnell und ruhig in die Liegeposition | Lange in halb aufrechter Haltung bleiben | Aufrecht steigt die Stirnfläche, der Luftwiderstand bremst |
+
+### 11.4 Die Liegeposition: Stirnfläche klein halten
+
+Der Luftwiderstand hängt von der Stirnfläche A und der Form (c_w-Wert) ab. Wind­kanal- und Strömungsstudien im Radsport zeigen, dass schon kleine Änderungen der Haltung den Widerstand messbar verändern. *(Transfer: Defraeye et al. 2010, Journal of Biomechanics; Blocken et al. 2013, Journal of Wind Engineering – keine Rodelstudie)*
+
+**Transfer auf das Rodeln:** Kopf flach und ruhig, Schultern schmal, Ellbogen am Körper, Füße gestreckt. Jedes Anheben des Kopfes vergrößert die Stirnfläche. *(Transfer aus Defraeye et al. 2010 und 11.1)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| Kopf so weit zurück, dass du die Bahn gerade noch siehst | Kopf heben, um mehr zu sehen | Mehr Stirnfläche = mehr Luftwiderstand |
+| Schultern und Ellbogen eng am Schlitten | Arme seitlich abspreizen | Breite kostet Geschwindigkeit |
+| Die Position im Trockentraining halten üben | Erst auf dem Eis an die Haltung denken | Die Haltung muss automatisch sitzen |
+
+### 11.5 Kurven: Fliehkraft und Steilkurve
+
+In der Kurve brauchst du eine Kraft zum Kurvenmittelpunkt: a = v² / r. Bei 108 km/h (30 m/s) in einer Kurve mit 30 m Radius sind das 30 m/s², also gut das Dreifache der Erdbeschleunigung zusätzlich zur Schwerkraft. *(Geprüft (2+): OpenStax; Halliday et al. – Rechnung als Beispiel, echte Werte hängen von der Bahn ab)*
+
+Die Bahn ist in Kurven geneigt. Je schneller du fährst, desto höher steigst du in der Kurve; die passende Neigung folgt aus tan θ = v² / (r · g). Fährst du zu langsam oder zu schnell für deine Höhe in der Kurve, musst du korrigieren. *(Geprüft (2+): OpenStax; Halliday et al. – Transfer auf das Rodeln)*
+
+Die hohe Belastung in Kurven trifft vor allem den Nacken; deshalb ist Nackenkraft im Rodeln so wichtig (Kapitel 3.2). *(Transfer aus 11.5 und Kapitel 3.2)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| Den Kopf in Kurven mit angespannter Nackenmuskulatur stabil halten | Den Kopf locker „mitgehen“ lassen | Mehrfache Erdbeschleunigung zieht am Kopf |
+| Nackenkraft das ganze Jahr trainieren | Erst in der Saison daran denken | Kraft braucht Monate |
+
+### 11.6 Lenken und Linie
+
+Gelenkt wird mit kleinem Druck der Unterschenkel auf die Kufenhörner und mit den Schultern. Jede Lenkbewegung verändert die Lage der Kufen und kostet über Reibung und Luft etwas Geschwindigkeit. *(Transfer aus 11.1 und 11.4; zur Lenktechnik selbst gibt es kaum Studien – hier zählt das Wissen deiner Trainer)*
+
+Die beste Linie ist die mit den wenigsten und kleinsten Korrekturen: früh, fein und rechtzeitig vor der Kurve lenken statt spät und stark in der Kurve. Ein Bandenkontakt bremst und bringt dich aus der Linie. *(Transfer aus 11.1 und 11.5)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| Früh und fein lenken | Spät und stark korrigieren | Große Korrekturen kosten mehr Geschwindigkeit |
+| Für jede Kurve Einfahrt, Scheitel und Ausfahrt im Bahnplan notieren | Jede Fahrt „auf Sicht“ fahren | Ein Plan macht die Linie wiederholbar |
+| Nach jedem Lauf kurz festhalten, wo du korrigieren musstest | Fehler nur im Kopf behalten | Aufgeschriebene Fehler kann man gezielt üben |
+
+### Merksätze Kapitel 11
+
+- Bei hoher Geschwindigkeit bremst vor allem die Luft – doppelt so schnell heißt vierfacher Widerstand.
+- Pro Kilogramm bremst die Luft schwere Rodler weniger; das Regelwerk gleicht das mit Zusatzgewichten aus.
+- Am Start ist am meisten Zeit gutzumachen.
+- Kopf flach, Schultern schmal, Füße gestreckt: kleine Stirnfläche.
+- In Kurven wirken mehrfache Erdbeschleunigungen – der Nacken muss halten.
+- Früh und fein lenken, Kurven im Bahnplan vorbereiten.
+
+### Quellen Kapitel 11
+
+- [OpenStax University Physics, Band 1: Reibung, Luftwiderstand, Kreisbewegung](https://openstax.org/books/university-physics-volume-1/pages/6-3-centripetal-force)
+- [Halliday, Resnick & Walker: Halliday Physik (Lehrbuch), Wiley-VCH](https://www.wiley-vch.de/de/fachgebiete/naturwissenschaften/halliday-physik-978-3-527-41356-8)
+- [Kietzig, Hatzikiriakos & Englezos 2010: Physics of ice friction, Journal of Applied Physics](https://doi.org/10.1063/1.3340792)
+- [Rosenberg 2005: Why is ice slippery?, Physics Today](https://doi.org/10.1063/1.2169444)
+- [Platzer et al. 2009: Leistungsbestimmende Faktoren beim Rodelstart](https://lida.sport-iat.de/ta/Record/4015720?lng=en)
+- [Lembert, Schachner & Raschner 2011: Measurement and feedback training tool for the arm strokes in high-performance luge, Sports Engineering](https://doi.org/10.1007/s12283-011-0074-8)
+- [Defraeye et al. 2010: Aerodynamic study of different cyclist positions, Journal of Biomechanics](https://pubmed.ncbi.nlm.nih.gov/?term=Defraeye+2010+Aerodynamic+study+of+different+cyclist+positions)
+- [Blocken et al. 2013: CFD simulations of the aerodynamic drag of two drafting cyclists, Computers & Fluids](https://doi.org/10.1016/j.compfluid.2012.11.012)
+- [FIL – Internationaler Rodelverband: Regelwerk](https://www.fil-luge.org/en/regulations)
+
+## Kapitel 12 – Kopf: Nervosität, Fokus, Routinen, Rückschläge
+
+Im Ziel entscheiden oft Hundertstel – und die hängen auch davon ab, was in deinem Kopf passiert. Mentale Fähigkeiten sind trainierbar wie Kraft. Dieses Kapitel zeigt die gut untersuchten Werkzeuge: Nervosität umdeuten, Routinen, Vorstellungstraining, Selbstgespräch, Aufmerksamkeit – und was du tust, wenn es dir nicht gut geht.
+
+### 12.1 Nervosität ist Energie
+
+Herzklopfen und flaues Gefühl vor dem Start sind eine normale Stressreaktion. Wer sie als „Ich bin bereit“ statt „Ich habe Angst“ deutet, leistet in Studien besser. Sagt man sich „Ich bin aufgeregt“ statt „Ich muss ruhig werden“, hilft das mehr als der Versuch, sich zu beruhigen. *(Geprüft (2+): Jamieson et al. 2010, Journal of Experimental Social Psychology; Brooks 2014, Journal of Experimental Psychology: General)*
+
+Auch im Sport verbesserte das Umdeuten von Stress als Herausforderung die Leistung unter Druck. *(Geprüft (2+): Moore et al. 2015, Journal of Sport and Exercise Psychology; Jamieson et al. 2010)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| Herzklopfen als „Mein Körper macht sich bereit“ deuten | Gegen die Aufregung ankämpfen | Umdeuten hilft mehr als Unterdrücken |
+| Laut oder leise sagen: „Ich bin bereit“ | „Ich darf nicht nervös sein“ | Verbote lenken die Aufmerksamkeit auf das Problem |
+| Ruhiges Ausatmen im 6er-Takt (Atmung in der App) | Hektisch hin und her laufen | Langes Ausatmen senkt die Erregung auf ein gutes Maß |
+
+### 12.2 Die Routine vor dem Start
+
+Eine feste Abfolge vor dem Start – gleiche Schritte, gleiche Gedanken, gleiche Zeit – verbessert in einer Meta-Analyse die Leistung, besonders unter Druck. *(Geprüft (2+): Rupprecht, Tran & Gröpel 2021, International Review of Sport and Exercise Psychology; Cotterill 2010, International Review of Sport and Exercise Psychology)*
+
+**Transfer auf das Rodeln** – so kann deine Routine aussehen *(Transfer aus Cotterill 2010 und Kapitel 7.3)*:
+
+1. Aufwärmen nach Plan (Kapitel 7.3), Schlitten und Handschuhe prüfen.
+2. Bahn einmal im Kopf fahren (12.3).
+3. Drei ruhige Atemzüge mit langem Ausatmen.
+4. Ein Schlüsselwort für den Start, zum Beispiel „explosiv“.
+5. In die Griffe, los.
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| Die gleiche Routine im Training und im Rennen | Am Renntag etwas Neues ausprobieren | Vertrautes gibt Sicherheit |
+| Routine kurz halten (1–2 Minuten) | Eine lange Abfolge, die bei Verzögerung zerbricht | Am Start gibt es oft Wartezeiten |
+
+### 12.3 Vorstellungstraining: die Bahn im Kopf fahren
+
+Mentales Üben verbessert die Leistung, vor allem bei Aufgaben mit viel Planung und Abfolge – und am meisten in Kombination mit echtem Üben. *(Geprüft (2+): Driskell, Copper & Moran 1994, Journal of Applied Psychology, Meta-Analyse; Holmes & Collins 2001, Journal of Applied Sport Psychology)*
+
+Am wirksamsten ist Vorstellung, die der echten Situation möglichst ähnlich ist: in Echtzeit, mit Körpergefühl, Geräuschen und Kälte, in der Liegeposition (PETTLEP-Modell). *(Geprüft (2+): Holmes & Collins 2001; Wakefield & Smith 2012, Journal of Imagery Research in Sport and Physical Activity)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| Die Bahn mit geschlossenen Augen in Echtzeit fahren, Kurve für Kurve | Die Fahrt im Zeitraffer „durchdenken“ | Echtzeit trainiert den Ablauf genauer |
+| Dabei die Kurvennummern aus dem Bahnplan nutzen | Nur an das Ziel denken | Jede Kurve braucht ihre Linie |
+| Abends vor dem Rennen 2–3 Fahrten im Kopf | Stundenlang grübeln | Kurz und klar wirkt, Grübeln macht unruhig |
+
+### 12.4 Selbstgespräch
+
+Was du dir selbst sagst, wirkt. Eine Meta-Analyse zeigt einen klaren Nutzen von gezieltem Selbstgespräch: anleitende Sätze („früh lenken“) helfen besonders bei feinen Technikaufgaben, motivierende Sätze („Du schaffst das“) bei Kraft und Ausdauer. *(Geprüft (2+): Hatzigeorgiadis et al. 2011, Perspectives on Psychological Science; Tod, Hardy & Oliver 2011, Journal of Sport and Exercise Psychology)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| Kurze, positive Sätze vorher festlegen | Spontan schimpfen nach einem Fehler | Vorbereitete Sätze halten unter Druck |
+| Für die Fahrt Technik-Sätze, für den Start Kraft-Sätze | Für alles denselben Satz | Die Wirkung hängt von der Aufgabe ab |
+
+### 12.5 Aufmerksamkeit: nach außen denken
+
+Wer sich auf die Wirkung der Bewegung konzentriert (die Linie, den Kurvenausgang), bewegt sich in vielen Studien besser als jemand, der an seine Körperteile denkt (Knie, Schultern). *(Geprüft (2+): Wulf 2013, International Review of Sport and Exercise Psychology; Chua et al. 2021, Psychological Bulletin, Meta-Analyse)*
+
+**Transfer:** In der Fahrt also „Ausgang Kurve 9 hoch halten“ statt „rechtes Bein drücken“. Körperdetails gehören ins Training, nicht in den Lauf. *(Transfer aus Wulf 2013)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| In der Fahrt an Linie und Kurvenausgänge denken | Im Rennen an einzelne Muskeln denken | Ein äußerer Fokus macht Bewegungen flüssiger |
+| Nach einem Fehler sofort zum nächsten Kurvenpunkt | Über den Fehler nachdenken, während du fährst | Die nächste Kurve kommt sofort |
+
+### 12.6 Rückschläge, Angst nach Stürzen und mentale Gesundheit
+
+Nach einem Sturz oder einer Verletzung ist Angst vor dem nächsten Mal häufig. Psychische Bereitschaft (Zuversicht, wenig Angst) hängt mit einer erfolgreichen Rückkehr in den Sport zusammen; sie lässt sich mit schrittweiser Annäherung aufbauen – zum Beispiel erst von weiter unten starten. *(Geprüft (2+): Ardern et al. 2013, BJSM; Forsdyke et al. 2016, BJSM)*
+
+Leistungssportler sind psychisch nicht robuster als andere. Der IOC-Konsensus empfiehlt, über Belastungen zu sprechen und früh Hilfe zu holen; Schule und Leistungssport gleichzeitig sind eine doppelte Belastung. *(Geprüft (2+): Reardon et al. 2019, IOC-Konsensus mentale Gesundheit, BJSM; Gouttebarge et al. 2019, BJSM)*
+
+| Mach das | Lass das | Warum |
+| --- | --- | --- |
+| Nach einem Sturz schrittweise zurück (z. B. tieferer Start) | Sofort wieder vom Herrenstart „um es hinter dich zu bringen“ | Angst baut sich durch kleine Erfolge ab |
+| Mit Trainer, Eltern oder Sportpsychologin sprechen, wenn es dir länger schlecht geht | Alles allein tragen | Hilfe holen ist eine Stärke |
+| Bei akuter Not: Nummer gegen Kummer 116 111 (kostenlos) oder Notruf 112 | Warten, bis es von allein besser wird | Schnelle Hilfe ist wichtig |
+
+### Merksätze Kapitel 12
+
+- Nervosität ist Energie: „Ich bin bereit“ statt „Ich muss ruhig werden“.
+- Eine kurze, feste Startroutine – im Training wie im Rennen.
+- Die Bahn im Kopf in Echtzeit fahren, Kurve für Kurve.
+- Kurze, vorbereitete Sätze: Technik-Sätze in der Fahrt, Kraft-Sätze am Start.
+- In der Fahrt an Linie und Kurvenausgänge denken, nicht an Muskeln.
+- Nach Stürzen schrittweise zurück, und bei Belastung früh Hilfe holen.
+
+### Quellen Kapitel 12
+
+- [Jamieson et al. 2010: Turning the knots in your stomach into bows – reappraising arousal, Journal of Experimental Social Psychology](https://doi.org/10.1016/j.jesp.2009.08.015)
+- [Brooks 2014: Get excited – reappraising pre-performance anxiety as excitement, Journal of Experimental Psychology: General](https://pubmed.ncbi.nlm.nih.gov/?term=Brooks+2014+Get+excited+reappraising+pre-performance+anxiety)
+- [Moore et al. 2015: Reappraising threat – how to optimize performance under pressure, Journal of Sport and Exercise Psychology](https://pubmed.ncbi.nlm.nih.gov/?term=Moore+2015+Reappraising+threat+optimize+performance+under+pressure)
+- [Rupprecht, Tran & Gröpel 2021: The effectiveness of pre-performance routines in sports – a meta-analysis, IRSEP](https://doi.org/10.1080/1750984X.2021.1944271)
+- [Cotterill 2010: Pre-performance routines in sport, IRSEP](https://doi.org/10.1080/1750984X.2010.488269)
+- [Driskell, Copper & Moran 1994: Does mental practice enhance performance?, Journal of Applied Psychology](https://doi.org/10.1037/0021-9010.79.4.481)
+- [Holmes & Collins 2001: The PETTLEP approach to motor imagery, Journal of Applied Sport Psychology](https://doi.org/10.1080/10413200109339004)
+- [Wakefield & Smith 2012: Perfecting practice – applying the PETTLEP model of motor imagery, Journal of Imagery Research in Sport and Physical Activity](https://doi.org/10.1515/1932-0191.1056)
+- [Hatzigeorgiadis et al. 2011: Self-talk and sports performance – a meta-analysis, Perspectives on Psychological Science](https://pubmed.ncbi.nlm.nih.gov/?term=Hatzigeorgiadis+2011+Self-talk+and+sports+performance+meta-analysis)
+- [Tod, Hardy & Oliver 2011: Effects of self-talk – a systematic review, Journal of Sport and Exercise Psychology](https://pubmed.ncbi.nlm.nih.gov/?term=Tod+Hardy+Oliver+2011+Effects+of+self-talk+systematic+review)
+- [Wulf 2013: Attentional focus and motor learning – a review of 15 years, IRSEP](https://doi.org/10.1080/1750984X.2012.723728)
+- [Chua et al. 2021: Superiority of external attentional focus for motor performance and learning, Psychological Bulletin](https://pubmed.ncbi.nlm.nih.gov/?term=Chua+2021+Superiority+of+external+attentional+focus+meta-analyses)
+- [Ardern et al. 2013: Psychological factors associated with returning to sport following injury, BJSM](https://pubmed.ncbi.nlm.nih.gov/?term=Ardern+2013+systematic+review+psychological+factors+returning+to+sport+following+injury)
+- [Forsdyke et al. 2016: Psychosocial factors associated with outcomes of sports injury rehabilitation, BJSM](https://pubmed.ncbi.nlm.nih.gov/?term=Forsdyke+2016+psychosocial+factors+sports+injury+rehabilitation+competitive+athletes)
+- [Reardon et al. 2019: Mental health in elite athletes – IOC consensus statement, BJSM](https://pubmed.ncbi.nlm.nih.gov/?term=Reardon+2019+Mental+health+in+elite+athletes+International+Olympic+Committee+consensus+statement)
+- [Gouttebarge et al. 2019: Occurrence of mental health symptoms and disorders in current and former elite athletes, BJSM](https://pubmed.ncbi.nlm.nih.gov/?term=Gouttebarge+2019+mental+health+symptoms+disorders+elite+athletes+systematic+review)
+- [Nummer gegen Kummer: Kinder- und Jugendtelefon 116 111](https://www.nummergegenkummer.de/)
+
 ## Quellenverzeichnis und Grenzen dieses Buchs
 
 Die vollständigen Quellen mit Links stehen am Ende jedes Kapitels. Hier findest du die Kernquellen, auf denen die meisten Praxisempfehlungen ruhen: Konsensuspapiere internationaler Fachgesellschaften und große Meta-Analysen.
@@ -1117,6 +1552,12 @@ Die vollständigen Quellen mit Links stehen am Ende jedes Kapitels. Hier findest
 | Verletzungsprävention | [Steib et al. 2017](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5694483/) | Meta-Analyse |
 | Rodelstart | [Platzer et al. 2009](https://lida.sport-iat.de/ta/Record/4015720?lng=en) | Studie, Nationalteam |
 | Rodelverletzungen | [Cummings et al. 1997](https://www.bisp-surf.de/Record/PU199710207869) | Epidemiologische Studie |
+| Belastung messen | [Foster et al. 2001](https://pubmed.ncbi.nlm.nih.gov/?term=Foster+2001+A+new+approach+to+monitoring+exercise+training) | Studie |
+| Jugend und Wachstum | [IOC, Bergeron et al. 2015](https://pubmed.ncbi.nlm.nih.gov/?term=Bergeron+2015+International+Olympic+Committee+consensus+statement+youth+athletic+development) | Konsensus |
+| Eiweiß | [Morton et al. 2018](https://pubmed.ncbi.nlm.nih.gov/?term=Morton+2018+systematic+review+meta-analysis+protein+supplementation+resistance+training) | Meta-Analyse |
+| Eis und Reibung | [Kietzig et al. 2010](https://doi.org/10.1063/1.3340792) | Übersichtsarbeit |
+| Startroutinen | [Rupprecht et al. 2021](https://doi.org/10.1080/1750984X.2021.1944271) | Meta-Analyse |
+| Mentale Gesundheit | [IOC, Reardon et al. 2019](https://pubmed.ncbi.nlm.nih.gov/?term=Reardon+2019+Mental+health+in+elite+athletes+International+Olympic+Committee+consensus+statement) | Konsensus |
 
 **Grenzen, die du kennen solltest:**
 
@@ -1125,4 +1566,4 @@ Die vollständigen Quellen mit Links stehen am Ende jedes Kapitels. Hier findest
 - Einige Konsenspapiere stammen von Erwachsenen oder anderen Sportarten; wo das für dich als U18-Rodler relevant ist, steht es im Text.
 - Das Buch ersetzt weder Sportarzt noch Trainer noch Sportdiätologen. Es soll dich befähigen, mit ihnen fundiert zu sprechen.
 
-Stand der Recherche: Oktober 2026.
+Stand der Recherche: November 2026 (Kapitel 9–12 neu).

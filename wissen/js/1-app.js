@@ -4,7 +4,7 @@
 (function () {
   "use strict";
   var B = window.SW_BUCH, KEY = "sg-wissen-v1";
-  var CH = B.chapters, BYID = {}, KAP = CH.filter(function (c) { return /^k\d$/.test(c.id); });
+  var CH = B.chapters, BYID = {}, KAP = CH.filter(function (c) { return /^k\d+$/.test(c.id); });
   CH.forEach(function (c) { BYID[c.id] = c; });
   var main = document.getElementById("main"), titleEl = document.getElementById("title"), tools = document.getElementById("tools"), bar = document.querySelector(".bar");
   var sheetEl = document.getElementById("sheet");
@@ -111,7 +111,7 @@
     tab("lesen"); setBar("Sportwissenschaft", '<button class="ib" data-a="find" aria-label="Suchen">' + ICO.search + "</button>");
     var p = bookPct(), last = S.last && BYID[S.last.ch] ? S.last : null, h = "";
     h += '<div class="card hero">' + ring(p) + '<div><h1 style="margin:0;font-size:22px">' + esc(B.title) + '</h1><div class="sub" style="margin:4px 0 0">' +
-      KAP.filter(function (c) { return chPct(c.id) >= 1; }).length + " von 8 Kapiteln gelesen · Stand " + esc(B.asof) + "</div></div></div>";
+      KAP.filter(function (c) { return chPct(c.id) >= 1; }).length + " von " + KAP.length + " Kapiteln gelesen · Stand " + esc(B.asof) + "</div></div></div>";
     if (last) {
       var lc = BYID[last.ch], sec = secOf(lc, last.at);
       h += '<div class="grp"><header><span>Weiterlesen</span></header><div class="cells"><button class="row" data-go="#lesen/' + lc.id + (last.at ? "@" + last.at : "") + '">' +

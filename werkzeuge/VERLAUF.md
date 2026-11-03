@@ -5,6 +5,12 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Training 3.1.0 – Sportwissenschaft: Kapitel 9–12 (PLAN-NEUORDNUNG.md, Schritt 2)
+- Neu in wissen/buch.md: 9 Belastung steuern (Session-RPE, Monotonie, ACWR-Streit, Periodisierung, Wachstumsschub, Interferenz, Prüfungsstress), 10 Ernährung im Detail (Energieverfügbarkeit/REDs, Gewicht im Rodeln, Eiweiß, Kohlenhydrate, Trinken in Kälte, Vitamin D/Eisen/Kalzium, Supplements), 11 Rodeltechnik & Physik (Kräfte, Masse, Start, Liegeposition, Kurven/Steilkurve, Lenken), 12 Kopf (Umdeuten, Routinen, Vorstellung, Selbstgespräch, äußerer Fokus, Rückschläge/Hilfe).
+- Quellenregel wie im Buch: Vermerk je Aussage (Geprüft/Einzelquelle/Transfer/Widerspruch geklärt). Rodelspezifisches ohne Studie ist ausdrücklich als Transfer markiert. Links ohne geprüfte Einzel-URL zeigen auf die PubMed-Suche zum Titel.
+- 24 Merksatz-Fragen und 32 Quizfragen in wissen_quiz.py. Buch jetzt 12 Kapitel, 218 Karten, 92 Fragen.
+- Fehler: Kapitel 10–12 fehlten in der Liste. Ursache: `KAP` filterte mit `/^k\d$/` (nur einstellige Nummern), und „von 8 Kapiteln“ stand fest im Text. Lösung: `/^k\d+$/`, Anzahl aus `KAP.length`.
+
 ## Schule 3.0.0 – Neuordnung (PLAN-NEUORDNUNG.md, Schritt 3)
 - Leiste **Stundenplan · Aufgaben · Prüfungen · Lehrgänge**, Start im Stundenplan (heute markiert, Einrichtung oben solange nicht erledigt). Prüfungen = Ausschnitt `ui.auf='pruef'` von Aufgaben (Reiter `data-v="pruef"`), Lehrgänge eigener Reiter ohne Kalender-Unterleiste.
 - Heute und Kalender (Ferien, Fehlzeiten, Termine) aus der Leiste raus, erhalten unter Einstellungen › „Weitere Ansichten“. Im Planer eingebettet bleibt alles wie vorher (`IN_PLANER`).
