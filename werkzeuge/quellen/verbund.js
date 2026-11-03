@@ -2381,7 +2381,9 @@
     // Übernehmen: gleiche Termine (UID bzw. Titel+Datum+Zeit) werden aktualisiert statt doppelt angelegt.
     // Termine, die aus der App selbst stammen (UID …@planer), werden nur aktualisiert.
     apply: function (list) {
-      var res = { added: 0, updated: 0, same: 0 };
+      var res = { added: 0, updated: 0, same: 0 }, extIds = {};
+      // Einträge aus Schule/Atmung (eigener Export, UID id@planer) stehen schon im Kalender – nicht als Kopie anlegen
+      try { var ds = list.map(function (x) { return x.date; }).filter(Boolean).sort(); if (ds.length) externalItems(plusDays(ds[0], -1), plusDays(ds[ds.length - 1], 1)).forEach(function (x) { extIds[x.id] = 1; }); } catch (x) {}
       mutate(function (d) {
         list.forEach(function (x) {
           var own = /@planer$/.test(x.uid || "") ? x.uid.replace(/@planer$/, "") : null;
@@ -2395,7 +2397,8 @@
           if (e) {
             var diff = Object.keys(patch).some(function (k) { return JSON.stringify(e[k] == null ? "" : e[k]) !== JSON.stringify(patch[k] == null ? "" : patch[k]); });
             if (diff) { Object.assign(e, patch); e.changed = Date.now(); if (e.app === "Handy") e.imported = e.changed; res.updated++; } else res.same++;
-          } else {
+          } else if (own && extIds[own]) res.same++;
+          else {
             // auch eine Datei mit UID …@planer (eigener Export, von einem anderen Gerät oder nach dem Löschen) wird neu angelegt –
             // früher wurde sie übersprungen und die App meldete „Schon alles im Kalender“, obwohl nichts drin war
             var now = Date.now();

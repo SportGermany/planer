@@ -8,6 +8,7 @@ So geht nichts verloren, wenn ein Chat voll ist.
 ## Planer 6.1.1 – Kalenderdatei-Import meldete „Schon alles im Kalender“
 - Fehler (Rückmeldung): Datei importieren → „Schon alles im Kalender“, obwohl nichts drin war. Ursache: `phone.apply` behandelte Termine mit UID `…@planer` (eigener Export, anderes Gerät, nach dem Löschen, oder von einem Werkzeug mit dieser Kennung erzeugt) als „nur aktualisieren“ – fehlte der Termin mit dieser id, wurde er stillschweigend übersprungen; 0 neu + 0 geändert ergab die Meldung. Nachgestellt: alte Fassung `added: 1` von 2, neue `added: 2`.
 - Lösung: fehlt der eigene Termin, wird er neu angelegt; Abgleich zusätzlich über den Importschlüssel (`ext`), damit ein zweiter Import nicht doppelt anlegt. Meldung nennt jetzt die Anzahl („Alle N Termine waren schon im Kalender“), und der Kalender springt zum ersten Termin der Datei.
+- Fehler beim ersten Fix (Gesamttest „H Handykalender“): eigene Export-Datei wieder importiert → Schul-/Atmungseinträge (abgeleitet, ids wie lc-…) wurden als Kopien angelegt. Lösung: UIDs, die einem Eintrag aus Schule/Atmung im Zeitraum entsprechen, zählen als „schon im Kalender“.
 - Neuer Test „K Import“ in suite3.js. Hinweis Testumgebung: Chromium liegt jetzt unter /opt/pw-browsers/chromium-1243/chrome-linux64/chrome (SG_CHROME setzen).
 
 ## Planer 6.1.0 + Training 3.2.0 – Planer liest aus den anderen Apps (PLAN-NEUORDNUNG.md, Schritt 4)
