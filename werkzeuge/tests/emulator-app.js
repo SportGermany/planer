@@ -12,13 +12,15 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 (async () => {
   const [dev] = await android.devices();
   ok(!!dev, 'Emulator verbunden');
-  const start = async () => {
+  // Kaltstart des Emulators: der erste App-Start bleibt manchmal ohne sichtbare WebView (Play-Dienste starten noch) – dann einmal neu starten
+  const start = async (again) => {
     await dev.shell('am force-stop ' + PKG); await dev.shell('am start -n ' + PKG + '/de.sportgermany.planer.MainActivity'); await wait(8000);
-    await dev.webView({ pkg: PKG }, { timeout: 60000 });
+    try { await dev.webView({ pkg: PKG }, { timeout: 60000 }); } catch (e) { if (!again) { console.log('  (keine WebView – App wird neu gestartet)'); return start(true); } throw e; }
     for (let i = 0; i < 40; i++) {
       for (const w of dev.webViews().filter(w => w.pkg() === PKG)) { const pg = await w.page().catch(() => null); if (pg && await pg.evaluate(() => innerHeight).catch(() => 0) > 100) return pg; }
       await wait(1000);
     }
+    if (!again) { console.log('  (keine sichtbare Ansicht – App wird neu gestartet)'); return start(true); }
     throw new Error('Keine sichtbare Ansicht der App');
   };
   let page = await start();
