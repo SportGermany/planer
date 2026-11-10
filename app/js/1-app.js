@@ -578,10 +578,28 @@
       return raw ? JSON.parse(raw) : null;
     } catch (e) { return null; }
   }
+  /* Demnächst wichtig: nächste Prüfung (Schul-App) und nächster Wettkampf (Training), je mit Countdown – auch aus der Cloud-Kopie */
+  function wichtig(t) {
+    var out = [];
+    try {
+      var fr = JSON.parse(localStorage.getItem("sg-fremd-lernplan") || "null"), raw = (SLIM && fr && fr.data && fr.data["schulkalender-bayern-v1"]) || (!SLIM && localStorage.getItem("schulkalender-bayern-v1")) || null, db = raw ? JSON.parse(raw) : null;
+      var EX = { sa: "Schulaufgabe", ka: "Kurzarbeit", ex: "Ex", test: "Test", referat: "Referat" };
+      var ex = db && (db.events || []).filter(function (e) { return EX[e.type] && !e.done && e.date >= t; }).sort(function (a, b) { return a.date.localeCompare(b.date); })[0];
+      if (ex) { var sub = (db.subjects || []).find(function (x) { return x.id === ex.subject; }); out.push(["schule", EX[ex.type] + (sub ? " " + (sub.name || sub.short) : "") + (ex.title ? " · " + ex.title : ""), ex.date]); }
+    } catch (e) {}
+    try { var h = trHeute(), cp = h && h.comp; if (!cp) { var cs = JSON.parse(localStorage.getItem("wk_comps") || "[]").filter(function (x) { return x && x.date >= t; }).sort(function (a, b) { return a.date.localeCompare(b.date); }); cp = cs[0]; }
+      if (cp && cp.date >= t) out.push(["training", (cp.name || "Wettkampf") + (cp.ort ? " · " + cp.ort : ""), cp.date]); } catch (e) {}
+    if (!out.length) return "";
+    return '<div class="grp wich"><header><span>Demnächst wichtig</span></header><div class="cells">' + out.map(function (x) {
+      var n = Math.round((parse(x[2]) - parse(t)) / 864e5);
+      return '<button class="wrow" data-wich="' + x[0] + '"><b class="cd">' + (n === 0 ? "heute" : n === 1 ? "morgen" : "in " + n + " T.") + '</b><span>' + esc(x[1]) + "<small>" + fmtDay(x[2]) + "</small></span></button>";
+    }).join("") + "</div></div>";
+  }
   function renderTr() {
     var el = $("cal-tr"), t = today(); if (!el) return;
-    var h = trHeute();
-    if (calSel !== t || !h || h.date !== t) { el.innerHTML = ""; return; }
+    var h = trHeute(), wich = wichtig(t);
+    if (calSel !== t) { el.innerHTML = ""; return; }
+    if (!h || h.date !== t) { el.innerHTML = wich; el.onclick = function (e) { var w = e.target.closest("[data-wich]"); if (w) mehrAct("app:" + w.dataset.wich); }; return; }
     var amp = h.ready >= 70 ? "gut" : h.ready >= 40 ? "mäßig" : "schwach", chips = [];
     if (h.sick) chips.push('<span class="trc bad">krank</span>');
     if (h.injured) chips.push('<span class="trc bad">verletzt</span>');
@@ -591,8 +609,8 @@
     el.innerHTML = '<div class="grp trh"><header><span>Training heute</span><button class="lnk" data-tr="open">Öffnen</button></header><div class="cells"><div class="trrow">' +
       '<div class="trk"><b>' + (h.ready != null ? h.ready + " %" : "–") + '</b><small>Bereitschaft · ' + amp + "</small></div>" +
       (w && w.temp != null ? '<div class="trk"><b>' + esc(String(w.temp)) + '°</b><small>' + esc(w.txt || "Wetter") + (w.max != null ? " · " + esc(String(w.min)) + "–" + esc(String(w.max)) + "°" : "") + "</small></div>" : "") +
-      "</div>" + (chips.length ? '<div class="trch">' + chips.join("") + "</div>" : "") + "</div></div>";
-    el.onclick = function (e) { if (e.target.closest("[data-tr]")) mehrAct("app:training"); };
+      "</div>" + (chips.length ? '<div class="trch">' + chips.join("") + "</div>" : "") + "</div></div>" + wich;
+    el.onclick = function (e) { var w = e.target.closest("[data-wich]"); if (w) return mehrAct("app:" + w.dataset.wich); if (e.target.closest("[data-tr]")) mehrAct("app:training"); };
   }
   function renderEve() {
     var el = $("cal-eve"), t = today(); if (!el) return;

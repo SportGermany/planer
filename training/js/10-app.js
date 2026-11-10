@@ -1686,7 +1686,10 @@ function writeHeute(){
     }
   } catch(e) {}
   var o = { date: S.today, ready: rd.score, label: rd.label, sick: !!S.illnessActive, injured: !!S.injuryActive, rest: !!p.rest,
-    done: !!(S.log[S.today] && S.log[S.today].done), weather: w };
+    done: !!(S.log[S.today] && S.log[S.today].done), weather: w, comp: null };
+  // nächster Wettkampf (Rodeln › Wettkampf-Countdown) – der Planer zeigt ihn bei Heute
+  try { var cs = JSON.parse(localStorage.getItem("wk_comps") || "[]").filter(function(x){ return x && x.date >= S.today; }).sort(function(a, b){ return a.date.localeCompare(b.date); });
+    if (cs[0]) o.comp = { name: cs[0].name || "Wettkampf", date: cs[0].date, ort: cs[0].ort || "" }; } catch(e) {}
   var j = JSON.stringify(o);
   if (localStorage.getItem("sg-training-heute") !== j) localStorage.setItem("sg-training-heute", j);
 }

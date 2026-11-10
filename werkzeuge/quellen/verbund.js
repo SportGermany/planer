@@ -1127,7 +1127,7 @@
     var upcoming = evs.filter(function (e) { if (e.date <= state.sel || seen[e.id]) return false; seen[e.id] = 1; return true; }).slice(0, 5);
     if (upcoming.length) h += "<div class='sec'><h3>Danach</h3>" + upcoming.map(function (e) { return item(e, true); }).join("") + "</div>";
     if ("Notification" in window && Notification.permission === "default") h += "<div class='cl' data-a='notify'>Erinnerungen als Benachrichtigung erlauben</div>";
-    h += "<div class='tools'><a class='b big' href='" + esc(appUrl(APPS[0]) + "#cal") + "'>Großer Kalender</a><button class='b' data-a='weekplan'>Woche planen</button><button class='b' data-a='export'>Sichern</button><button class='b' data-a='import'>Importieren</button><button class='b' data-a='ics'>.ics-Export</button></div>";
+    h += "<div class='tools'><a class='b big' href='" + (nativeSolo() ? "#' data-a='bigcal" : esc(appUrl(APPS[0]) + "#cal")) + "'>Großer Kalender</a><button class='b' data-a='weekplan'>Woche planen</button><button class='b' data-a='export'>Sichern</button><button class='b' data-a='import'>Importieren</button><button class='b' data-a='ics'>.ics-Export</button></div>";
     return h;
   }
 
@@ -1142,6 +1142,15 @@
 
   function appsView() {
     var here = location.hash;
+    // Einzel-Apps auf dem Handy: vier eigene APKs – „Öffnen“ startet die andere App über Android (keine Web-Links, die gibt es dort nicht)
+    if (nativeSolo()) {
+      var NM = [["planer", "Planer", "Kalender, Aufgaben, Notizen", "#6ea8fe"], ["training", "Training", "Lauf, Mobility, Rodeln, Wissen", "#4fc18a"], ["schule", "Schule", "Stundenplan, Aufgaben, Prüfungen, Lehrgänge", "#2b5fd9"], ["bibel", "Bibel", "Lesen, Lesepläne, Meine Bibel", "#c9a27a"]];
+      return "<div class='apps'>" + NM.map(function (a) {
+        var me = a[0] === window.SGApp;
+        return "<div class='app" + (me ? " me" : "") + "'><a class='ah' href='#' data-a='" + (me ? "close" : "openapp") + "' data-app='" + a[0] + "'>" +
+          "<span class='mono' style='background:" + a[3] + "'>" + esc(a[1].charAt(0)) + "</span><span><b>" + esc(a[1]) + "</b><span>" + (me ? "Du bist hier" : esc(a[2])) + "</span></span></a></div>";
+      }).join("") + "</div><p class='txt m'>Vier Apps, ein gemeinsamer Cloud-Abgleich: Farbwelt und Sicherung gelten überall.</p>";
+    }
     var h = "<div class='apps'>" + APPS.map(function (a) {
       var me = a.id === ME.id;
       return "<div class='app" + (me ? " me" : "") + "'><a class='ah' href='" + (me ? "#" : esc(appUrl(a))) + "'" + (me ? " data-a='close'" : "") + ">" +
@@ -1454,7 +1463,7 @@
         if (e) { state.edit = editOf(e, t.dataset.occ); render(); }
         return;
       }
-      if (t.dataset.a === "close" && t.tagName === "A") ev.preventDefault();
+      if ((t.dataset.a === "close" || t.dataset.a === "openapp" || t.dataset.a === "bigcal") && t.tagName === "A") ev.preventDefault();
       act(t.dataset.a, box, t);
     });
     // Formular: Mehrtägig, Wochentage, Überschneidung live
@@ -1497,6 +1506,8 @@
     else if (a === "next") state.month = new Date(m.getFullYear(), m.getMonth() + 1, 1);
     else if (a === "today") { var t = new Date(); state.sel = iso(t); state.month = new Date(t.getFullYear(), t.getMonth(), 1); }
     else if (a === "close") return close();
+    else if (a === "openapp") { close(); go(t.dataset.app, ""); return; }
+    else if (a === "bigcal") { close(); go("planer", "#cal"); return; }
     else if (a === "weekplan") { close(); openWeekPlan(); return; }
     else if (a === "glass") { var gc = box.querySelector("[data-a=glass]"); if (window.SGTheme && window.SGTheme.setGlass) window.SGTheme.setGlass(gc.checked); return; }
     else if (a === "install") { if (window.SGInstallEvt) { close(); installNow(); } else { state.instHelp = true; render(); } return; }
@@ -2002,8 +2013,27 @@
   var CMD_EXTRA = [], PAL_OVERRIDE = null;
   // Läuft die App in der gemeinsamen Hülle (/planer/app/), springt sie dort hin statt die Seite zu wechseln
   function shell() { try { return window.top.SGShell || null; } catch (e) { return null; } }
+  /* Einzel-Apps auf dem Handy (eigene APKs): eine andere App ist keine Seite in dieser APK – sie wird über Android geöffnet.
+   * Früher: location.href auf ../training/ usw. → „Webseite nicht verfügbar“, weil die Dateien nur in der anderen APK liegen. */
+  var PKG = { planer: "de.sportgermany.planer", training: "de.sportgermany.training", schule: "de.sportgermany.schule", bibel: "de.sportgermany.bibel" };
+  var ZIEL = { brief: "kalender", cal: "kalender", tasks: "aufgaben", wochenplanung: "kalender" };
+  function nativeSolo() { return !!(window.SGApp && window.SGNative && !shell()); }
+  function toast(t) { try { window.alert(t); } catch (e) {} }
+  function openNative(tgt, hash) {
+    var P = null; try { P = window.Capacitor.Plugins.PlanerSystem; } catch (e) {}
+    var h = String(hash || "").replace(/^#/, ""), z = ZIEL[h] || h;
+    if (!P || !P.openApp) return false;
+    P.openApp({ pkg: PKG[tgt], ziel: z }).then(function (r) { if (!r || !r.opened) toast("Die App „" + ({ planer: "Planer", training: "Training", schule: "Schule", bibel: "Bibel" }[tgt] || tgt) + "“ ist auf diesem Handy nicht installiert."); })
+      .catch(function () { toast("Die App ließ sich nicht öffnen."); });
+    return true;
+  }
   function go(appId, hash) {
     var SH = shell(); if (SH) return SH.openApp(appId, hash || "");
+    if (window.SGApp && window.SGNative) {
+      var tgt = appId === "planer" && /^#schule/.test(hash || "") ? "schule" : appId;
+      if (tgt !== window.SGApp && PKG[tgt] && openNative(tgt, tgt === "schule" ? "" : hash)) return;
+      if (tgt === window.SGApp && tgt === "schule") hash = "";
+    }
     if (appId === ME.id) { if (location.hash === (hash || "#")) window.dispatchEvent(new HashChangeEvent("hashchange")); else location.hash = hash || ""; return; }
     var a = APPS.find(function (x) { return x.id === appId; }); location.href = appUrl(a) + (hash || "");
   }
