@@ -5,6 +5,11 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Planer 6.2.0 · Training 3.2.1 · Schule 3.0.1 · Bibel 2.0.1 – Apps-Wechsel als echte App, Klicktest, Demnächst wichtig
+- Fehler (Rückmeldung): In Schule oben „Apps“ → andere App antippen → „Webseite nicht verfügbar“. Ursache: das gemeinsame Fenster (verbund.js, Reiter Apps, „Großer Kalender“, Befehlssuche über `go()`) verlinkte noch Web-Adressen (../training/ …) aus der Zeit als eine App – in einer Einzel-APK gibt es diese Dateien nicht. Lösung: `nativeSolo()`/`openNative()` – in den Einzel-Apps öffnet `go()` die andere APK über PlanerSystem.openApp (Paket + Ziel), „Planer › Schule“ zeigt auf die Schul-App; Apps-Reiter listet alle vier Apps. Test `apps-wechsel.js` (Schule, Training, Bibel).
+- Neu: `klicktest.js <app>` – tippt in der APK-Fassung (Android nachgestellt) jeden sichtbaren Knopf jeder Ansicht einmal an (Seite vor jedem Knopf neu), meldet Skriptfehler, fehlende Dateien, Sprünge aus der App und geöffnete Apps. Ergebnis: Schule 62, Training 25, Bibel 117, Planer 29 Knöpfe – ohne Fehler; gefunden: Planer öffnete Training/Schule mit Ziel „heute“ (versteckte Tagesübersicht) → jetzt Startreiter.
+- Neu: Planer › Heute „Demnächst wichtig“ (nächste Prüfung aus der Schul-Cloud-Kopie, nächster Wettkampf aus `sg-training-heute.comp`), Countdown, Tippen öffnet die App.
+
 ## Planer 6.1.1 – Kalenderdatei-Import meldete „Schon alles im Kalender“
 - Fehler (Rückmeldung): Datei importieren → „Schon alles im Kalender“, obwohl nichts drin war. Ursache: `phone.apply` behandelte Termine mit UID `…@planer` (eigener Export, anderes Gerät, nach dem Löschen, oder von einem Werkzeug mit dieser Kennung erzeugt) als „nur aktualisieren“ – fehlte der Termin mit dieser id, wurde er stillschweigend übersprungen; 0 neu + 0 geändert ergab die Meldung. Nachgestellt: alte Fassung `added: 1` von 2, neue `added: 2`.
 - Lösung: fehlt der eigene Termin, wird er neu angelegt; Abgleich zusätzlich über den Importschlüssel (`ext`), damit ein zweiter Import nicht doppelt anlegt. Meldung nennt jetzt die Anzahl („Alle N Termine waren schon im Kalender“), und der Kalender springt zum ersten Termin der Datei.

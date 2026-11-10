@@ -146,6 +146,8 @@
     try { done = JSON.parse(localStorage.getItem("sg-uebergabe-v1") || "{}") || {}; } catch (e) {}
     var part = opt.sub || (kid && (kid.h || kid.s)) || (sec && (sec.h || sec.s)) || "", pre = E.pre && sec && v === (app || v) && E.pre[sec.id];
     var o = { pkg: E.pkg, ziel: pre ? pre + (part ? "/" + part : "") : part };
+    // Training und Schule haben keinen Reiter „Heute“ mehr (Neuordnung): ohne Unterziel im Startreiter der App öffnen
+    if (!s && o.ziel === "heute" && (v === "training" || v === "schule")) o.ziel = "";
     var prep = Promise.resolve();
     // Stand von Cloud-Zugang und Farbwelt (geht bei der ersten Übergabe mit, später nur bei Änderung)
     var zk = {}; ["sg-shared-calendar-sync", "sg-design", "sg-design-v3", "sg-monet-v1"].forEach(function (key) { var val = localStorage.getItem(key); if (val != null) zk[key] = val; });
@@ -1585,6 +1587,9 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["6.2.0", ["Heute: „Demnächst wichtig“ zeigt die nächste Prüfung (Schule) und den nächsten Wettkampf (Training) mit Countdown – antippen öffnet die App",
+      "Apps-Wechsel überall als echte App: in Schule, Training und Bibel öffnet das Apps-Fenster und „Großer Kalender“ jetzt die andere App statt „Webseite nicht verfügbar“",
+      "Training und Schule öffnen aus dem Planer in ihrem Startreiter"]],
     ["6.1.1", ["Kalenderdatei (.ics) importieren: Termine werden wieder übernommen – vorher meldete der Planer bei manchen Dateien „Schon alles im Kalender“, obwohl nichts drin war",
       "Nach dem Import springt der Kalender zum ersten übernommenen Termin"]],
     ["6.1.0", ["Heute zeigt „Training heute“: Bereitschaft, Wetter, krank/verletzt und Ruhetag aus der Training-App (über die Cloud)",
