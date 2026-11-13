@@ -2111,6 +2111,7 @@ switchTab(window.SGApp === "training" ? "lauf" : "heute");   // eigene App start
   function applyHashNav(){
     var href = location.href;
     var hashTab = href.indexOf("#") >= 0 ? href.slice(href.indexOf("#")+1) : "";
+    if (hashTab === "einstellungen") hashTab = "einst";   // Sprungziel aus dem Planer (Handykalender › Atemübungen)
     if (validTabs.indexOf(hashTab) < 0) return;
     // #lauf und #kraft sind zwei Ausschnitte derselben Seite (Ein- und Ausblenden über data-sec, siehe CSS)
     switchTab(hashTab === "lauf" ? "lauf" : hashTab, hashTab === "lauf" ? "lauf" : ""); S.shortcutNav = true;

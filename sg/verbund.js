@@ -2663,7 +2663,15 @@
         var s = hState(); s.on = true; hSave(s); return hSync(true);
       });
     },
-    disable: function () { var s = hState(); s.on = false; s.err = ""; hSave(s); emit(); },
+    // Abgleich aus: die eigenen Einträge dieser App aus dem Handykalender entfernen (fremde Termine bleiben), dann abschalten
+    disable: function () {
+      var s = hState(), P = HP(), ids = [s.wrote, s.wrote2].filter(function (x, i, a) { return x != null && x >= 0 && a.indexOf(x) === i; });
+      var done = function (n) { var s2 = hState(); s2.on = false; s2.err = ""; s2.wrote = null; s2.wrote2 = null; hSave(s2); hLastOut = ""; emit(); return { removed: n || 0 }; };
+      if (!P || !ids.length) return Promise.resolve(done(0));
+      var n = 0;
+      return ids.reduce(function (pr, id) { return pr.then(function () { return P.write({ calendarId: id, events: [], prune: true }).then(function (w) { n += (w && w.removed) || 0; }).catch(function () {}); }); }, Promise.resolve())
+        .then(function () { return done(n); });
+    },
     setOpt: function (k, v) { var s = hState(); s.opt[k] = !!v; hSave(s); return hSync(true); },
     // per Link eingebundener Google-Kalender, der auf dem Handy nicht synchronisiert wird: Synchronisieren einschalten, dann neu lesen
     enableSync: function (id) {

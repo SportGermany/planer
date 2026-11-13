@@ -1,0 +1,390 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//SportGermany//Quali BGL//DE
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:3. Quali BGL
+X-WR-TIMEZONE:Europe/Berlin
+BEGIN:VTIMEZONE
+TZID:Europe/Berlin
+BEGIN:DAYLIGHT
+TZOFFSETFROM:+0100
+TZOFFSETTO:+0200
+TZNAME:CEST
+DTSTART:19700329T020000
+RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU
+END:DAYLIGHT
+BEGIN:STANDARD
+TZOFFSETFROM:+0200
+TZOFFSETTO:+0100
+TZNAME:CET
+DTSTART:19701025T030000
+RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:quali3-bgl-20261116-0820-0@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261116T082000
+DTEND;TZID=Europe/Berlin:20261116T083000
+SUMMARY:Abfahrt zur Bahn
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Abfahrt zum Training 40 Min. vorher\n3. Quali BGL · Änderun
+ gen jederzeit möglich · 22:00 Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261116-0900-1@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261116T090000
+DTEND;TZID=Europe/Berlin:20261116T100000
+SUMMARY:Bahnbegehung · 3. Quali BGL
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Bahnbegehung (Ende nicht angegeben)\n3. Quali BGL · Änderun
+ gen jederzeit möglich · 22:00 Uhr Nachtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Bahnbegehung · 3. Quali BGL
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261116-1420-2@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261116T142000
+DTEND;TZID=Europe/Berlin:20261116T143000
+SUMMARY:Abfahrt zur Bahn · GR1
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Abfahrt zum Training 40 Min. vorher\n3. Quali BGL · Änderun
+ gen jederzeit möglich · 22:00 Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261116-1500-3@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261116T150000
+DTEND;TZID=Europe/Berlin:20261116T170000
+SUMMARY:Training GR1 (ESM + DSW) · 3. Quali BGL
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:3. Quali BGL · Änderungen jederzeit möglich · 22:00 Uhr N
+ achtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Training GR1 (ESM + DSW) · 3. Quali BGL
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261116-1620-4@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261116T162000
+DTEND;TZID=Europe/Berlin:20261116T163000
+SUMMARY:Abfahrt zur Bahn · GR2
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Abfahrt zum Training 40 Min. vorher\n3. Quali BGL · Änderun
+ gen jederzeit möglich · 22:00 Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261116-1700-5@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261116T170000
+DTEND;TZID=Europe/Berlin:20261116T190000
+SUMMARY:Training GR2 (ESW + DSM) · 3. Quali BGL
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:3. Quali BGL · Änderungen jederzeit möglich · 22:00 Uhr N
+ achtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Training GR2 (ESW + DSM) · 3. Quali BGL
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261117-0820-6@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261117T082000
+DTEND;TZID=Europe/Berlin:20261117T083000
+SUMMARY:Abfahrt zur Bahn · GR2
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Abfahrt zum Training 40 Min. vorher\n3. Quali BGL · Änderun
+ gen jederzeit möglich · 22:00 Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261117-0900-7@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261117T090000
+DTEND;TZID=Europe/Berlin:20261117T110000
+SUMMARY:Training GR2 (ESW + DSM) · 3. Quali BGL
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:3. Quali BGL · Änderungen jederzeit möglich · 22:00 Uhr N
+ achtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Training GR2 (ESW + DSM) · 3. Quali BGL
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261117-1020-8@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261117T102000
+DTEND;TZID=Europe/Berlin:20261117T103000
+SUMMARY:Abfahrt zur Bahn · GR1
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Abfahrt zum Training 40 Min. vorher\n3. Quali BGL · Änderun
+ gen jederzeit möglich · 22:00 Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261117-1100-9@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261117T110000
+DTEND;TZID=Europe/Berlin:20261117T130000
+SUMMARY:Training GR1 (ESM + DSW) · 3. Quali BGL
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:3. Quali BGL · Änderungen jederzeit möglich · 22:00 Uhr N
+ achtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Training GR1 (ESM + DSW) · 3. Quali BGL
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261117-1420-10@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261117T142000
+DTEND;TZID=Europe/Berlin:20261117T143000
+SUMMARY:Abfahrt zur Bahn · GR2
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Abfahrt zum Training 40 Min. vorher\n3. Quali BGL · Änderun
+ gen jederzeit möglich · 22:00 Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261117-1500-11@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261117T150000
+DTEND;TZID=Europe/Berlin:20261117T170000
+SUMMARY:Training GR2 (ESW + DSM) · 3. Quali BGL
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:3. Quali BGL · Änderungen jederzeit möglich · 22:00 Uhr N
+ achtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Training GR2 (ESW + DSM) · 3. Quali BGL
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261117-1620-12@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261117T162000
+DTEND;TZID=Europe/Berlin:20261117T163000
+SUMMARY:Abfahrt zur Bahn · GR1
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Abfahrt zum Training 40 Min. vorher\n3. Quali BGL · Änderun
+ gen jederzeit möglich · 22:00 Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261117-1700-13@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261117T170000
+DTEND;TZID=Europe/Berlin:20261117T190000
+SUMMARY:Training GR1 (ESM + DSW) · 3. Quali BGL
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:3. Quali BGL · Änderungen jederzeit möglich · 22:00 Uhr N
+ achtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Training GR1 (ESM + DSW) · 3. Quali BGL
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261118-0820-14@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261118T082000
+DTEND;TZID=Europe/Berlin:20261118T083000
+SUMMARY:Abfahrt zur Bahn · GR1
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Abfahrt zum Training 40 Min. vorher\n3. Quali BGL · Änderun
+ gen jederzeit möglich · 22:00 Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261118-0900-15@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261118T090000
+DTEND;TZID=Europe/Berlin:20261118T110000
+SUMMARY:Training GR1 (ESM + DSW) · 3. Quali BGL
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:3. Quali BGL · Änderungen jederzeit möglich · 22:00 Uhr N
+ achtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Training GR1 (ESM + DSW) · 3. Quali BGL
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261118-1020-16@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261118T102000
+DTEND;TZID=Europe/Berlin:20261118T103000
+SUMMARY:Abfahrt zur Bahn · GR2
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Abfahrt zum Training 40 Min. vorher\n3. Quali BGL · Änderun
+ gen jederzeit möglich · 22:00 Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261118-1100-17@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261118T110000
+DTEND;TZID=Europe/Berlin:20261118T130000
+SUMMARY:Training GR2 (ESW + DSM) · 3. Quali BGL
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:3. Quali BGL · Änderungen jederzeit möglich · 22:00 Uhr N
+ achtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Training GR2 (ESW + DSM) · 3. Quali BGL
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261118-1420-18@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261118T142000
+DTEND;TZID=Europe/Berlin:20261118T143000
+SUMMARY:Abfahrt zur Bahn
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Abfahrt zum Training 40 Min. vorher\n3. Quali BGL · Änderun
+ gen jederzeit möglich · 22:00 Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261118-1500-19@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261118T150000
+DTEND;TZID=Europe/Berlin:20261118T151000
+SUMMARY:RL DS · 3. Quali BGL
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Laut Plan: „15 RLDS“ (Dauer geschätzt)\n3. Quali BGL · 
+ Änderungen jederzeit möglich · 22:00 Uhr Nachtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:RL DS · 3. Quali BGL
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261118-1510-20@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261118T151000
+DTEND;TZID=Europe/Berlin:20261118T152000
+SUMMARY:TL Esm · 3. Quali BGL
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Laut Plan: „15.10 TL Esm“ (Dauer geschätzt)\n3. Quali BG
+ L · Änderungen jederzeit möglich · 22:00 Uhr Nachtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:TL Esm · 3. Quali BGL
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261118-1540-21@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261118T154000
+DTEND;TZID=Europe/Berlin:20261118T155000
+SUMMARY:RL DS · 3. Quali BGL
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Laut Plan: „15.40 RLDS“ (Dauer geschätzt)\n3. Quali BGL 
+ · Änderungen jederzeit möglich · 22:00 Uhr Nachtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:RL DS · 3. Quali BGL
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261118-1550-22@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261118T155000
+DTEND;TZID=Europe/Berlin:20261118T160000
+SUMMARY:TL Esm · 3. Quali BGL
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Laut Plan: „15.50 TL Esm“ (Dauer geschätzt)\n3. Quali BG
+ L · Änderungen jederzeit möglich · 22:00 Uhr Nachtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:TL Esm · 3. Quali BGL
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261118-1645-23@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261118T164500
+DTEND;TZID=Europe/Berlin:20261118T165500
+SUMMARY:RL DS · 3. Quali BGL
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Laut Plan: „16.45 RLDS“ (Dauer geschätzt)\n3. Quali BGL 
+ · Änderungen jederzeit möglich · 22:00 Uhr Nachtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:RL DS · 3. Quali BGL
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261118-1655-24@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261118T165500
+DTEND;TZID=Europe/Berlin:20261118T170500
+SUMMARY:TL Esm · 3. Quali BGL
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Laut Plan: „16.55 TL Esm“ (Dauer geschätzt)\n3. Quali BG
+ L · Änderungen jederzeit möglich · 22:00 Uhr Nachtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:TL Esm · 3. Quali BGL
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261118-1720-25@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261118T172000
+DTEND;TZID=Europe/Berlin:20261118T175000
+SUMMARY:3 TL Esw · 3. Quali BGL
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Laut Plan: „17.20 3TL Esw“ (Dauer geschätzt)\n3. Quali B
+ GL · Änderungen jederzeit möglich · 22:00 Uhr Nachtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:3 TL Esw · 3. Quali BGL
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261119-0820-26@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261119T082000
+DTEND;TZID=Europe/Berlin:20261119T083000
+SUMMARY:Abfahrt zur Bahn
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Abfahrt zum Training 40 Min. vorher\n3. Quali BGL · Änderun
+ gen jederzeit möglich · 22:00 Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:quali3-bgl-20261119-0900-27@sportgermany
+DTSTAMP:20261113T173610Z
+DTSTART;TZID=Europe/Berlin:20261119T090000
+DTEND;TZID=Europe/Berlin:20261119T130000
+SUMMARY:Quali-Rennen: 3 RL ES · 3. Quali BGL
+LOCATION:Kunsteisbahn Königssee\, Schönau a. Königssee
+DESCRIPTION:Laut Plan: „9:00 – 13:00 3 RL ES“\n3. Quali BGL · Änd
+ erungen jederzeit möglich · 22:00 Uhr Nachtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Quali-Rennen: 3 RL ES · 3. Quali BGL
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+END:VCALENDAR

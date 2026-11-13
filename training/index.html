@@ -1211,7 +1211,7 @@ html.m3 .streak-chip { border-radius: 8px; }
   }
 </style>
 <!-- verbund-design:start -->
-<script data-design="panel" data-sync="training" src="../sg/design.js?v=6.2.0.6e8a99"></script>
+<script data-design="panel" data-sync="training" src="../sg/design.js?v=6.2.1.954c9a"></script>
 <!-- verbund-design:end -->
 </head>
 <body>
@@ -1779,6 +1779,11 @@ html.m3 .streak-chip { border-radius: 8px; }
     <div><h1>Einstellungen</h1><p>Alles anpassen, kategorisiert</p></div>
   </div>
 
+  <div class="card" id="tHandy" hidden>
+    <div class="card-h"><h2>Handykalender</h2><span>was Training einträgt</span></div>
+    <div class="row"><div class="lab"><b>Atemübungen</b><span>geplante Übungen aus Atmung &amp; HRV – ausschalten entfernt sie aus dem Handykalender</span></div><input type="checkbox" id="hoAtmung" style="width:24px;height:24px"></div>
+  </div>
+
   <div class="card" id="tAusw">
     <div class="card-h"><h2>Auswertungen</h2><span>alles, was nicht in der Leiste steht</span></div>
     <div class="ts-grid">
@@ -2208,6 +2213,15 @@ html.m3 .streak-chip { border-radius: 8px; }
     top.insertAdjacentHTML("afterend", '<div class="fseg" role="group" aria-label="Fortschritt"><button type="button" data-go="fitness"' + (x[1] === "fitness" ? ' class="on"' : "") + '>Stand</button><button type="button" data-go="daten"' + (x[1] === "daten" ? ' class="on"' : "") + ">Analyse</button></div>");
   });
   document.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-go]"); if (b) go(b.dataset.go); });
+  // Handykalender: was diese App ins Handy schreibt (eigene Einstellung je App; ausschalten entfernt die Einträge wieder)
+  function handyCard() {
+    var H = window.SharedCalendar && SharedCalendar.handy, c = document.getElementById("tHandy"), x = document.getElementById("hoAtmung");
+    if (!c || !H || !H.available || !H.available() || !H.state().on) return;
+    c.hidden = false; x.checked = !!H.state().opt.atmung;
+    x.onchange = function () { H.setOpt("atmung", x.checked).then(function (r) { if (window.APP && APP.toast) APP.toast(x.checked ? "Atemübungen gehen ins Handy" : "Atemübungen aus dem Handykalender entfernt" + (r && r.removed ? " (" + r.removed + ")" : "")); }); };
+  }
+  document.addEventListener("click", function (e) { if (e.target.closest && e.target.closest('[data-go="einst"]')) setTimeout(handyCard, 50); });
+  setTimeout(handyCard, 3000);
 })();
 </script>
 
@@ -2637,26 +2651,26 @@ html.m3 .streak-chip { border-radius: 8px; }
   </div>
   <button class="btn accent block sm" id="btnWrappedShare" style="margin-top:16px">📤 Teilen</button>
 </div></dialog>
-<script id="coreScript" src="js/1-core.js?v=6.2.0.6e8a99"></script>
-<script id="poolsScript" src="js/2-pools.js?v=6.2.0.6e8a99"></script>
-<script id="sportsScript" src="js/3-sports.js?v=6.2.0.6e8a99"></script>
-<script id="stretchScript" src="js/4-stretch.js?v=6.2.0.6e8a99"></script>
-<script id="rodelnScript" src="js/5-rodeln.js?v=6.2.0.6e8a99"></script>
-<script id="gymScript" src="js/6-gym.js?v=6.2.0.6e8a99"></script>
-<script id="weatherScript" src="js/7-weather.js?v=6.2.0.6e8a99"></script>
-<script id="githubScript" src="js/8-github.js?v=6.2.0.6e8a99"></script>
-<script id="analysisScript" src="js/9-analysis.js?v=6.2.0.6e8a99"></script>
-<script src="js/10-app.js?v=6.2.0.6e8a99"></script>
-<script src="js/11-app.js?v=6.2.0.6e8a99"></script>
-<script src="js/12-app.js?v=6.2.0.6e8a99"></script>
-<script src="js/13-app.js?v=6.2.0.6e8a99"></script>
-<script src="js/14-app.js?v=6.2.0.6e8a99"></script>
-<script src="js/15-wettkampf.js?v=6.2.0.6e8a99"></script>
+<script id="coreScript" src="js/1-core.js?v=6.2.1.954c9a"></script>
+<script id="poolsScript" src="js/2-pools.js?v=6.2.1.954c9a"></script>
+<script id="sportsScript" src="js/3-sports.js?v=6.2.1.954c9a"></script>
+<script id="stretchScript" src="js/4-stretch.js?v=6.2.1.954c9a"></script>
+<script id="rodelnScript" src="js/5-rodeln.js?v=6.2.1.954c9a"></script>
+<script id="gymScript" src="js/6-gym.js?v=6.2.1.954c9a"></script>
+<script id="weatherScript" src="js/7-weather.js?v=6.2.1.954c9a"></script>
+<script id="githubScript" src="js/8-github.js?v=6.2.1.954c9a"></script>
+<script id="analysisScript" src="js/9-analysis.js?v=6.2.1.954c9a"></script>
+<script src="js/10-app.js?v=6.2.1.954c9a"></script>
+<script src="js/11-app.js?v=6.2.1.954c9a"></script>
+<script src="js/12-app.js?v=6.2.1.954c9a"></script>
+<script src="js/13-app.js?v=6.2.1.954c9a"></script>
+<script src="js/14-app.js?v=6.2.1.954c9a"></script>
+<script src="js/15-wettkampf.js?v=6.2.1.954c9a"></script>
 <!-- training-suite:start -->
-<script src="../sg/training-suite.js?v=6.2.0.6e8a99"></script>
+<script src="../sg/training-suite.js?v=6.2.1.954c9a"></script>
 <!-- training-suite:end -->
 <!-- gemeinsamer-kalender:start -->
-<script data-app="training" src="../sg/verbund.js?v=6.2.0.6e8a99"></script>
+<script data-app="training" src="../sg/verbund.js?v=6.2.1.954c9a"></script>
 <!-- gemeinsamer-kalender:end -->
 </body>
 </html>

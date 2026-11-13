@@ -1272,9 +1272,13 @@
       '<div class="grp"><header><span>Ins Handy</span></header><div class="cells">' +
       '<button class="row" data-s="ziel" style="--c:var(--c-termin)"><span class="ic">' + ico("cal") + '</span><span class="tx"><b>Ziel: ' + esc(tgName) + '</b><small>' + (tg ? "erscheint auch im Google-Kalender" : "antippen, um deinen Google-Kalender zu wählen") + "</small></span></button>" +
       chk('data-h="termine"', "Termine & Wochenplanung", "alles, was du in der App einträgst", s.opt.termine) +
-      chk('data-h="schule"', "Schule", "Prüfungen, Schultermine, Lehrgänge", s.opt.schule) +
-      chk('data-h="stunden"', "Stundenplan", "jede Schulstunde (ohne Ferien und Feiertage)", s.opt.stunden) +
-      chk('data-h="atmung"', "Atemübungen", "geplante Übungen aus Atmung & HRV", s.opt.atmung) +
+      // Schlanker Planer: Schule/Stundenplan schreibt die Schul-App, Atemübungen die Training-App – dort ein-/ausschalten
+      (SLIM && (window.SGOhne || []).indexOf("schule") >= 0
+        ? '<button class="row" data-s="ext:schule" style="--c:var(--c-schule)"><span class="ic">' + ico("school") + '</span><span class="tx"><b>Schule und Stundenplan</b><small>trägt die Schul-App ein – dort unter Einstellungen › Ins Handy übertragen ein- und ausschalten</small></span><span class="go">›</span></button>'
+        : chk('data-h="schule"', "Schule", "Prüfungen, Schultermine, Lehrgänge", s.opt.schule) + chk('data-h="stunden"', "Stundenplan", "jede Schulstunde (ohne Ferien und Feiertage)", s.opt.stunden)) +
+      (SLIM && (window.SGOhne || []).indexOf("training") >= 0
+        ? '<button class="row" data-s="ext:training" style="--c:var(--c-training)"><span class="ic">' + ico("run") + '</span><span class="tx"><b>Atemübungen</b><small>trägt die Training-App ein – dort unter Einstellungen › Handykalender</small></span><span class="go">›</span></button>'
+        : chk('data-h="atmung"', "Atemübungen", "geplante Übungen aus Atmung & HRV", s.opt.atmung)) +
       chk('data-h="aufgaben"', "Aufgaben", "offene Aufgaben mit Datum als ganztägiger Eintrag", s.opt.aufgaben) + "</div></div>" +
       (cals.length ? '<div class="grp"><header><span>Aus dem Handy anzeigen</span></header><div class="cells">' + cals.map(function (k) {
         // per Link eingebundene Google-Kalender: auf dem Handy oft „nicht synchronisiert“ – dann kommen keine Termine an
@@ -1285,9 +1289,10 @@
       '<div class="btns"><button class="btn" data-s="off">Abgleich aus</button><button class="btn p" data-s="now">Jetzt abgleichen</button></div>', function (act) {
       if (act === "abo") return aboSheet();
       if (act === "ziel") return zielSheet();
+      if (act.indexOf("ext:") === 0) { var ap = act.slice(4), P0 = sysP(); closeSheet(); if (P0 && P0.openApp) P0.openApp({ pkg: "de.sportgermany." + ap, ziel: "einstellungen" }).then(function (r) { if (!r || !r.opened) snack("Die App ist auf diesem Handy nicht installiert"); }); return; }
       if (act.indexOf("sy:") === 0) { snack("Schalte Synchronisieren ein …"); H.enableSync(act.slice(3)).then(function (x) { snack(x && x.error ? x.error + " – sonst im Google-Kalender: Einstellungen › Kalender › Synchronisieren" : "Eingeschaltet – Google lädt die Termine, das kann eine Minute dauern"); refresh(); handySheet(); }); return; }
       if (act === "now") { snack("Gleiche ab …"); H.sync(true).then(function (x) { snack(x && x.error ? "Fehler: " + x.error : "Abgeglichen" + (x ? " – " + (x.added + x.changed) + " ins Handy, " + x.read + " aus dem Handy" : "")); refresh(); handySheet(); }); }
-      else if (act === "off") { H.disable(); refresh(); closeSheet(); snack("Abgleich aus – der Kalender „Planer“ bleibt im Handy, bis du ihn dort entfernst"); }
+      else if (act === "off") { snack("Abgleich aus – Einträge des Planers werden aus dem Handykalender entfernt …"); H.disable().then(function (x) { refresh(); snack("Abgleich aus" + (x && x.removed ? " – " + x.removed + " Einträge aus dem Handykalender entfernt" : "")); }); closeSheet(); }
     });
     Array.prototype.forEach.call(document.querySelectorAll("#sheet [data-h]"), function (x) { x.onchange = function () { H.setOpt(x.dataset.h, x.checked).then(function () { refresh(); }); }; });
     Array.prototype.forEach.call(document.querySelectorAll("#sheet [data-c]"), function (x) { x.onchange = function () { H.setCal(x.dataset.c, x.checked); refresh(); }; });
@@ -1587,6 +1592,8 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["6.2.1", ["Handykalender: Ausschalten entfernt jetzt die Einträge wieder aus dem Handy – auch „Abgleich aus“",
+      "Stundenplan und Schultermine schaltest du in der Schul-App ein und aus (Einstellungen › Ins Handy übertragen), Atemübungen in Training – der Planer führt dich hin"]],
     ["6.2.0", ["Heute: „Demnächst wichtig“ zeigt die nächste Prüfung (Schule) und den nächsten Wettkampf (Training) mit Countdown – antippen öffnet die App",
       "Apps-Wechsel überall als echte App: in Schule, Training und Bibel öffnet das Apps-Fenster und „Großer Kalender“ jetzt die andere App statt „Webseite nicht verfügbar“",
       "Training und Schule öffnen aus dem Planer in ihrem Startreiter"]],

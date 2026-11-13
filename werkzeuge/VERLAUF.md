@@ -5,6 +5,12 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Planer 6.2.1 · Schule 3.0.2 · Training 3.2.2 · Bibel 2.0.2 – Handykalender: Ausschalten entfernt Einträge
+- Fehler (Rückmeldung): Stundenplan im Planer › Handykalender abgeschaltet, die Stunden blieben im Handykalender. Ursache: seit der Aufteilung schreibt die Schul-App den Stundenplan (eigene Einstellungen, eigener Speicher); der Schalter im Planer wirkte nur auf den Planer, der ihn gar nicht mehr schreibt. Die Schul-App hatte keinen Schalter.
+- Lösung: Schul-App › Einstellungen › „Ins Handy übertragen“ (Prüfungen/Schultermine, Stundenplan) – `handy.setOpt` gleicht sofort ab, `write(prune)` löscht nicht mehr gewünschte Einträge. Training › Einstellungen › Handykalender (Atemübungen). Im schlanken Planer stehen statt der wirkungslosen Schalter Zeilen, die die jeweilige App in ihren Einstellungen öffnen (Ziel `einstellungen`).
+- „Abgleich aus“ entfernt jetzt die eigenen Einträge der App aus dem Handykalender (früher blieben sie stehen). Test `handy-aus.js` (Kalender nachgestellt): an 525 Stunden → aus 0 → wieder 525 → Abgleich aus: alle 527 weg.
+- Kalenderdatei 3. Quali BGL (15.–19.11.2026, beide Gruppen, Läufe einzeln, Abfahrt 40 Min. vorher, Erinnerung 60 Min.): `kalender/3-quali-bgl-2026.ics` (28 Termine, im Planer-Import geprüft).
+
 ## Planer 6.2.0 · Training 3.2.1 · Schule 3.0.1 · Bibel 2.0.1 – Apps-Wechsel als echte App, Klicktest, Demnächst wichtig
 - Fehler (Rückmeldung): In Schule oben „Apps“ → andere App antippen → „Webseite nicht verfügbar“. Ursache: das gemeinsame Fenster (verbund.js, Reiter Apps, „Großer Kalender“, Befehlssuche über `go()`) verlinkte noch Web-Adressen (../training/ …) aus der Zeit als eine App – in einer Einzel-APK gibt es diese Dateien nicht. Lösung: `nativeSolo()`/`openNative()` – in den Einzel-Apps öffnet `go()` die andere APK über PlanerSystem.openApp (Paket + Ziel), „Planer › Schule“ zeigt auf die Schul-App; Apps-Reiter listet alle vier Apps. Test `apps-wechsel.js` (Schule, Training, Bibel).
 - Neu: `klicktest.js <app>` – tippt in der APK-Fassung (Android nachgestellt) jeden sichtbaren Knopf jeder Ansicht einmal an (Seite vor jedem Knopf neu), meldet Skriptfehler, fehlende Dateien, Sprünge aus der App und geöffnete Apps. Ergebnis: Schule 62, Training 25, Bibel 117, Planer 29 Knöpfe – ohne Fehler; gefunden: Planer öffnete Training/Schule mit Ziel „heute“ (versteckte Tagesübersicht) → jetzt Startreiter.

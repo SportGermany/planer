@@ -2341,7 +2341,8 @@ async function showDueReminders() { // beim Öffnen: heutige Erinnerungen als Be
 
 // ---------- Einstellungen ----------
 function refreshSettings() { if (sheetOpen && sheetMode === 'settings') openSheet(settingsHTML(), 'settings'); }
-function openSettings() { sheetReturn = null; openSheet(settingsHTML(), 'settings'); if (window.SGAppInfo) window.SGAppInfo(); const z = $('#stundenZiel'); if (z) z.onchange = () => SC().handy.setTarget2(z.value).then(() => toast(z.value ? 'Stundenplan steht jetzt im eigenen Kalender' : 'Stundenplan wieder bei den Prüfungen')); }
+function openSettings() { sheetReturn = null; openSheet(settingsHTML(), 'settings'); if (window.SGAppInfo) window.SGAppInfo();
+  [['hoSchule', 'schule'], ['hoStunden', 'stunden']].forEach(([id, k]) => { const x = $('#' + id); if (x) x.onchange = () => SC().handy.setOpt(k, x.checked).then(r => toast(r && r.error ? 'Fehler: ' + r.error : x.checked ? 'Wird ins Handy übertragen' : 'Aus dem Handykalender entfernt' + (r && r.removed ? ' (' + r.removed + ')' : ''))); }); const z = $('#stundenZiel'); if (z) z.onchange = () => SC().handy.setTarget2(z.value).then(() => toast(z.value ? 'Stundenplan steht jetzt im eigenen Kalender' : 'Stundenplan wieder bei den Prüfungen')); }
 function settingsHTML() {
   const s = db.settings, k = klasse();
   const sel = (key, opts) => `<select class="inp" data-s="${key}" style="width:auto;padding:8px 10px">${opts.map(([v, l]) => `<option value="${v}"${String(s[key]) === String(v) ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
@@ -2420,6 +2421,8 @@ function settingsHTML() {
   const H = SC() && SC().handy, hs = H && H.available && H.available() ? H.state() : null;
   if (hs && hs.on && !IN_PLANER) {
     const cals = (hs.cals || []).filter(c => c.writable !== false);
+    // Was diese App ins Handy schreibt – ausschalten löscht die Einträge gleich wieder aus dem Handykalender
+    h += `<div class="sh">Ins Handy übertragen</div><label class="switch"><span>Prüfungen, Schultermine, Lehrgänge</span><input type="checkbox" class="tgl" id="hoSchule"${hs.opt.schule ? ' checked' : ''}></label><label class="switch"><span>Stundenplan<small>jede Schulstunde – ausschalten entfernt sie aus dem Handykalender</small></span><input type="checkbox" class="tgl" id="hoStunden"${hs.opt.stunden ? ' checked' : ''}></label>`;
     h += `<div class="sh">Stundenplan im Kalender</div><div class="switch"><span>Eigener Kalender für Stunden<small>z. B. ein Google-Kalender „Stundenplan“ – dort ein- und ausblendbar</small></span><select class="inp" id="stundenZiel" style="width:auto;max-width:55%;padding:8px 10px"><option value="">wie Prüfungen</option>${cals.map(c => `<option value="${esc(c.id)}"${hs.target2 === c.id ? ' selected' : ''}>${esc(c.name || 'Kalender')}</option>`).join('')}</select></div>`;
   }
   if (!IN_PLANER) h += `<div class="sh">Weitere Ansichten</div><div class="rowb"><button class="btn ghost" data-a="tab" data-v="heute">Tagesübersicht</button><button class="btn ghost" data-a="tab" data-v="kalender">Kalender, Ferien, Fehlzeiten</button></div>`;
@@ -2921,11 +2924,13 @@ if (!IN_PLANER) ui.view = 'plan';   // eigene App startet im Stundenplan (heute 
 if (START_VIEWS.some(x => x[0] === local.startView)) ui.view = local.startView;
 if (vParam === 'monat') { ui.view = 'kalender'; ui.kal = 'monat'; } else if (['kalender', 'plan', 'aufgaben', 'lehrgang', 'morgen'].includes(vParam)) ui.view = vParam;
 if (vParam === 'ablage' || vParam === 'lernzeit') { ui.view = 'aufgaben'; ui.auf = vParam; }
+if (vParam === 'einstellungen') setTimeout(() => { history.replaceState(null, '', location.pathname); openSettings(); }, 400);
 window.addEventListener('hashchange', () => {
   const h = location.hash.slice(1);
   if (h === 'ablage' || h === 'lernzeit') { if (sheetOpen) { sheetReturn = null; closeSheet(); } ui.view = 'aufgaben'; ui.auf = h; render(); window.scrollTo(0, 0); }
   // eigene Schul-App: Sprungziel aus dem Planer (#plan, #aufgaben …)
   else if (h === 'pruef' && !IN_PLANER) { if (sheetOpen) { sheetReturn = null; closeSheet(); } ui.view = 'aufgaben'; ui.auf = 'pruef'; render(); window.scrollTo(0, 0); }
+  else if (h === 'einstellungen') { history.replaceState(null, '', location.pathname); openSettings(); }
   else if (['heute', 'kalender', 'plan', 'aufgaben', 'lehrgang'].includes(h)) { if (sheetOpen) { sheetReturn = null; closeSheet(); } ui.view = h; render(); window.scrollTo(0, 0); }
 });
 document.addEventListener('toggle', e => { if (e.target.matches && e.target.matches('details.more-today')) { local.homeMore = e.target.open; saveLocal(); } }, true);
