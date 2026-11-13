@@ -2342,7 +2342,17 @@ async function showDueReminders() { // beim Öffnen: heutige Erinnerungen als Be
 // ---------- Einstellungen ----------
 function refreshSettings() { if (sheetOpen && sheetMode === 'settings') openSheet(settingsHTML(), 'settings'); }
 function openSettings() { sheetReturn = null; openSheet(settingsHTML(), 'settings'); if (window.SGAppInfo) window.SGAppInfo();
+  const an = $('#hoAn'); if (an) an.onchange = () => { const H = SC().handy; (an.checked ? H.enable() : H.disable()).then(r => { toast(r && r.error ? r.error : an.checked ? 'Abgleich an' + (r && r.added ? ' – ' + r.added + ' Einträge ins Handy' : '') : 'Abgleich aus' + (r && r.removed ? ' – ' + r.removed + ' Einträge aus dem Handykalender entfernt' : '')); openSettings(); }); };
   [['hoSchule', 'schule'], ['hoStunden', 'stunden']].forEach(([id, k]) => { const x = $('#' + id); if (x) x.onchange = () => SC().handy.setOpt(k, x.checked).then(r => toast(r && r.error ? 'Fehler: ' + r.error : x.checked ? 'Wird ins Handy übertragen' : 'Aus dem Handykalender entfernt' + (r && r.removed ? ' (' + r.removed + ')' : ''))); }); const z = $('#stundenZiel'); if (z) z.onchange = () => SC().handy.setTarget2(z.value).then(() => toast(z.value ? 'Stundenplan steht jetzt im eigenen Kalender' : 'Stundenplan wieder bei den Prüfungen')); }
+// Handykalender der Schul-App: Abgleich an/aus und was diese App einträgt (ausschalten entfernt die Einträge wieder)
+function handyHTML() {
+  const H = SC() && SC().handy;
+  if (!H || !H.available || !H.available()) return '';
+  const hs = H.state();
+  let h = `<div class="sh">Handykalender</div><label class="switch"><span>Abgleich mit dem Handykalender<small>${hs.on ? 'an' + (hs.err ? ' – Fehler: ' + esc(hs.err) : '') : 'aus – Prüfungen und Stundenplan stehen nur in der App'}</small></span><input type="checkbox" class="tgl" id="hoAn"${hs.on ? ' checked' : ''}></label>`;
+  if (hs.on) h += `<label class="switch"><span>Prüfungen, Schultermine, Lehrgänge</span><input type="checkbox" class="tgl" id="hoSchule"${hs.opt.schule ? ' checked' : ''}></label><label class="switch"><span>Stundenplan<small>jede Schulstunde – ausschalten entfernt sie aus dem Handykalender</small></span><input type="checkbox" class="tgl" id="hoStunden"${hs.opt.stunden ? ' checked' : ''}></label>`;
+  return h;
+}
 function settingsHTML() {
   const s = db.settings, k = klasse();
   const sel = (key, opts) => `<select class="inp" data-s="${key}" style="width:auto;padding:8px 10px">${opts.map(([v, l]) => `<option value="${v}"${String(s[key]) === String(v) ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
@@ -2350,6 +2360,8 @@ function settingsHTML() {
   const sy = local.sync || {};
   let h = sheetHead('Einstellungen', '<button class="link" data-a="close" style="text-align:right">Fertig</button>', '<span style="min-width:70px"></span>');
   if (deferredPrompt) h += '<button class="btn wide" data-a="install" style="margin-top:0">📲 Als App installieren</button>';
+  // Ganz oben: App (Version aktualisieren, Planer öffnen) und Handykalender – immer sichtbar in der eigenen Schul-App
+  if (!IN_PLANER) h += `<div id="sgAppInfo" hidden></div>` + handyHTML();
   h += `<div class="sh">Schule</div><div class="small muted">Realschule Bayern · Schuljahr ${curSy()}</div>
     <div class="fl">Klasse</div><div class="wrap">${[5, 6, 7, 8, 9, 10].map(n => `<button class="chip${k === n ? ' on' : ''}" data-a="setKlasse" data-v="${n}">${n}.</button>`).join('')}</div>
     <div class="fl">Wahlpflichtfächergruppe</div><div class="wrap">${['I', 'II', 'IIIa', 'IIIb'].map(n => `<button class="chip${s.wpfg === n ? ' on' : ''}" data-a="setWpfg" data-v="${n}">${n}</button>`).join('')}</div>
@@ -2421,12 +2433,10 @@ function settingsHTML() {
   const H = SC() && SC().handy, hs = H && H.available && H.available() ? H.state() : null;
   if (hs && hs.on && !IN_PLANER) {
     const cals = (hs.cals || []).filter(c => c.writable !== false);
-    // Was diese App ins Handy schreibt – ausschalten löscht die Einträge gleich wieder aus dem Handykalender
-    h += `<div class="sh">Ins Handy übertragen</div><label class="switch"><span>Prüfungen, Schultermine, Lehrgänge</span><input type="checkbox" class="tgl" id="hoSchule"${hs.opt.schule ? ' checked' : ''}></label><label class="switch"><span>Stundenplan<small>jede Schulstunde – ausschalten entfernt sie aus dem Handykalender</small></span><input type="checkbox" class="tgl" id="hoStunden"${hs.opt.stunden ? ' checked' : ''}></label>`;
     h += `<div class="sh">Stundenplan im Kalender</div><div class="switch"><span>Eigener Kalender für Stunden<small>z. B. ein Google-Kalender „Stundenplan“ – dort ein- und ausblendbar</small></span><select class="inp" id="stundenZiel" style="width:auto;max-width:55%;padding:8px 10px"><option value="">wie Prüfungen</option>${cals.map(c => `<option value="${esc(c.id)}"${hs.target2 === c.id ? ' selected' : ''}>${esc(c.name || 'Kalender')}</option>`).join('')}</select></div>`;
   }
   if (!IN_PLANER) h += `<div class="sh">Weitere Ansichten</div><div class="rowb"><button class="btn ghost" data-a="tab" data-v="heute">Tagesübersicht</button><button class="btn ghost" data-a="tab" data-v="kalender">Kalender, Ferien, Fehlzeiten</button></div>`;
-  h += `<div id="sgAppInfo" hidden></div>`;   // eigene Schul-App: Version, Aktualisieren, Planer öffnen (sg/design.js)
+  if (IN_PLANER) h += `<div id="sgAppInfo" hidden></div>`;   // eigene Schul-App: Version, Aktualisieren, Planer öffnen (sg/design.js)
   return h;
 }
 function setWpfg(g) { setSetting('wpfg', g); }

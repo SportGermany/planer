@@ -1592,6 +1592,8 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["6.2.2", ["Handykalender: Deine Termine verschwinden nicht mehr – die Schul-App hat beim Abgleich die Einträge des Planers im gemeinsamen Kalender „Planer“ gelöscht. Jetzt räumt jede App nur ihre eigenen Einträge auf",
+      "Nach dem Update trägt der Planer beim ersten Start alle deine Termine wieder ein"]],
     ["6.2.1", ["Handykalender: Ausschalten entfernt jetzt die Einträge wieder aus dem Handy – auch „Abgleich aus“",
       "Stundenplan und Schultermine schaltest du in der Schul-App ein und aus (Einstellungen › Ins Handy übertragen), Atemübungen in Training – der Planer führt dich hin"]],
     ["6.2.0", ["Heute: „Demnächst wichtig“ zeigt die nächste Prüfung (Schule) und den nächsten Wettkampf (Training) mit Countdown – antippen öffnet die App",

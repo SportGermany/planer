@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.regex.Pattern;
 import org.json.JSONObject;
 
 /**
@@ -306,6 +307,13 @@ public class PlanerKalenderPlugin extends Plugin {
         }
         boolean prune = call.getBoolean("prune", true);
         JSArray events = call.getArray("events", new JSArray());
+        // Alle Planer-Apps teilen sich den lokalen Kalender „Planer“: jede App fasst nur ihre eigenen Einträge an (SYNC_DATA3 = Paketname).
+        // Alte Einträge ohne Besitzer: übernehmen, wenn der Schlüssel jetzt geschrieben wird oder zum Muster „legacy“ dieser App passt.
+        Pattern legacy = null;
+        try { String lg = call.getString("legacy", ""); if (lg != null && !lg.isEmpty()) legacy = Pattern.compile(lg); } catch (Exception ex) { legacy = null; }
+        Set<String> incoming = new HashSet<>();
+        for (int i = 0; i < events.length(); i++) { try { incoming.add(events.getJSONObject(i).getString("key")); } catch (Exception ex) { /* ohne Schlüssel */ } }
+        Set<String> adopt = new HashSet<>();
         Map<String, long[]> have = new HashMap<>();
         Map<String, String> hashes = new HashMap<>();
         // Eigener lokaler Kalender: als Sync-Adapter mit SYNC_DATA1/2 (Schlüssel/Prüfsumme).
@@ -315,14 +323,23 @@ public class PlanerKalenderPlugin extends Plugin {
         final String pkg = getContext().getPackageName();
         try (
             Cursor c = mine
-                ? cr().query(asSync(Events.CONTENT_URI), new String[] { Events._ID, Events.SYNC_DATA1, Events.SYNC_DATA2 },
+                ? cr().query(asSync(Events.CONTENT_URI), new String[] { Events._ID, Events.SYNC_DATA1, Events.SYNC_DATA2, Events.SYNC_DATA3 },
                     Events.CALENDAR_ID + "=? AND " + Events.DELETED + "=0", new String[] { String.valueOf(cal) }, null)
                 : cr().query(Events.CONTENT_URI, new String[] { Events._ID, Events.CUSTOM_APP_URI },
                     Events.CALENDAR_ID + "=? AND " + Events.DELETED + "=0 AND " + Events.CUSTOM_APP_PACKAGE + "=?", new String[] { String.valueOf(cal), pkg }, null)
         ) {
             while (c != null && c.moveToNext()) {
                 String k, h;
-                if (mine) { k = c.getString(1); h = c.getString(2); }
+                if (mine) {
+                    k = c.getString(1); h = c.getString(2);
+                    String owner = c.getString(3);
+                    if (k == null) continue;
+                    if (owner != null && !owner.equals(pkg)) continue;   // gehört einer anderen Planer-App
+                    if (owner == null) {
+                        if (incoming.contains(k)) adopt.add(k);
+                        else if (legacy == null || !legacy.matcher(k).find()) continue;
+                    }
+                }
                 else {
                     Uri u = c.getString(1) == null ? null : Uri.parse(c.getString(1));
                     if (u == null || u.getPath() == null || u.getPath().length() < 2) continue;
@@ -344,7 +361,13 @@ public class PlanerKalenderPlugin extends Plugin {
                 if (!seen.add(key)) continue;
                 String h = e.optString("h", "");
                 long[] old = have.get(key);
-                if (old != null && h.equals(hashes.get(key))) continue;
+                if (old != null && h.equals(hashes.get(key))) {
+                    if (mine && adopt.contains(key)) {   // alter Eintrag ohne Besitzer: nur den Besitzer nachtragen
+                        ContentValues ov = new ContentValues(); ov.put(Events.SYNC_DATA3, pkg);
+                        ops.add(ContentProviderOperation.newUpdate(sx(true, ContentUris.withAppendedId(Events.CONTENT_URI, old[0]))).withValues(ov).build());
+                    }
+                    continue;
+                }
                 boolean allDay = e.optBoolean("allDay", false);
                 ContentValues v = new ContentValues();
                 v.put(Events.CALENDAR_ID, cal);
@@ -357,6 +380,7 @@ public class PlanerKalenderPlugin extends Plugin {
                 if (mine) {
                     v.put(Events.SYNC_DATA1, key);
                     v.put(Events.SYNC_DATA2, h);
+                    v.put(Events.SYNC_DATA3, pkg);
                 } else {
                     v.put(Events.CUSTOM_APP_PACKAGE, pkg);
                     v.put(Events.CUSTOM_APP_URI, new Uri.Builder().scheme("sgplaner").authority("t").appendPath(key).appendQueryParameter("h", h).build().toString());

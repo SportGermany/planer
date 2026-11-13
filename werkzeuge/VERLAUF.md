@@ -5,6 +5,12 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Planer 6.2.2 · Schule 3.0.3 · Training 3.2.3 · Bibel 2.0.3 – Apps löschten sich gegenseitig die Handykalender-Einträge
+- Fehler (Rückmeldung): „meine normalen Termine landen nicht mehr in meinem Kalender“. Ursache: alle APKs nutzen denselben lokalen Kalender „Planer“ (Konto „Planer“, LOCAL – `ownId()` findet den, den die erste App angelegt hat). `write(prune)` löschte im eigenen Kalender ALLES, was nicht in der eigenen Liste stand → die Schul-App löschte beim Abgleich die Termine des Planers (und umgekehrt den Stundenplan). Seit der Aufteilung in Einzel-Apps (6.0).
+- Lösung (PlanerKalenderPlugin.java): jeder Eintrag bekommt `SYNC_DATA3 = Paketname`; jede App liest/ändert/löscht nur eigene. Alte Einträge ohne Besitzer: übernommen, wenn der Schlüssel jetzt geschrieben wird, sonst nur gelöscht, wenn der Schlüssel zum Muster der App passt (`legacy` aus verbund.js `hLegacy()`: Schule lp/lc/lh/st, Training pp/ps/tb/ta, schlanker Planer alles andere).
+- Einstellungen: Schul-App zeigt „App“ (Version aktualisieren) und „Handykalender“ (Abgleich an/aus, Prüfungen, Stundenplan) jetzt ganz oben und immer – vorher nur bei laufendem Abgleich und ganz unten. Training › Einstellungen › Handykalender ebenso mit Abgleich an/aus.
+- Test handy-aus.js erweitert (gemeinsamer Kalender mit Planer-Eintrag und Alteinträgen nachgestellt).
+
 ## Planer 6.2.1 · Schule 3.0.2 · Training 3.2.2 · Bibel 2.0.2 – Handykalender: Ausschalten entfernt Einträge
 - Fehler (Rückmeldung): Stundenplan im Planer › Handykalender abgeschaltet, die Stunden blieben im Handykalender. Ursache: seit der Aufteilung schreibt die Schul-App den Stundenplan (eigene Einstellungen, eigener Speicher); der Schalter im Planer wirkte nur auf den Planer, der ihn gar nicht mehr schreibt. Die Schul-App hatte keinen Schalter.
 - Lösung: Schul-App › Einstellungen › „Ins Handy übertragen“ (Prüfungen/Schultermine, Stundenplan) – `handy.setOpt` gleicht sofort ab, `write(prune)` löscht nicht mehr gewünschte Einträge. Training › Einstellungen › Handykalender (Atemübungen). Im schlanken Planer stehen statt der wirkungslosen Schalter Zeilen, die die jeweilige App in ihren Einstellungen öffnen (Ziel `einstellungen`).

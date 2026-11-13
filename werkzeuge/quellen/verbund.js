@@ -2592,6 +2592,15 @@
     return occurrences(from, to, (s.cache.events || []).filter(function (e) { return e.fromApp ? !(SOLO && e.fromApp === "planer") : !off[e.cal]; }));
   }
   var hBusy = false, hAgain = false, hLastOut = "";
+  /* Alte Einträge im gemeinsamen Kalender „Planer“ (vor der Besitzer-Kennung): welche Schlüssel zu dieser App gehören.
+   * Schule: Lernplan/Lehrgang/Hausaufgabe/Stundenplan, Training: Atmung/Trainingstagebuch, Planer (schlank): alles andere. */
+  function hLegacy() {
+    var O = "(lp|lc|lh|st|pp|ps|tb|ta)-";
+    if (SOLO === "schule") return "^(lp|lc|lh|st)-";
+    if (SOLO === "training") return "^(pp|ps|tb|ta)-";
+    if (SOLO) return "";
+    return (window.SGOhne && window.SGOhne.length) ? "^(?!" + O + ")" : ".";
+  }
   function hSync(force) {
     var P = HP(), s = hState();
     if (!P || !s.on || EMBED) return Promise.resolve(null);
@@ -2606,13 +2615,13 @@
       if (!force && sig === hLastOut) return null;
       // Ziel gewechselt: die eigenen Einträge im alten Kalender entfernen (fremde Termine dort bleiben unberührt)
       var prev = s.wrote != null ? s.wrote : r.calendarId;   // vor 4.1.0 ohne Merker: es war der eigene Kalender
-      var old = prev >= 0 && prev !== s.calId ? P.write({ calendarId: prev, events: [], prune: true }).catch(function () {}) : Promise.resolve();
+      var old = prev >= 0 && prev !== s.calId ? P.write({ calendarId: prev, events: [], prune: true, legacy: hLegacy() }).catch(function () {}) : Promise.resolve();
       // Stundenplan in einen eigenen Kalender (target2, z. B. ein Google-Kalender „Stundenplan“) – dann in Google ein-/ausblendbar
       var t2 = s.target2 && +s.target2 !== s.calId && (s.cals || []).find(function (c) { return c.id === s.target2 && c.writable !== false; }) ? +s.target2 : null;
       var main = t2 ? evs.filter(function (e) { return e.key.indexOf("st-") !== 0; }) : evs, st = t2 ? evs.filter(function (e) { return e.key.indexOf("st-") === 0; }) : [];
-      var old2 = s.wrote2 != null && s.wrote2 !== t2 && s.wrote2 !== s.calId ? P.write({ calendarId: s.wrote2, events: [], prune: true }).catch(function () {}) : Promise.resolve();
-      return old.then(function () { return old2; }).then(function () { return P.write({ calendarId: s.calId, events: main, prune: true }); })
-        .then(function (w) { res.added = w.added; res.changed = w.changed; res.removed = w.removed; return t2 ? P.write({ calendarId: t2, events: st, prune: true }) : null; })
+      var old2 = s.wrote2 != null && s.wrote2 !== t2 && s.wrote2 !== s.calId ? P.write({ calendarId: s.wrote2, events: [], prune: true, legacy: hLegacy() }).catch(function () {}) : Promise.resolve();
+      return old.then(function () { return old2; }).then(function () { return P.write({ calendarId: s.calId, events: main, prune: true, legacy: hLegacy() }); })
+        .then(function (w) { res.added = w.added; res.changed = w.changed; res.removed = w.removed; return t2 ? P.write({ calendarId: t2, events: st, prune: true, legacy: hLegacy() }) : null; })
         .then(function (w2) { hLastOut = sig; s.wrote = s.calId; s.wrote2 = t2; if (w2) { res.added += w2.added; res.changed += w2.changed; res.removed += w2.removed; } });
     }).then(function () {
       var from = Date.now() + HDAYS[0] * 864e5, to = Date.now() + HDAYS[1] * 864e5;
@@ -2669,7 +2678,7 @@
       var done = function (n) { var s2 = hState(); s2.on = false; s2.err = ""; s2.wrote = null; s2.wrote2 = null; hSave(s2); hLastOut = ""; emit(); return { removed: n || 0 }; };
       if (!P || !ids.length) return Promise.resolve(done(0));
       var n = 0;
-      return ids.reduce(function (pr, id) { return pr.then(function () { return P.write({ calendarId: id, events: [], prune: true }).then(function (w) { n += (w && w.removed) || 0; }).catch(function () {}); }); }, Promise.resolve())
+      return ids.reduce(function (pr, id) { return pr.then(function () { return P.write({ calendarId: id, events: [], prune: true, legacy: hLegacy() }).then(function (w) { n += (w && w.removed) || 0; }).catch(function () {}); }); }, Promise.resolve())
         .then(function () { return done(n); });
     },
     setOpt: function (k, v) { var s = hState(); s.opt[k] = !!v; hSave(s); return hSync(true); },

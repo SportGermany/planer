@@ -15,10 +15,15 @@ let bad = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (
   const c = await b.newContext({ viewport: { width: 384, height: 832 }, isMobile: true, hasTouch: true });
   await c.addInitScript(() => {
     // nachgestellter Android-Kalender: eigener Kalender 1, Einträge nach Schlüssel
-    const cal = window.__cal = {};
+    // wie PlanerKalenderPlugin.write: gemeinsamer Kalender, jeder Eintrag mit Besitzer (Paket); fremde bleiben, alte ohne Besitzer nach Muster „legacy“
+    const PKG = 'de.sportgermany.schule';
+    const cal = window.__cal = { 1: { 'abc123@2026-11-16': { key: 'abc123@2026-11-16', owner: 'de.sportgermany.planer' }, 'xyz9@2026-11-17': { key: 'xyz9@2026-11-17', owner: null }, 'st-99@2026-11-21': { key: 'st-99@2026-11-21', owner: null } } };
     const K = { ensure: () => Promise.resolve({ calendarId: 1 }), request: () => Promise.resolve({ permission: 'granted' }),
       write: o => { const ev = o.events || [], keys = new Set(ev.map(e => e.key)); let added = 0, removed = 0; const m = cal[o.calendarId] = cal[o.calendarId] || {};
-        ev.forEach(e => { if (!m[e.key]) added++; m[e.key] = e; }); if (o.prune !== false) Object.keys(m).forEach(k => { if (!keys.has(k)) { delete m[k]; removed++; } });
+        const re = o.legacy ? new RegExp(o.legacy) : null;
+        const mineK = k => { const x = m[k]; if (!x) return false; if (x.owner && x.owner !== PKG) return false; if (!x.owner) return keys.has(k) || !!(re && re.test(k)); return true; };
+        const own = Object.keys(m).filter(mineK);
+        ev.forEach(e => { if (!m[e.key]) added++; m[e.key] = Object.assign({}, e, { owner: PKG }); }); if (o.prune !== false) own.forEach(k => { if (!keys.has(k)) { delete m[k]; removed++; } });
         return Promise.resolve({ added, changed: 0, removed, calendarId: o.calendarId }); },
       instances: () => Promise.resolve({ events: [] }), calendars: () => Promise.resolve({ calendars: [] }) };
     const sys = { openApp: () => Promise.resolve({ opened: true }), takeHandover: () => Promise.resolve({}), installed: o => Promise.resolve({ installed: o.pkgs || [] }) };
@@ -28,20 +33,22 @@ let bad = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (
   const p = await c.newPage(), errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('dialog', d => d.accept());
   await p.goto('http://localhost:8769/'); await wait(1500);
   await p.addScriptTag({ path: path.join(__dirname, 'seed.js') }).catch(() => {}); await p.reload(); await wait(2500);
-  const count = () => p.evaluate(() => { const m = (window.__cal || {})[1] || {}, k = Object.keys(m); return { all: k.length, st: k.filter(x => x.indexOf('st-') === 0).length }; });
+  const count = () => p.evaluate(() => { const m = (window.__cal || {})[1] || {}, k = Object.keys(m); return { all: k.length, st: k.filter(x => x.indexOf('st-') === 0).length, planer: !!m['abc123@2026-11-16'], alt: !!m['xyz9@2026-11-17'], altSt: !!m['st-99@2026-11-21'] }; });
   await p.evaluate(() => SharedCalendar.handy.enable()); await wait(1500);
   const a = await count();
   ok(a.st > 0, 'Stundenplan an: ' + a.st + ' Stunden im Handykalender (' + a.all + ' Einträge)');
+  ok(a.planer && a.alt, 'Termine des Planers bleiben stehen, wenn die Schul-App abgleicht (gemeinsamer Kalender „Planer“)');
+  ok(!a.altSt, 'alter Stundenplan-Eintrag ohne Besitzer wird von der Schul-App aufgeräumt');
   // Schalter in den Einstellungen der Schul-App
   await p.click('#btnSettings'); await wait(600);
   const has = await p.$('#hoStunden'); ok(!!has, 'Einstellungen: Schalter „Stundenplan“ unter „Ins Handy übertragen“');
   if (has) { await p.click('#hoStunden'); await wait(1500); }
   const b2 = await count();
-  ok(b2.st === 0 && b2.all > 0, 'Stundenplan aus: Stunden entfernt, Rest bleibt (' + b2.st + ' Stunden, ' + b2.all + ' Einträge)');
+  ok(b2.st === 0 && b2.all > 0 && b2.planer, 'Stundenplan aus: Stunden entfernt, Rest bleibt (' + b2.st + ' Stunden, ' + b2.all + ' Einträge)');
   if (has) { await p.click('#hoStunden'); await wait(1500); }
   const c2 = await count(); ok(c2.st === a.st, 'wieder an: Stunden wieder da (' + c2.st + ')');
   const r = await p.evaluate(() => SharedCalendar.handy.disable()); await wait(500);
-  const d = await count(); ok(d.all === 0 && !(await p.evaluate(() => SharedCalendar.handy.state().on)), 'Abgleich aus: alle Einträge der App entfernt (' + JSON.stringify(r) + ')');
+  const d = await count(); ok(d.all === 2 && d.planer && d.alt && !(await p.evaluate(() => SharedCalendar.handy.state().on)), 'Abgleich aus: alle Einträge der Schul-App entfernt, Planer-Termine bleiben (' + JSON.stringify(r) + ')');
   ok(!errs.length, 'keine Fehler ' + errs.join(' | '));
   await b.close(); srv.kill();
   console.log(bad ? bad + ' Fehler' : 'Handykalender aus/ein grün'); process.exit(bad ? 1 : 0);

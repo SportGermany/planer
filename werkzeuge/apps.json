@@ -19,7 +19,7 @@
       "bibel",
       "sg"
     ],
-    "ver": "2.0.2",
+    "ver": "2.0.3",
     "probe": {
       "keys": {
         "zweiminutenbibel_v2": "{\"streak\":7}"
@@ -41,7 +41,7 @@
       "schule",
       "sg"
     ],
-    "ver": "3.0.2",
+    "ver": "3.0.3",
     "probe": {
       "keys": {
         "schulplaner-lokal-v1": "{\"homeMore\":true}"
@@ -86,7 +86,7 @@
       "wissen",
       "sg"
     ],
-    "ver": "3.2.2",
+    "ver": "3.2.3",
     "probe": {
       "keys": {
         "wk_onboarded": "1",
