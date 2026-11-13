@@ -5,6 +5,10 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Planer 6.2.3 – importierte Kalenderdatei kam nicht im Handykalender an
+- Fehler (Rückmeldung): Königssee-Plan (kalender/3-quali-bgl-2026.ics) im Planer importiert, aber nicht im Handykalender. Ursache: `phone.apply` legt übernommene Termine mit app „Handy“ an, und `hOut` ließ alle „Handy“-Einträge weg (gedacht gegen Rückschreiben von Terminen, die aus dem Handy stammen). Nachgestellt: alte Fassung 0 von 28 im Kalender.
+- Lösung: „Handy“-Einträge gehen mit ins Handy, außer derselbe Termin (Titel, Datum, Uhrzeit) steht schon in einem anderen Handykalender (Abgleich-Zwischenspeicher). Test `import-handy.js`: 27 von 28 geschrieben, der schon vorhandene nicht doppelt.
+
 ## Planer 6.2.2 · Schule 3.0.3 · Training 3.2.3 · Bibel 2.0.3 – Apps löschten sich gegenseitig die Handykalender-Einträge
 - Fehler (Rückmeldung): „meine normalen Termine landen nicht mehr in meinem Kalender“. Ursache: alle APKs nutzen denselben lokalen Kalender „Planer“ (Konto „Planer“, LOCAL – `ownId()` findet den, den die erste App angelegt hat). `write(prune)` löschte im eigenen Kalender ALLES, was nicht in der eigenen Liste stand → die Schul-App löschte beim Abgleich die Termine des Planers (und umgekehrt den Stundenplan). Seit der Aufteilung in Einzel-Apps (6.0).
 - Lösung (PlanerKalenderPlugin.java): jeder Eintrag bekommt `SYNC_DATA3 = Paketname`; jede App liest/ändert/löscht nur eigene. Alte Einträge ohne Besitzer: übernommen, wenn der Schlüssel jetzt geschrieben wird, sonst nur gelöscht, wenn der Schlüssel zum Muster der App passt (`legacy` aus verbund.js `hLegacy()`: Schule lp/lc/lh/st, Training pp/ps/tb/ta, schlanker Planer alles andere).

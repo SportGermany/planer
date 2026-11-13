@@ -2478,8 +2478,11 @@
       ev.h = strHash([ev.title, ev.start, ev.end, ev.description, ev.reminder].join("|"));
       out.push(ev);
     }
+    // Übernommene Termine (Kalenderdatei, geteilt): gehen mit ins Handy – außer derselbe Termin steht dort schon in einem anderen Kalender.
+    // Früher blieben alle „Handy“-Einträge draußen → eine importierte Datei (z. B. Lehrgangsplan) kam nie im Handykalender an.
+    var inPhone = {}; try { (hState().cache.events || []).forEach(function (x) { inPhone[(x.title || "") + "|" + x.date + "|" + (x.time || "")] = 1; }); } catch (e0) {}
     if (opt.termine) withStatus(occurrences(from, to)).forEach(function (e) {
-      if (e.app === "Handy" || e.st === "skip" || (e.of > 1 && e.day > 1 && e.date !== from)) return;   // Ausgelassenes nicht ins Handy   // mehrtägig: einmal (am ersten Tag oder am Anfang des Zeitraums)
+      if ((e.app === "Handy" && inPhone[(e.title || "") + "|" + e.date + "|" + (e.time || "")]) || e.st === "skip" || (e.of > 1 && e.day > 1 && e.date !== from)) return;   // Ausgelassenes nicht ins Handy   // mehrtägig: einmal (am ersten Tag oder am Anfang des Zeitraums)
       // erledigt (von Hand oder aus der Training-App): im Handy/Google mit „✓“ und dem Ergebnis in der Beschreibung
       var dn = e.st === "done";
       add(dn ? Object.assign({}, e, { title: "✓ " + e.title }) : e, (e.note ? e.note + "\n" : "") + "Planer · " + e.app + (dn ? "\nErledigt" + (e.auto ? " (laut Trainingstagebuch)" : "") : ""));

@@ -1592,6 +1592,8 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["6.2.3", ["Importierte Kalenderdateien (z. B. Lehrgangsplan) landen jetzt auch im Handykalender – vorher blieben sie nur im Planer",
+      "Steht derselbe Termin schon in einem anderen Handykalender, wird er nicht doppelt eingetragen"]],
     ["6.2.2", ["Handykalender: Deine Termine verschwinden nicht mehr – die Schul-App hat beim Abgleich die Einträge des Planers im gemeinsamen Kalender „Planer“ gelöscht. Jetzt räumt jede App nur ihre eigenen Einträge auf",
       "Nach dem Update trägt der Planer beim ersten Start alle deine Termine wieder ein"]],
     ["6.2.1", ["Handykalender: Ausschalten entfernt jetzt die Einträge wieder aus dem Handy – auch „Abgleich aus“",
