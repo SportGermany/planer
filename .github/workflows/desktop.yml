@@ -1,0 +1,62 @@
+# Baut das PC-Programm für Ubuntu (werkzeuge/desktop, Electron) als .deb mit Release „desktop-v<version>“.
+# Gebaut wird nur, wenn es für die Version in werkzeuge/desktop/package.json noch kein Release gibt (Version erhöhen = neues Paket).
+name: PC-Programm bauen
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop
+  cancel-in-progress: false
+
+jobs:
+  deb:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          VER=$(node -p 'require("./werkzeuge/desktop/package.json").version')
+          echo "ver=$VER" >> "$GITHUB_OUTPUT"
+          if gh release view "desktop-v$VER" >/dev/null 2>&1 && [ "${{ github.event_name }}" != "workflow_dispatch" ]; then echo "neu=nein" >> "$GITHUB_OUTPUT"; echo "Release desktop-v$VER gibt es schon"; else echo "neu=ja" >> "$GITHUB_OUTPUT"; fi
+      - if: steps.v.outputs.neu == 'ja'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - if: steps.v.outputs.neu == 'ja'
+        name: Paket bauen
+        working-directory: werkzeuge/desktop
+        run: |
+          npm install --no-audit --no-fund
+          node www.js
+          npx electron-builder --linux deb --publish never
+          ls -la dist/*.deb
+      - if: steps.v.outputs.neu == 'ja'
+        name: Programm starten und prüfen
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb >/dev/null
+          cd werkzeuge/tests && npm install --no-audit --no-fund >/dev/null
+          xvfb-run -a node desktop.js
+      - if: steps.v.outputs.neu == 'ja'
+        name: Release desktop-v${{ steps.v.outputs.ver }}
+        run: |
+          VER=${{ steps.v.outputs.ver }}
+          cat > "$RUNNER_TEMP/notes.md" <<NOTES
+          **Planer für Ubuntu $VER** – Kalender, Aufgaben, Schule, Training und Bibel in einem Programm, mit Cloud-Abgleich zum Handy.
+
+          **Installieren:** \`planer-desktop-$VER.deb\` herunterladen, doppelklicken (Ubuntu-Software) – oder im Terminal: \`sudo apt install ./planer-desktop-$VER.deb\`.
+          Danach im App-Menü „Planer“ starten. **Update:** neue .deb genauso installieren, die Daten bleiben.
+          **Handy-Daten:** im Programm Mehr › Sicherung › Cloud mit demselben Zugang wie auf dem Handy verbinden.
+          NOTES
+          gh release delete "desktop-v$VER" --yes 2>/dev/null || true
+          gh release create "desktop-v$VER" werkzeuge/desktop/dist/planer-desktop-$VER.deb --target "$GITHUB_SHA" --title "Planer für Ubuntu $VER" --notes-file "$RUNNER_TEMP/notes.md" --latest=false

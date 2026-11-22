@@ -5,6 +5,13 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Planer 6.3.0 + Planer für Ubuntu 1.0.0 (PC-Programm)
+- Wunsch: native Ubuntu-App mit PC-Design. Antworten: ein Programm mit allem, Cloud-Abgleich wie Handy, .deb, Schwerpunkte großer Kalender, Tastenkürzel, mehrere Spalten.
+- `werkzeuge/desktop/` (Electron 33): `www.js` kopiert ALLE Bereiche (kein schlanker Planer) nach www/planer/… und setzt in design.js `window.SGDesktop` + Programmversion; `main.js` lädt über das eigene Schema app://local/planer/app/ (Pfade wie im Netz/in der APK, BASE /planer/), Links nach außen im Browser, Fenstergröße gemerkt, eine Instanz. `npm run deb` → dist/planer-desktop-<ver>.deb (electron-builder, `publish: null` – sonst Absturz „reading 'channel'“).
+- Workflow `.github/workflows/desktop.yml`: baut bei neuer Version in package.json, startet das Programm unter xvfb (`werkzeuge/tests/desktop.js`) und legt Release `desktop-v<ver>` mit der .deb an. Update-Suche im Programm (design.js) schaut nach `desktop-v…` mit .deb und öffnet den Download im Browser.
+- PC-Ansicht (app/index.html, 1-app.js `deskCheck`): im Programm oder mit ?desk=1 ab 1100 px drei Spalten – links Heute (.dl), Mitte Monat/Woche immer sichtbar, rechts Aufgaben mit Schnelleingabe („morgen“, „Fr“ über SGQuick). Tastenkürzel N/T/←→/M/W/1–4///?. Handy unverändert (Spalten-Wrapper .dl ohne Wirkung).
+- Lokal geprüft: Electron startet (Playwright _electron unter xvfb), alle Bereiche öffnen, keine Skriptfehler; .deb gebaut (Depends gtk3/nss …, Menüeintrag + Symbol).
+
 ## Planer 6.2.3 – importierte Kalenderdatei kam nicht im Handykalender an
 - Fehler (Rückmeldung): Königssee-Plan (kalender/3-quali-bgl-2026.ics) im Planer importiert, aber nicht im Handykalender. Ursache: `phone.apply` legt übernommene Termine mit app „Handy“ an, und `hOut` ließ alle „Handy“-Einträge weg (gedacht gegen Rückschreiben von Terminen, die aus dem Handy stammen). Nachgestellt: alte Fassung 0 von 28 im Kalender.
 - Lösung: „Handy“-Einträge gehen mit ins Handy, außer derselbe Termin (Titel, Datum, Uhrzeit) steht schon in einem anderen Handykalender (Abgleich-Zwischenspeicher). Test `import-handy.js`: 27 von 28 geschrieben, der schon vorhandene nicht doppelt.

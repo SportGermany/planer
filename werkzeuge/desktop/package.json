@@ -1,0 +1,54 @@
+{
+  "name": "planer-desktop",
+  "productName": "Planer",
+  "version": "1.0.0",
+  "description": "Planer für Ubuntu: Kalender, Aufgaben, Schule, Training und Bibel – offline, mit Cloud-Abgleich zum Handy",
+  "homepage": "https://github.com/SportGermany/planer",
+  "author": {
+    "name": "SportGermany",
+    "email": "planer@sportgermany.invalid"
+  },
+  "license": "UNLICENSED",
+  "main": "main.js",
+  "scripts": {
+    "www": "node www.js",
+    "start": "node www.js && electron .",
+    "deb": "node www.js && electron-builder --linux deb --publish never"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "de.sportgermany.planer.desktop",
+    "productName": "Planer",
+    "executableName": "planer",
+    "files": [
+      "main.js",
+      "www/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "linux": {
+      "target": [
+        "deb"
+      ],
+      "category": "Office",
+      "icon": "icon.png",
+      "synopsis": "Kalender, Aufgaben, Schule, Training, Bibel",
+      "desktop": {
+        "StartupWMClass": "Planer",
+        "Keywords": "Kalender;Planer;Schule;Training;Bibel;"
+      }
+    },
+    "deb": {
+      "artifactName": "planer-desktop-${version}.deb"
+    },
+    "publish": null
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SportGermany/planer.git"
+  }
+}

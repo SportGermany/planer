@@ -448,6 +448,27 @@
     dwPn.addEventListener("touchend", function () { on = false; }, { passive: true });
   })();
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && drawerOpen) closeDrawer(); });
+  /* Tastenkürzel (vor allem am PC): N neu · T heute · ←/→ blättern · M Monat · W Woche · 1–4 Bereiche · / Suche · ? Übersicht.
+     Nur ohne Strg/Alt und wenn gerade nicht in ein Feld getippt wird. */
+  var KEYS = [["N", "Neuer Termin oder neue Aufgabe"], ["T", "Zu heute springen"], ["← →", "Vorheriger / nächster Monat bzw. Woche"], ["M", "Monatsansicht"], ["W", "Wochenansicht"], ["1–4", "Bereiche der Leiste"], ["/ oder Strg+K", "Suchen und Befehle"], ["?", "Diese Übersicht"], ["Esc", "Fenster schließen"]];
+  document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return;
+    var tg = e.target, tn = tg && tg.tagName;
+    if (tn === "INPUT" || tn === "TEXTAREA" || tn === "SELECT" || (tg && tg.isContentEditable) || sheetOpen || (window.SGShellSearch && SGShellSearch.isOpen())) return;
+    var k = e.key;
+    if (k === "?" ) { e.preventDefault(); return sheet("<h3>Tastenkürzel</h3>" + '<div class="grp"><div class="cells">' + KEYS.map(function (x) { return '<div class="kbr"><kbd>' + esc(x[0]) + "</kbd><span>" + esc(x[1]) + "</span></div>"; }).join("") + '</div></div><div class="btns"><button class="btn p" data-s="x">OK</button></div>', function () { closeSheet(); }); }
+    if (k === "/") { e.preventDefault(); return openSearch(); }
+    if (/^[1-4]$/.test(k)) { var nb = document.querySelectorAll("#nav > button, .nav > button"); if (nb[+k - 1]) { e.preventDefault(); nb[+k - 1].click(); } return; }
+    if (k === "n" || k === "N") { e.preventDefault(); return addSheet(); }
+    if (cur.v !== "kalender") return;
+    if (k === "t" || k === "T") { setSel(today()); calMonth = today().slice(0, 8) + "01"; renderCal(); return; }
+    if (k === "m" || k === "M" || k === "w" || k === "W") { try { localStorage.setItem("sg-monatsansicht-v1", /w/i.test(k) ? "woche" : "monat"); } catch (x) {} if (DESK || calMon) renderMonth(); else setMon(true); return; }
+    if (k === "ArrowLeft" || k === "ArrowRight") {
+      var dir = k === "ArrowRight" ? 1 : -1; e.preventDefault();
+      if ((DESK || calMon) && monView() === "monat") { calMonth = shiftMonth(calMonth, dir); renderMonth(dir > 0 ? "l" : "r"); }
+      else { setSel(plus(calSel, (DESK || calMon) ? 7 * dir : dir)); renderAfterPick(); }
+    }
+  });
   (wideMQ.addEventListener ? wideMQ.addEventListener.bind(wideMQ, "change") : wideMQ.addListener.bind(wideMQ))(function () { if (drawerOpen) closeDrawer(); if (!V[cur.v].native) render(); });
 
   /* ---------- Sprünge aus den Bereichen (Links, Befehle, Module) ---------- */
@@ -566,11 +587,48 @@
   function dayRoll() { var t = today(); if (t === calToday) return false; if (calSel === calToday) setSel(t); calToday = t; return true; }
   function calBox() {
     var w = $("n-kalender").firstElementChild;
-    if (!$("cal-strip")) w.innerHTML = '<div id="cal-strip"></div><div id="cal-tr"></div><div id="cal-up"></div><div id="cal-eve"></div><div id="cal-day"></div><div id="cal-next"></div><div id="cal-month"></div>';
+    // .dl = linke Spalte am PC (Heute, Als Nächstes, Tagesplan, Demnächst); Mitte großer Kalender, rechts Aufgaben – am Handy untereinander wie bisher
+    if (!$("cal-strip")) w.innerHTML = '<div class="dl"><div id="cal-strip"></div><div id="cal-tr"></div><div id="cal-up"></div><div id="cal-eve"></div><div id="cal-day"></div><div id="cal-next"></div></div><div id="cal-month"></div><div id="cal-tasks"></div>';
     calModeCls();
     return w;
   }
-  function renderCal() { dayRoll(); calBox(); calData(); renderStrip(); renderTr(); renderUp(); renderEve(); renderDay(); renderNext(); if (calMon) renderMonth(); widget(); }
+  function renderCal() { dayRoll(); calBox(); calData(); renderStrip(); renderTr(); renderUp(); renderEve(); renderDay(); renderNext(); if (calMon || DESK) renderMonth(); if (DESK) renderDeskTasks(); else if ($("cal-tasks")) $("cal-tasks").innerHTML = ""; widget(); }
+  /* ---------- PC-Programm (werkzeuge/desktop) und breite Fenster: drei Spalten ----------
+   * links Heute, Mitte großer Kalender (Monat oder Woche), rechts Aufgaben. Aktiv im Desktop-Programm (window.SGDesktop)
+   * oder mit ?desk=1, jeweils ab 1100 px Breite; schmaler bleibt die Handy-Ansicht. */
+  var DESK = false;
+  function deskCheck() {
+    var on = !!(window.SGDesktop || /[?&]desk=1/.test(location.search)) && innerWidth >= 1100;
+    if (on === DESK) return false;
+    DESK = on; document.documentElement.classList.toggle("desk", on);
+    if (on && calMon) { calMon = false; calModeCls(); }
+    return true;
+  }
+  function renderDeskTasks() {
+    var el = $("cal-tasks"); if (!el) return;
+    var t = today(), list = C().tasks.list().filter(function (q) { return !q.done; });
+    var grp = [["Überfällig", function (q) { return q.due && q.due < t; }], ["Heute", function (q) { return q.due === t; }], ["Demnächst", function (q) { return q.due && q.due > t; }], ["Ohne Datum", function (q) { return !q.due; }]];
+    var h = '<div class="grp dtk"><header><span>Aufgaben' + (list.length ? " · " + list.length : "") + '</span><button class="lnk" data-dtk="alle">Alle ›</button></header>' +
+      '<input class="dtin" id="dtin" placeholder="+ Aufgabe (Enter) – „morgen“, „Fr“ gehen auch" maxlength="140" enterkeyhint="done">';
+    grp.forEach(function (g) {
+      var xs = list.filter(g[1]).sort(function (a, b) { return (a.due || "9").localeCompare(b.due || "9") || (b.prio || 0) - (a.prio || 0); }); if (!xs.length) return;
+      h += '<div class="dtg' + (g[0] === "Überfällig" ? " late" : "") + '">' + g[0] + '</div><div class="cells">' + xs.slice(0, 30).map(function (q) {
+        return '<div class="dtr"><button class="ck" data-ck="' + esc(q.id) + '" aria-label="Erledigt: ' + esc(q.title) + '"></button><span>' + esc(q.title) + (q.due && q.due !== t ? "<small>" + fmtDay(q.due) + "</small>" : "") + "</span></div>";
+      }).join("") + "</div>";
+    });
+    if (!list.length) h += '<p class="s" style="padding:12px 16px">Keine offenen Aufgaben.</p>';
+    el.innerHTML = h + "</div>";
+    var inp = $("dtin");
+    inp.onkeydown = function (e) {
+      if (e.key !== "Enter" || !inp.value.trim()) return;
+      var txt = inp.value.trim(), due = "", q = null;
+      try { q = window.SGQuick ? SGQuick.parseQuick(txt, new Date()) : null; } catch (x) {}
+      if (q && q.date) { due = q.date; txt = q.title || txt; }
+      C().tasks.add({ title: txt, due: due }); inp.value = ""; renderCal(); setTimeout(function () { var i2 = $("dtin"); if (i2) i2.focus(); }, 30);
+    };
+    el.onclick = function (e) { if (e.target.closest("[data-dtk]")) go("aufgaben", null, null, { push: true }); };
+  }
+  window.addEventListener("resize", function () { if (deskCheck() && cur.v === "kalender") renderCal(); });
   /* Abend-Rückblick (schlanker Planer, ab 18 Uhr): was heute erledigt ist, was offen blieb – Offenes mit einem Tipp auf morgen */
   /* Training heute (PLAN-NEUORDNUNG.md): Bereitschaft, Wetter, krank/verletzt, Ruhetag aus der Training-App.
      Schlanker Planer: aus der Cloud-Kopie (sg-fremd-trainingheute, nur lesen), sonst direkt aus dem gemeinsamen Speicher. */
@@ -648,6 +706,7 @@
   var calMon = false;
   function calModeCls() { var w = $("n-kalender").firstElementChild; if (w) w.classList.toggle("mon", calMon); }
   function setMon(on) {
+    if (DESK) { if (on && cur.v !== "kalender") go("kalender"); return; }   // am PC steht der große Kalender immer in der Mitte
     if (on === calMon) return;
     if (on) { calMon = true; calMonth = calSel.slice(0, 8) + "01"; history.pushState({ app: 1, mon: 1, from: history.state && history.state.from }, "", location.hash); calModeCls(); renderMonth(); render(); $("n-kalender").scrollTop = 0; if (window.SGHaptic) SGHaptic("tap"); return; }
     scrollBusy = Date.now() + 400;   // ein zweiter Tipp (Doppeltipp im Monat) trifft nicht die Tagesansicht darunter
@@ -882,7 +941,7 @@
   }
   // Tag gewählt: Leiste, Tagesplan, Monat, Blick und Danach neu; von unten (Monat, Danach) weich nach oben zum Tagesplan
   function renderAfterPick(scrollUp) {
-    renderStrip(); renderUp(); renderDay(); renderNext(); if (calMon) renderMonth();
+    renderStrip(); renderUp(); renderDay(); renderNext(); if (calMon || DESK) renderMonth();
     if (scrollUp) scrollCal(0);
   }
   var scrollBusy = 0;
@@ -1592,6 +1651,9 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["6.3.0", ["Neu: Planer für Ubuntu (PC-Programm, .deb) – alles in einem Fenster, mit Cloud-Abgleich zum Handy",
+      "Am PC und in breiten Fenstern: drei Spalten – Heute links, großer Kalender (Monat/Woche) in der Mitte, Aufgaben rechts",
+      "Tastenkürzel: N neu · T heute · ←/→ blättern · M Monat · W Woche · 1–4 Bereiche · / Suche · ? Übersicht"]],
     ["6.2.3", ["Importierte Kalenderdateien (z. B. Lehrgangsplan) landen jetzt auch im Handykalender – vorher blieben sie nur im Planer",
       "Steht derselbe Termin schon in einem anderen Handykalender, wird er nicht doppelt eingetragen"]],
     ["6.2.2", ["Handykalender: Deine Termine verschwinden nicht mehr – die Schul-App hat beim Abgleich die Einträge des Planers im gemeinsamen Kalender „Planer“ gelöscht. Jetzt räumt jede App nur ihre eigenen Einträge auf",
@@ -2293,7 +2355,7 @@
   navEl.innerHTML = TABS.map(function (t) { return '<button data-tab="' + t[0] + '"><span class="pill">' + ico(t[2]) + "</span>" + t[1] + "</button>"; }).join("");
   // Offline-Speicher für die ganze App (Service Worker liegt in /planer/, gilt für alle Seiten)
   // (in der APK liegen die Dateien in der App – dort kein Service Worker)
-  if (!window.SGNative && "serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("../sw.js", { scope: "../" }).catch(function () {});
+  if (!window.SGNative && !window.SGDesktop && "serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("../sw.js", { scope: "../" }).catch(function () {});
   function start() {
     if (!C()) return setTimeout(start, 30);
     C().onChange(function () { clearTimeout(refresh.t); refresh.t = setTimeout(refresh, 100); });
@@ -2301,6 +2363,7 @@
     nativeFiles();
     if (C().setSnack) C().setSnack(function (t, fn) { snack(t, function () { fn(); refresh(); }); });   // Rückgängig auch aus dem Terminblatt
     if (C().setPalette && window.SGSuche) C().setPalette(function (text) { try { openSearch(text); } catch (e) { if (sx) sxFail(e); else { diag("Suche: " + e.message); C().setPalette(null); C().palette(text); } } });
+    deskCheck();
     if (location.hash.length > 1) fromHash(); else { history.replaceState({ app: 1 }, "", "#kalender"); render(); }
     if (window.SGNative && !localStorage.getItem("sg-umzug-v1")) setTimeout(function () { moveInSheet(true); }, 600);
     else if (window.SGNative && !localStorage.getItem("sg-apk-setup")) setTimeout(setupSheet, 900);

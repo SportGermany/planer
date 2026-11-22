@@ -467,7 +467,7 @@
 (function () {
   "use strict";
   if (window.SGFixUrl) return;
-  var VERSION = "6.2.3";
+  var VERSION = "6.3.0";
   window.SGVersion = VERSION;
   var BASE = "/" + (location.pathname.split("/")[1] || "") + "/";
   var MAP = { trainingsblog: "training/", pulsplan: "training/atmung/", rodeln: "training/mobility/", schulplaner: "", kalender: "",
@@ -558,24 +558,27 @@
   // Mehrere Apps aus einem Repo (werkzeuge/PLAN-APPS.md): jede App sucht nur ihr eigenes Release –
   // Planer „v4.1.0“, die anderen „<app>-v1.0.0“ (window.SGApp setzt der APK-Bau, werkzeuge/apk/www.js)
   var REL = "https://api.github.com/repos/SportGermany/planer/releases?per_page=40", apkUrl = "";
-  function relTag(t) { var a = window.SGApp && window.SGApp !== "planer" ? window.SGApp + "-v" : "v"; return t.indexOf(a) === 0 && /^\d/.test(t.slice(a.length)) ? t.slice(a.length) : null; }
+  // PC-Programm (werkzeuge/desktop, Electron): eigene Releases „desktop-v…“ mit .deb-Paket
+  var PKGRE = window.SGDesktop ? /\.deb$/ : /\.apk$/;
+  function relTag(t) { var a = window.SGDesktop ? "desktop-v" : window.SGApp && window.SGApp !== "planer" ? window.SGApp + "-v" : "v"; return t.indexOf(a) === 0 && /^\d/.test(t.slice(a.length)) ? t.slice(a.length) : null; }
   function nativeCheck(status, auto) {
     if (!navigator.onLine) { status("Ohne Internet kann nicht nach einer neuen Version gesucht werden. Die App läuft offline ganz normal weiter."); return Promise.resolve("offline"); }
     status("Suche nach einer neuen Version …");
     return fetch(REL, { cache: "no-store", headers: { Accept: "application/vnd.github+json" } }).then(function (r) { if (r.status === 404) return []; if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (list) {
       // neuestes eigenes Release mit APK (Entwürfe und Vorabversionen zählen nicht); keins = nichts Neueres
-      var j = (Array.isArray(list) ? list : [list]).filter(function (x) { return x && !x.draft && !x.prerelease && relTag(String(x.tag_name || "")) && (x.assets || []).some(function (y) { return /\.apk$/.test(y.name); }); })
+      var j = (Array.isArray(list) ? list : [list]).filter(function (x) { return x && !x.draft && !x.prerelease && relTag(String(x.tag_name || "")) && (x.assets || []).some(function (y) { return PKGRE.test(y.name); }); })
         .sort(function (x, y) { return newer(relTag(x.tag_name), relTag(y.tag_name)) ? -1 : 1; })[0] || {};
-      var v = j.tag_name ? relTag(j.tag_name) : "", a = (j.assets || []).find(function (x) { return /\.apk$/.test(x.name); });
+      var v = j.tag_name ? relTag(j.tag_name) : "", a = (j.assets || []).find(function (x) { return PKGRE.test(x.name); });
       if (!a || !newer(v, window.SGVersion)) { status("Du hast die neueste Version (" + window.SGVersion + ")."); return "aktuell"; }
       apkUrl = a.browser_download_url;
       if (auto) { status("Version " + v + " ist da."); return v; }
+      if (window.SGDesktop) { status("Version " + v + " gefunden – das neue Paket wird im Browser geladen. Danach doppelklicken und installieren (deine Daten bleiben)."); window.SGDesktop.openExternal(apkUrl); return "neu"; }
       status("Version " + v + " gefunden – die neue App wird heruntergeladen. Danach antippen und installieren (deine Daten bleiben)."); install(status, v); return "neu";
     }).catch(function () { status("GitHub ist gerade nicht erreichbar. Die App läuft offline ganz normal weiter."); return "fehler"; });
   }
   function check(status, auto) {
     status = status || function () {};
-    if (window.SGNative) return nativeCheck(status, auto);
+    if (window.SGNative || window.SGDesktop) return nativeCheck(status, auto);
     if (!navigator.onLine) { status("Ohne Internet kann nicht nach einer neuen Version gesucht werden. Die App läuft offline ganz normal weiter."); return Promise.resolve("offline"); }
     status("Suche nach einer neuen Version …");
     return remote().then(function (v) {

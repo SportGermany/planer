@@ -266,7 +266,30 @@ textarea.diag { display: block; width: calc(100% - 32px); margin: 0 16px; min-he
 .wich .cd { flex: none; min-width: 64px; font-size: 15px; color: var(--acc); }
 .wich .wrow span { flex: 1; min-width: 0; }
 .wich .wrow small { display: block; font-size: 13px; color: var(--muted); }
-.trc.bad { color: #ffb4ab; } .trc.ok { color: var(--c-training, #4fc18a); }
+.trc.bad { color: #ffb4ab; }
+/* ---------- PC-Programm / breite Fenster: drei Spalten (html.desk, siehe deskCheck in 1-app.js) ---------- */
+html.desk #n-kalender .wrap { max-width: none; display: grid; grid-template-columns: minmax(270px, 330px) minmax(0, 1fr) minmax(250px, 310px); gap: 20px; align-items: start; padding: 8px 24px 24px; }
+html.desk #n-kalender .wrap #cal-month { display: block !important; margin: 0; }
+html.desk #n-kalender .wrap #cal-strip { display: none; }
+html.desk #n-kalender .dl { min-width: 0; }
+html.desk #n-kalender .dl #cal-next header .lnk { display: none; }
+html.desk #cal-tasks { position: sticky; top: 8px; min-width: 0; }
+html.desk .mgrid.wide .mc { min-height: 96px; }
+html.desk .wkgrid { min-height: 60vh; }
+#cal-tasks:empty { display: none; }
+.dtk .dtin { width: calc(100% - 24px); margin: 4px 12px 8px; height: 44px; border-radius: 22px; border: 1px solid var(--line); background: var(--s3, transparent); color: var(--ink); padding: 0 16px; font: inherit; }
+.dtk .dtg { margin: 10px 16px 4px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.dtk .dtg.late { color: #ffb4ab; }
+.dtk .dtr { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 4px 16px; }
+.dtk .dtr + .dtr { border-top: 1px solid var(--line); }
+.dtk .dtr .ck { flex: none; width: 24px; height: 24px; border-radius: 12px; border: 2px solid var(--muted); background: none; cursor: pointer; position: relative; }
+.dtk .dtr .ck::after { content: ""; position: absolute; inset: -10px; }
+.dtk .dtr span { flex: 1; min-width: 0; }
+.dtk .dtr small { display: block; font-size: 13px; color: var(--muted); }
+.kbr { display: flex; align-items: center; gap: 16px; min-height: 44px; padding: 4px 16px; }
+.kbr + .kbr { border-top: 1px solid var(--line); }
+.kbr kbd { min-width: 96px; font: 600 13px/1.6 ui-monospace, monospace; color: var(--acc); }
+ .trc.ok { color: var(--c-training, #4fc18a); }
 .eve .evo { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 4px 8px 4px 16px; border-top: 1px solid var(--line); }
 .eve .evo span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .eve .btns { padding: 8px 12px 12px; }
@@ -489,13 +512,13 @@ html.m3 .ev .go em { position: absolute; width: 1px; height: 1px; overflow: hidd
 @media (min-width: 900px) { html.m3 .nav { height: auto; border-right: 0; } }
 </style>
 <!-- verbund-design:start -->
-<script data-design="bahn" data-sync="" data-dir="1" src="../sg/design.js?v=6.2.3.9a9403"></script>
+<script data-design="bahn" data-sync="" data-dir="1" src="../sg/design.js?v=6.3.0.17cd0c"></script>
 <!-- verbund-design:end -->
 <!-- suche:start -->
-<script src="../sg/schnell.js?v=6.2.3.9a9403"></script>
-<script src="../sg/suche.js?v=6.2.3.9a9403"></script>
-<script src="../sg/bibelstelle.js?v=6.2.3.9a9403"></script>
-<script src="../sg/suche-daten.js?v=6.2.3.9a9403"></script>
+<script src="../sg/schnell.js?v=6.3.0.17cd0c"></script>
+<script src="../sg/suche.js?v=6.3.0.17cd0c"></script>
+<script src="../sg/bibelstelle.js?v=6.3.0.17cd0c"></script>
+<script src="../sg/suche-daten.js?v=6.3.0.17cd0c"></script>
 <!-- suche:end -->
 </head>
 <body>
@@ -512,9 +535,9 @@ html.m3 .ev .go em { position: absolute; width: 1px; height: 1px; overflow: hidd
 <div class="drawer" id="drawer"><div class="dw-pn" id="dwpn" role="dialog" aria-modal="true" aria-label="Bereichsmenü"></div></div>
 <div class="sheet" id="sheet"><div class="pn"></div></div>
 <div class="snack" id="snack"></div>
-<script src="js/1-app.js?v=6.2.3.9a9403"></script>
+<script src="js/1-app.js?v=6.3.0.17cd0c"></script>
 <!-- gemeinsamer-kalender:start -->
-<script data-app="planer" data-fab="off" src="../sg/verbund.js?v=6.2.3.9a9403"></script>
+<script data-app="planer" data-fab="off" src="../sg/verbund.js?v=6.3.0.17cd0c"></script>
 <!-- gemeinsamer-kalender:end -->
 </body>
 </html>
