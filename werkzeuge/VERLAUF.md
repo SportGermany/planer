@@ -5,6 +5,11 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Planer für Ubuntu 1.0.1 – „Start nicht möglich“ auf Ubuntu
+- Fehler (Rückmeldung): Programm startet auf Ubuntu nicht. Ursache: Ubuntu ab 23.10/24.04 verbietet unprivilegierte Benutzer-Namensräume (AppArmor, `kernel.apparmor_restrict_unprivileged_userns=1`); die Electron-Sandbox braucht sie. Das Standard-postinst von electron-builder prüft `unshare --user true` als root (dort erlaubt) und setzt chrome-sandbox darum auf 0755 statt SUID → als normaler Nutzer keine benutzbare Sandbox → Abbruch.
+- Lösung: eigenes `deb-postinst.sh` (AppArmor-Profil /etc/apparmor.d/planer mit `userns`, wenn abi 4.0 vorhanden; chrome-sandbox immer root:4755) und `deb-postrm.sh` (Profil wieder entfernen). Abhängigkeiten mit t64-Alternativen (24.04).
+- Geprüft: in Ubuntu 24.04 (Container) installiert, als normaler Nutzer gestartet – läuft. CI installiert die .deb jetzt auf dem Ubuntu-24.04-Runner und startet sie als normaler Nutzer (Zeitlimit 25 s = läuft).
+
 ## Planer 6.3.0 + Planer für Ubuntu 1.0.0 (PC-Programm)
 - Wunsch: native Ubuntu-App mit PC-Design. Antworten: ein Programm mit allem, Cloud-Abgleich wie Handy, .deb, Schwerpunkte großer Kalender, Tastenkürzel, mehrere Spalten.
 - `werkzeuge/desktop/` (Electron 33): `www.js` kopiert ALLE Bereiche (kein schlanker Planer) nach www/planer/… und setzt in design.js `window.SGDesktop` + Programmversion; `main.js` lädt über das eigene Schema app://local/planer/app/ (Pfade wie im Netz/in der APK, BASE /planer/), Links nach außen im Browser, Fenstergröße gemerkt, eine Instanz. `npm run deb` → dist/planer-desktop-<ver>.deb (electron-builder, `publish: null` – sonst Absturz „reading 'channel'“).

@@ -48,6 +48,17 @@ jobs:
           cd werkzeuge/tests && npm install --no-audit --no-fund >/dev/null
           xvfb-run -a node desktop.js
       - if: steps.v.outputs.neu == 'ja'
+        name: Paket installieren und als normaler Nutzer starten (Ubuntu 24.04 mit AppArmor-Sperre wie auf dem PC)
+        run: |
+          cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null || true
+          sudo apt-get install -y -qq ./werkzeuge/desktop/dist/planer-desktop-${{ steps.v.outputs.ver }}.deb
+          ls -la /opt/Planer/chrome-sandbox /etc/apparmor.d/planer || true
+          set +e; timeout 25 xvfb-run -a /usr/bin/planer > "$RUNNER_TEMP/start.log" 2>&1; rc=$?; set -e
+          grep -i "sandbox\|FATAL" "$RUNNER_TEMP/start.log" | head -20 || true
+          # 124 = lief bis zum Zeitlimit, also gestartet; alles andere = Abbruch beim Start
+          if [ "$rc" != "124" ]; then echo "::error::Planer startete nicht (Code $rc)"; tail -40 "$RUNNER_TEMP/start.log"; exit 1; fi
+          echo "Planer läuft als normaler Nutzer"
+      - if: steps.v.outputs.neu == 'ja'
         name: Release desktop-v${{ steps.v.outputs.ver }}
         run: |
           VER=${{ steps.v.outputs.ver }}

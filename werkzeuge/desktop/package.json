@@ -1,7 +1,7 @@
 {
   "name": "planer-desktop",
   "productName": "Planer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Planer für Ubuntu: Kalender, Aufgaben, Schule, Training und Bibel – offline, mit Cloud-Abgleich zum Handy",
   "homepage": "https://github.com/SportGermany/planer",
   "author": {
@@ -43,7 +43,20 @@
       }
     },
     "deb": {
-      "artifactName": "planer-desktop-${version}.deb"
+      "artifactName": "planer-desktop-${version}.deb",
+      "afterInstall": "deb-postinst.sh",
+      "afterRemove": "deb-postrm.sh",
+      "depends": [
+        "libgtk-3-0 | libgtk-3-0t64",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0 | libatspi2.0-0t64",
+        "libuuid1",
+        "libsecret-1-0"
+      ]
     },
     "publish": null
   },
