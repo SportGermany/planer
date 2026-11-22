@@ -1,0 +1,406 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//SportGermany//ITP Cortina//DE
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:ITP Team Cortina
+X-WR-TIMEZONE:Europe/Berlin
+BEGIN:VTIMEZONE
+TZID:Europe/Berlin
+BEGIN:DAYLIGHT
+TZOFFSETFROM:+0100
+TZOFFSETTO:+0200
+TZNAME:CEST
+DTSTART:19700329T020000
+RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU
+END:DAYLIGHT
+BEGIN:STANDARD
+TZOFFSETFROM:+0200
+TZOFFSETTO:+0100
+TZNAME:CET
+DTSTART:19701025T030000
+RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:itp-cortina-20261122-2200-0@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261122T220000
+DTEND;TZID=Europe/Berlin:20261122T221000
+SUMMARY:Nachtruhe · ITP Cortina
+DESCRIPTION:22:00 Uhr Nachtruhe\nITP Team Cortina · Abfahrt zum Training 
+ 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261123-0800-1@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261123T080000
+DTEND;TZID=Europe/Berlin:20261123T081000
+SUMMARY:Abfahrt zur Bahn
+LOCATION:Cortina Sliding Centre "Eugenio Monti"\, Cortina d'Ampezzo
+DESCRIPTION:Abfahrt zum Training 60 Min. vorher\nITP Team Cortina · Abfah
+ rt zum Training 60 Min. vorher · Änderungen jederzeit möglich · 22:00 
+ Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261123-0900-2@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261123T090000
+DTEND;TZID=Europe/Berlin:20261123T100000
+SUMMARY:Bahntraining · ITP Cortina
+LOCATION:Cortina Sliding Centre "Eugenio Monti"\, Cortina d'Ampezzo
+DESCRIPTION:Bahn (Ende nicht angegeben)\nITP Team Cortina · Abfahrt zum T
+ raining 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uhr Nach
+ truhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Bahntraining · ITP Cortina
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261123-1400-3@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261123T140000
+DTEND;TZID=Europe/Berlin:20261123T150000
+SUMMARY:Training G/H · ITP Cortina
+DESCRIPTION:G/H (Ende nicht angegeben)\nITP Team Cortina · Abfahrt zum Tr
+ aining 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uhr Nacht
+ ruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Training G/H · ITP Cortina
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261123-2200-4@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261123T220000
+DTEND;TZID=Europe/Berlin:20261123T221000
+SUMMARY:Nachtruhe · ITP Cortina
+DESCRIPTION:22:00 Uhr Nachtruhe\nITP Team Cortina · Abfahrt zum Training 
+ 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261124-1220-5@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261124T122000
+DTEND;TZID=Europe/Berlin:20261124T132000
+SUMMARY:Training G/H · ITP Cortina
+DESCRIPTION:G/H (Ende nicht angegeben)\nMittag 12:30 noch offen (?)\nITP T
+ eam Cortina · Abfahrt zum Training 60 Min. vorher · Änderungen jederzei
+ t möglich · 22:00 Uhr Nachtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Training G/H · ITP Cortina
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261124-1430-6@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261124T143000
+DTEND;TZID=Europe/Berlin:20261124T144000
+SUMMARY:Abfahrt zur Bahn
+LOCATION:Cortina Sliding Centre "Eugenio Monti"\, Cortina d'Ampezzo
+DESCRIPTION:Abfahrt zum Training 60 Min. vorher\nITP Team Cortina · Abfah
+ rt zum Training 60 Min. vorher · Änderungen jederzeit möglich · 22:00 
+ Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261124-1530-7@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261124T153000
+DTEND;TZID=Europe/Berlin:20261124T163000
+SUMMARY:Bahntraining · ITP Cortina
+LOCATION:Cortina Sliding Centre "Eugenio Monti"\, Cortina d'Ampezzo
+DESCRIPTION:Bahn (Ende nicht angegeben)\nITP Team Cortina · Abfahrt zum T
+ raining 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uhr Nach
+ truhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Bahntraining · ITP Cortina
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261124-2200-8@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261124T220000
+DTEND;TZID=Europe/Berlin:20261124T221000
+SUMMARY:Nachtruhe · ITP Cortina
+DESCRIPTION:22:00 Uhr Nachtruhe\nITP Team Cortina · Abfahrt zum Training 
+ 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261125-1030-9@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261125T103000
+DTEND;TZID=Europe/Berlin:20261125T113000
+SUMMARY:Training G/H · ITP Cortina
+DESCRIPTION:G/H (Ende nicht angegeben)\nITP Team Cortina · Abfahrt zum Tr
+ aining 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uhr Nacht
+ ruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Training G/H · ITP Cortina
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261125-1305-10@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261125T130500
+DTEND;TZID=Europe/Berlin:20261125T131500
+SUMMARY:Abfahrt zur Bahn
+LOCATION:Cortina Sliding Centre "Eugenio Monti"\, Cortina d'Ampezzo
+DESCRIPTION:Abfahrt zum Training 60 Min. vorher\nITP Team Cortina · Abfah
+ rt zum Training 60 Min. vorher · Änderungen jederzeit möglich · 22:00 
+ Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261125-1405-11@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261125T140500
+DTEND;TZID=Europe/Berlin:20261125T150500
+SUMMARY:Bahntraining · ITP Cortina
+LOCATION:Cortina Sliding Centre "Eugenio Monti"\, Cortina d'Ampezzo
+DESCRIPTION:Bahn (Ende nicht angegeben)\nITP Team Cortina · Abfahrt zum T
+ raining 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uhr Nach
+ truhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Bahntraining · ITP Cortina
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261125-2200-12@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261125T220000
+DTEND;TZID=Europe/Berlin:20261125T221000
+SUMMARY:Nachtruhe · ITP Cortina
+DESCRIPTION:22:00 Uhr Nachtruhe\nITP Team Cortina · Abfahrt zum Training 
+ 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261126-0900-13@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261126T090000
+DTEND;TZID=Europe/Berlin:20261126T093500
+SUMMARY:Training G/H · ITP Cortina
+DESCRIPTION:G/H (Ende nicht angegeben)\nFrühstück für G/H schon 7:30\nI
+ TP Team Cortina · Abfahrt zum Training 60 Min. vorher · Änderungen jede
+ rzeit möglich · 22:00 Uhr Nachtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Training G/H · ITP Cortina
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261126-0935-14@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261126T093500
+DTEND;TZID=Europe/Berlin:20261126T094500
+SUMMARY:Abfahrt zur Bahn
+LOCATION:Cortina Sliding Centre "Eugenio Monti"\, Cortina d'Ampezzo
+DESCRIPTION:Abfahrt zum Training 60 Min. vorher\nITP Team Cortina · Abfah
+ rt zum Training 60 Min. vorher · Änderungen jederzeit möglich · 22:00 
+ Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261126-1035-15@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261126T103500
+DTEND;TZID=Europe/Berlin:20261126T113500
+SUMMARY:Bahntraining · ITP Cortina
+LOCATION:Cortina Sliding Centre "Eugenio Monti"\, Cortina d'Ampezzo
+DESCRIPTION:Bahn (Ende nicht angegeben)\nITP Team Cortina · Abfahrt zum T
+ raining 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uhr Nach
+ truhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Bahntraining · ITP Cortina
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261126-1800-16@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261126T180000
+DTEND;TZID=Europe/Berlin:20261126T190000
+SUMMARY:AntiDoping · ITP Cortina
+DESCRIPTION:AntiDoping (Ende nicht angegeben)\nITP Team Cortina · Abfahrt
+  zum Training 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uh
+ r Nachtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:AntiDoping · ITP Cortina
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261126-2200-17@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261126T220000
+DTEND;TZID=Europe/Berlin:20261126T221000
+SUMMARY:Nachtruhe · ITP Cortina
+DESCRIPTION:22:00 Uhr Nachtruhe\nITP Team Cortina · Abfahrt zum Training 
+ 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261127-0935-18@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261127T093500
+DTEND;TZID=Europe/Berlin:20261127T094500
+SUMMARY:Abfahrt zur Bahn
+LOCATION:Cortina Sliding Centre "Eugenio Monti"\, Cortina d'Ampezzo
+DESCRIPTION:Abfahrt zum Training 60 Min. vorher\nITP Team Cortina · Abfah
+ rt zum Training 60 Min. vorher · Änderungen jederzeit möglich · 22:00 
+ Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261127-1035-19@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261127T103500
+DTEND;TZID=Europe/Berlin:20261127T113500
+SUMMARY:Bahntraining · ITP Cortina
+LOCATION:Cortina Sliding Centre "Eugenio Monti"\, Cortina d'Ampezzo
+DESCRIPTION:Bahn (Ende nicht angegeben)\nITP Team Cortina · Abfahrt zum T
+ raining 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uhr Nach
+ truhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Bahntraining · ITP Cortina
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261127-1535-20@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261127T153500
+DTEND;TZID=Europe/Berlin:20261127T163500
+SUMMARY:Training G/H · ITP Cortina
+DESCRIPTION:G/H (Ende nicht angegeben)\nITP Team Cortina · Abfahrt zum Tr
+ aining 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uhr Nacht
+ ruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Training G/H · ITP Cortina
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261127-2200-21@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261127T220000
+DTEND;TZID=Europe/Berlin:20261127T221000
+SUMMARY:Nachtruhe · ITP Cortina
+DESCRIPTION:22:00 Uhr Nachtruhe\nITP Team Cortina · Abfahrt zum Training 
+ 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261128-0800-22@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261128T080000
+DTEND;TZID=Europe/Berlin:20261128T081000
+SUMMARY:Abfahrt zur Bahn
+LOCATION:Cortina Sliding Centre "Eugenio Monti"\, Cortina d'Ampezzo
+DESCRIPTION:Abfahrt zum Training 60 Min. vorher\nITP Team Cortina · Abfah
+ rt zum Training 60 Min. vorher · Änderungen jederzeit möglich · 22:00 
+ Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261128-0900-23@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261128T090000
+DTEND;TZID=Europe/Berlin:20261128T100000
+SUMMARY:Bahntraining · ITP Cortina
+LOCATION:Cortina Sliding Centre "Eugenio Monti"\, Cortina d'Ampezzo
+DESCRIPTION:Bahn (Ende nicht angegeben)\nITP Team Cortina · Abfahrt zum T
+ raining 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uhr Nach
+ truhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Bahntraining · ITP Cortina
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261128-1400-24@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261128T140000
+DTEND;TZID=Europe/Berlin:20261128T150000
+SUMMARY:Training G/H · ITP Cortina
+DESCRIPTION:G/H (Ende nicht angegeben)\nITP Team Cortina · Abfahrt zum Tr
+ aining 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uhr Nacht
+ ruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Training G/H · ITP Cortina
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261128-2200-25@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261128T220000
+DTEND;TZID=Europe/Berlin:20261128T221000
+SUMMARY:Nachtruhe · ITP Cortina
+DESCRIPTION:22:00 Uhr Nachtruhe\nITP Team Cortina · Abfahrt zum Training 
+ 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261129-1220-26@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261129T122000
+DTEND;TZID=Europe/Berlin:20261129T132000
+SUMMARY:Training G/H · ITP Cortina
+DESCRIPTION:G/H (Ende nicht angegeben)\nMittag 12:30 noch offen (?)\nITP T
+ eam Cortina · Abfahrt zum Training 60 Min. vorher · Änderungen jederzei
+ t möglich · 22:00 Uhr Nachtruhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Training G/H · ITP Cortina
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261129-1430-27@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261129T143000
+DTEND;TZID=Europe/Berlin:20261129T144000
+SUMMARY:Abfahrt zur Bahn
+LOCATION:Cortina Sliding Centre "Eugenio Monti"\, Cortina d'Ampezzo
+DESCRIPTION:Abfahrt zum Training 60 Min. vorher\nITP Team Cortina · Abfah
+ rt zum Training 60 Min. vorher · Änderungen jederzeit möglich · 22:00 
+ Uhr Nachtruhe
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261129-1530-28@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261129T153000
+DTEND;TZID=Europe/Berlin:20261129T163000
+SUMMARY:Bahntraining · ITP Cortina
+LOCATION:Cortina Sliding Centre "Eugenio Monti"\, Cortina d'Ampezzo
+DESCRIPTION:Bahn (Ende nicht angegeben)\nITP Team Cortina · Abfahrt zum T
+ raining 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uhr Nach
+ truhe
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Bahntraining · ITP Cortina
+TRIGGER:-PT60M
+END:VALARM
+END:VEVENT
+BEGIN:VEVENT
+UID:itp-cortina-20261129-2200-29@sportgermany
+DTSTAMP:20261122T120000Z
+DTSTART;TZID=Europe/Berlin:20261129T220000
+DTEND;TZID=Europe/Berlin:20261129T221000
+SUMMARY:Nachtruhe · ITP Cortina
+DESCRIPTION:22:00 Uhr Nachtruhe\nITP Team Cortina · Abfahrt zum Training 
+ 60 Min. vorher · Änderungen jederzeit möglich · 22:00 Uhr Nachtruhe
+END:VEVENT
+END:VCALENDAR

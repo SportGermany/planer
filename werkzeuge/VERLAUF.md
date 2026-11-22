@@ -5,6 +5,10 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Kalenderdatei ITP Team Cortina (22.–29.11.2026)
+- `kalender/itp-cortina-2026.ics`: 30 Termine – Bahntraining (7×) mit „Abfahrt zur Bahn“ 60 Min. vorher, Training G/H (7×, Name wie im Plan), AntiDoping Do 18:00, Nachtruhe 22:00 jeden Abend. Erinnerung 60 Min. vor Bahn, G/H und AntiDoping. Dauer im Plan nicht angegeben → 1 Std. (G/H am Do bis 9:35, dann Abfahrt). Mittag „?“ und Frühstück 7:30 als Hinweis in der Beschreibung.
+- Geprüft mit dem Import-Test (Planer, Handykalender nachgestellt): 30 von 30 übernommen und im Kalender „Planer“.
+
 ## Planer für Ubuntu 1.0.1 – „Start nicht möglich“ auf Ubuntu
 - Fehler (Rückmeldung): Programm startet auf Ubuntu nicht. Ursache: Ubuntu ab 23.10/24.04 verbietet unprivilegierte Benutzer-Namensräume (AppArmor, `kernel.apparmor_restrict_unprivileged_userns=1`); die Electron-Sandbox braucht sie. Das Standard-postinst von electron-builder prüft `unshare --user true` als root (dort erlaubt) und setzt chrome-sandbox darum auf 0755 statt SUID → als normaler Nutzer keine benutzbare Sandbox → Abbruch.
 - Lösung: eigenes `deb-postinst.sh` (AppArmor-Profil /etc/apparmor.d/planer mit `userns`, wenn abi 4.0 vorhanden; chrome-sandbox immer root:4755) und `deb-postrm.sh` (Profil wieder entfernen). Abhängigkeiten mit t64-Alternativen (24.04).
