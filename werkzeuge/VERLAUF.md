@@ -5,6 +5,20 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Planer 6.3.1 · Schule 3.1.1 · Planer für Ubuntu 1.1.1 – Design am Laptop (alle Menüs)
+- Rückmeldung: „Design von allen Menüs komplett zerrüttet“ am Laptop – auch was aus der Handy-App kommt, soll am PC passen. Ab jetzt feste Regel (CLAUDE.md): jede Änderung auch am PC (1280×720, 1366×768, 1920×1080) prüfen.
+- Durchgesehen mit Bildern aus dem PC-Programm (Electron) in allen Bereichen und Menüs. Gefunden und behoben:
+  - Blätter der Hülle (Mehr › Sicherung/Einstellungen/Kalender verbinden, Neu, Tastenkürzel, „Mehr ▾“ der Bereiche) kamen wie am Handy von unten und klebten am unteren Rand. Jetzt am PC (`html.desk`) mittig als Fenster, rundum rund, ohne Griff.
+  - Esc schloss kein Blatt (die Übersicht der Tastenkürzel versprach es) – dadurch blieb man am PC in jedem Menü hängen. Esc schließt jetzt Blatt bzw. Seitenmenü.
+  - Schule im Planer (Rahmen, ≥ 900 px): ließ links 86 px für die eigene Seitenleiste frei, obwohl die Hülle die Leiste hat → Inhalt schob sich bis an den rechten Rand. Jetzt `html.sg-embed body{padding-left:0}`, Inhalt mittig (max. 1120 px).
+  - Schule allein (Starter „Schule“): Beschriftungen der Seitenleiste unten abgeschnitten (`.tab{height:64px}` aus dem Material-Design + Innenabstand). Jetzt Höhe nach Inhalt (min. 64 px).
+  - Tastenkürzel (N, T, M, W …) wirkten nach dem Wechsel aus einem Bereich nicht, weil der Fokus im iframe blieb. Die Hülle holt den Fokus bei ihren eigenen Ansichten zurück.
+  - Graue Systembildlaufleisten in jedem Rahmen: am PC (`window.SGDesktop` → `html.sgpc`, in `design.js` für alle Apps) schmal in der Schriftfarbe; Zeiger als Hand auf Knöpfen.
+  - Skriptfehler „Cannot read properties of undefined (reading 'tasks')“ beim Start: `renderDeskTasks` lief, bevor der Kalender-Kern bereit war – jetzt abgefangen.
+  - Datumsfelder zeigten 11/25/2026 (Electron nimmt sonst Englisch): `app.commandLine.appendSwitch('lang','de-DE')`.
+  - Suche am PC über die ganze Fensterbreite: Kopf, Filter und Treffer jetzt mittig (max. 900 px).
+- Tests: `desktop.js` erweitert (Blatt mittig, Esc, Schule im Planer mittig, Seitenleiste nicht abgeschnitten, Sprache Deutsch). `suite3.js` K-Monatskalender: schloss das Blatt bisher mit Esc + Zurück (Esc wirkte nicht); jetzt reicht Esc, sonst ging das zusätzliche Zurück eine Ansicht zu weit.
+
 ## Schule 3.1.0 + Planer für Ubuntu 1.1.0 – Lehrgang-Aufgaben nach Tag, Schule am PC
 - Wunsch: Schule auf dem Ubuntu-PC nutzen; bei Lehrgängen für jedes Fach und jeden einzelnen Tag Aufgaben festlegen, damit klar ist, wann welche Aufgabe kam.
 - Lehrgang › Aufgaben: Umschalter „Nach Tag“ (Standard, gemerkt in `settings.campView`) / „Nach Fach“ (wie bisher, mit „Stoff nachgeholt“). Nach Tag: eine Karte je Lehrgangstag (heute umrandet), darin die Aufgaben dieses Tages nach Fach, Knopf „+ Aufgabe für Do 26.11.“.

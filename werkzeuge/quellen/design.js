@@ -655,3 +655,16 @@
   window.SGIcon.fill = fill;
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { fill(); }); else fill();
 })();
+/* PC-Programm (window.SGDesktop, werkzeuge/desktop): in jeder App (auch in den Rahmen der Hülle) schmale Bildlaufleisten in den
+ * Farben der App statt grauer Systemleisten, Zeiger als Hand auf Knöpfen, Klasse html.sgpc für eigene PC-Regeln der Apps. */
+(function () {
+  if (!window.SGDesktop) return;
+  var d = document.documentElement; d.classList.add("sgpc");
+  var st = document.createElement("style"); st.id = "sg-pc";
+  st.textContent = "html.sgpc,html.sgpc *{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,currentColor 28%,transparent) transparent}" +
+    "html.sgpc ::-webkit-scrollbar{width:10px;height:10px}html.sgpc ::-webkit-scrollbar-track{background:transparent}" +
+    "html.sgpc ::-webkit-scrollbar-thumb{background:color-mix(in srgb,currentColor 24%,transparent);border-radius:8px;border:2px solid transparent;background-clip:padding-box}" +
+    "html.sgpc ::-webkit-scrollbar-thumb:hover{background-color:color-mix(in srgb,currentColor 40%,transparent)}" +
+    "html.sgpc button:not(:disabled),html.sgpc [role=button],html.sgpc label.switch,html.sgpc summary{cursor:pointer}";
+  (document.head || d).appendChild(st);
+})();

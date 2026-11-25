@@ -6,6 +6,8 @@ const path = require('path'), fs = require('fs'), url = require('url');
 const WWW = path.join(__dirname, 'www');
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
 app.setName('Planer');
+// Sprache Deutsch für Datums-/Zeitfelder (sonst 11/25/2026 auf englisch eingestellten Systemen) und die Rechtschreibprüfung
+app.commandLine.appendSwitch('lang', 'de-DE');
 // Fenster: Planer (alles) und Schule als eigenes Programm (eigener Starter „Schule“, planer --app=schule) – gleiche Daten
 const APPS = { planer: { start: 'app/', title: 'Planer', icon: 'icon-512.png', bg: '#141218' }, schule: { start: 'schule/?einzeln=1', title: 'Schule', icon: 'icon-512.png', bg: '#141218' } };
 const argApp = argv => { const a = (argv || []).find(x => /^--app=/.test(x)); const k = a && a.slice(6); return APPS[k] ? k : 'planer'; };

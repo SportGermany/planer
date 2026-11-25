@@ -11,6 +11,7 @@ Sprache in App, Commits, Doku: Deutsch. Ausführliches Wissen: `werkzeuge/WISSEN
 - Gemeinsamer Code nur in `werkzeuge/quellen/` → `python3 werkzeuge/build.py` kopiert nach `sg/` (nie `sg/` direkt bearbeiten).
 - Design zentral (`werkzeuge/quellen/design.js`, Standard „Material You“). Mobility (`training/mobility/`, `training/atmung/`) inhaltlich nicht ändern ohne Rückfrage.
 - Nicht anfassen: `bibel/elb1905.json`, `werkzeuge/apk/planer-schluessel.enc` (nie neu erzeugen), Passwortdatei (nie lesen/ausgeben).
+- **Design immer auch am PC prüfen** (Wunsch der Nutzerin): jede Änderung im PC-Programm bei 1280×720, 1366×768 und 1920×1080 ansehen – Seiten, Blätter/Menüs, Bereiche im Planer und Schule allein. Was vom Handy kommt, muss am Laptop sauber aussehen (mittige Fenster, kein Rand-Kleben, nichts abgeschnitten). `xvfb-run -a node desktop.js`.
 - Kein `100dvh`, kein `scrollIntoView`, Grids `minmax(0,1fr)`, Tippflächen ≥ 44 px, Schrift ≥ 12 px, Konsole sauber.
 - Jede Änderung: Plan + Fehler/Ursache/Lösung in `VERLAUF.md`, Tests grün, dann Commit. Kein Modellname in Commits/Code.
 - Version erhöhen in `werkzeuge/build.py` (`VERSION`) und `werkzeuge/tests/suite3.js` (`VER`); Push auf `main` baut die APK und das Release.

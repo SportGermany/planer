@@ -4,7 +4,7 @@ const fs = require('fs');
 const U = 'http://localhost:8765/planer/', APP = U + 'app/';
 const SEED = fs.readFileSync(__dirname + '/seed.js', 'utf8');
 const ONLY = process.argv[2] || '';
-const VER = '6.3.0';
+const VER = '6.3.1';
 const results = [];
 const PAGES = ['', 'schule/', 'pause/', 'training/', 'training/mobility/', 'training/atmung/', 'training/bahnplan/', 'bibel/', 'wissen/'];
 const PHONE = { viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 };
@@ -783,7 +783,8 @@ async function open(p, hash) { await p.goto(APP + hash); await wait(p, 2200); }
     await touch(p, '#mgrid [data-mday="' + lp + '"]', 0, 0, 600); await wait(p, 300);
     const dd = new Date(lp + 'T12:00');
     assert(/Neu/.test(await p.textContent('#sheet')) && (await p.textContent('#sheet')).includes(dd.getDate() + '.'), 'Langer Druck öffnet Neu für den Tag');
-    await p.keyboard.press('Escape'); await p.evaluate(() => history.back()); await wait(p, 300);
+    await p.keyboard.press('Escape'); await wait(p, 300);   // Esc schließt das Blatt (seit 6.3.1, PC)
+    assert(!(await p.evaluate(() => document.getElementById('sheet').classList.contains('on'))), 'Esc schließt das Blatt');
     // Wischen: Monat weiter, Tag bleibt (31.10. → 30.11.)
     await p.evaluate(() => { window.__pick = k => { const b = document.querySelector('#mgrid [data-mday="' + k + '"]'); if (b) b.click(); }; });
     // auf den Monat Oktober 2026 springen und den 31. wählen

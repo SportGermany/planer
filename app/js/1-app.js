@@ -256,6 +256,8 @@
     fab.classList.toggle("on", (cur.v === "kalender" && !(SLIM && calMon)) || cur.v === "notizen");
     fab.innerHTML = ico("plus");
     if (v.native) {
+      // Tastatur (PC): stand der Fokus in einem Bereich (iframe), kämen N, T, M, W … sonst nicht in der Hülle an
+      try { var ae = document.activeElement; if (ae && ae.tagName === "IFRAME") { ae.blur(); window.focus(); } } catch (e) {}
       chipsEl.innerHTML = ""; stage.classList.remove("lined"); dwPn.innerHTML = "";
       var n = $("n-" + v.native); show(n); $("load").classList.remove("on");
       if (v.native === "kalender") renderCal(); else if (v.native === "mehr") renderMehr(); else renderNotes();
@@ -447,7 +449,8 @@
     }, { passive: true });
     dwPn.addEventListener("touchend", function () { on = false; }, { passive: true });
   })();
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && drawerOpen) closeDrawer(); });
+  // Esc schließt Seitenmenü bzw. Blatt (PC; das Blatt der Tastenkürzel verspricht es)
+  document.addEventListener("keydown", function (e) { if (e.key !== "Escape") return; if (drawerOpen) closeDrawer(); else if (sheetOpen && !(window.SGShellSearch && SGShellSearch.isOpen())) { e.preventDefault(); closeSheet(); } });
   /* Tastenkürzel (vor allem am PC): N neu · T heute · ←/→ blättern · M Monat · W Woche · 1–4 Bereiche · / Suche · ? Übersicht.
      Nur ohne Strg/Alt und wenn gerade nicht in ein Feld getippt wird. */
   var KEYS = [["N", "Neuer Termin oder neue Aufgabe"], ["T", "Zu heute springen"], ["← →", "Vorheriger / nächster Monat bzw. Woche"], ["M", "Monatsansicht"], ["W", "Wochenansicht"], ["1–4", "Bereiche der Leiste"], ["/ oder Strg+K", "Suchen und Befehle"], ["?", "Diese Übersicht"], ["Esc", "Fenster schließen"]];
@@ -605,7 +608,7 @@
     return true;
   }
   function renderDeskTasks() {
-    var el = $("cal-tasks"); if (!el) return;
+    var el = $("cal-tasks"); if (!el || !C() || !C().tasks) return;
     var t = today(), list = C().tasks.list().filter(function (q) { return !q.done; });
     var grp = [["Überfällig", function (q) { return q.due && q.due < t; }], ["Heute", function (q) { return q.due === t; }], ["Demnächst", function (q) { return q.due && q.due > t; }], ["Ohne Datum", function (q) { return !q.due; }]];
     var h = '<div class="grp dtk"><header><span>Aufgaben' + (list.length ? " · " + list.length : "") + '</span><button class="lnk" data-dtk="alle">Alle ›</button></header>' +
@@ -1651,6 +1654,7 @@
   /* ---------- Mehr: nach Zweck geordnet, jede Zeile zeigt ihren Zustand ----------
    * Jeder Punkt hat genau einen Hauptort; Verknüpfungen (↗) springen dorthin. */
   var WHATSNEW = [
+    ["6.3.1", ["PC: Fenster (Sicherung, Einstellungen, Neu …) erscheinen mittig statt von unten, Esc schließt sie", "PC: Schule im Planer mittig und nicht mehr bis an den Rand", "PC: schmale Bildlaufleisten, Tastenkürzel wirken auch nach dem Wechsel aus einem Bereich"]],
     ["6.3.0", ["Neu: Planer für Ubuntu (PC-Programm, .deb) – alles in einem Fenster, mit Cloud-Abgleich zum Handy",
       "Am PC und in breiten Fenstern: drei Spalten – Heute links, großer Kalender (Monat/Woche) in der Mitte, Aufgaben rechts",
       "Tastenkürzel: N neu · T heute · ←/→ blättern · M Monat · W Woche · 1–4 Bereiche · / Suche · ? Übersicht"]],

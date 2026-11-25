@@ -14,6 +14,8 @@ let bad = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (
   ok(r.href.indexOf('app://local/planer/app/') === 0 && r.sg, 'startet über app:// mit PC-Kennung (' + r.href + ')');
   ok(r.desk && r.cols.every(x => x > 200), 'PC-Ansicht: drei Spalten ' + r.cols.join(' / ') + ' px');
   ok(/^\d+\.\d+\.\d+$/.test(r.ver || ''), 'Version ' + r.ver);
+  const lang = await w.evaluate(() => navigator.language);
+  ok(/^de/.test(lang), 'Sprache Deutsch (Datumsfelder TT.MM.JJJJ): ' + lang);
   await w.keyboard.press('w'); await w.waitForTimeout(500);
   ok(await w.evaluate(() => !!document.getElementById('wkgrid')), 'Taste W: Wochenansicht');
   await w.keyboard.press('m'); await w.waitForTimeout(300);
@@ -24,6 +26,17 @@ let bad = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (
     const f = w.frames().find(x => x.url().indexOf('/planer/' + h + '/') > 0);
     ok(!!f && (await f.evaluate(() => document.body.innerText.length)) > 50, h + ' öffnet im Programm');
   }
+  // Fenster (Blätter) am PC mittig, Esc schließt; Schule im Planer ohne eigenen Seitenleisten-Rand
+  await w.evaluate(() => { location.hash = 'mehr'; }); await w.waitForTimeout(1200);
+  await w.click('[data-m="g:safe"]'); await w.waitForTimeout(600);
+  const sh = await w.evaluate(() => { const r = document.querySelector('#sheet .pn').getBoundingClientRect(); return { mid: Math.abs((r.top + r.bottom) / 2 - innerHeight / 2) < 40, open: document.getElementById('sheet').classList.contains('on') }; });
+  ok(sh.open && sh.mid, 'PC: Blatt mittig als Fenster');
+  await w.keyboard.press('Escape'); await w.waitForTimeout(500);
+  ok(await w.evaluate(() => !document.getElementById('sheet').classList.contains('on')), 'PC: Esc schließt das Blatt');
+  await w.evaluate(() => { location.hash = 'schule/plan'; }); await w.waitForTimeout(2500);
+  const sf = w.frames().find(x => /\/planer\/schule\//.test(x.url()));
+  const sm = await sf.evaluate(() => { const m = document.querySelector('main').getBoundingClientRect(); return { pl: parseInt(getComputedStyle(document.body).paddingLeft), l: m.left, r: innerWidth - m.right }; });
+  ok(sm.pl === 0 && Math.abs(sm.l - sm.r) < 24, 'PC: Schule im Planer mittig (links ' + Math.round(sm.l) + ' / rechts ' + Math.round(sm.r) + ' px)');
   ok(!errs.length, 'keine Skriptfehler ' + errs.join(' | '));
   await app.close();
   // Starter „Schule“: planer --app=schule öffnet die volle Schul-App im eigenen Fenster (Seitenleiste, alle Reiter, Lehrgang nach Tag)
@@ -33,6 +46,7 @@ let bad = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (
   await s.waitForTimeout(3500);
   const q = await s.evaluate(() => ({ href: location.href, title: document.title, tabs: [...document.querySelectorAll('.tabs .tab')].filter(t => t.offsetParent).map(t => t.dataset.v), side: parseInt(getComputedStyle(document.body).paddingLeft) }));
   ok(q.href.indexOf('app://local/planer/schule/') === 0, 'Starter Schule: eigenes Fenster ' + q.href);
+  ok(await s.evaluate(() => [...document.querySelectorAll('.tabs .tab .lbl')].every(l => l.scrollHeight <= l.clientHeight + 1)), 'Schule am PC: Beschriftungen der Seitenleiste nicht abgeschnitten');
   ok(q.tabs.includes('lehrgang') && q.side >= 80, 'Schule am PC: Seitenleiste (' + q.side + ' px), Reiter ' + q.tabs.join(', '));
   await s.evaluate(() => { location.hash = 'lehrgang'; }); await s.waitForTimeout(800);
   ok(await s.evaluate(() => /Lehrg/.test(document.body.innerText)), 'Lehrgänge öffnen');
