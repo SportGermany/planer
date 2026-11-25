@@ -5,6 +5,15 @@ So geht nichts verloren, wenn ein Chat voll ist.
 
 ---
 
+## Schule 3.1.0 + Planer für Ubuntu 1.1.0 – Lehrgang-Aufgaben nach Tag, Schule am PC
+- Wunsch: Schule auf dem Ubuntu-PC nutzen; bei Lehrgängen für jedes Fach und jeden einzelnen Tag Aufgaben festlegen, damit klar ist, wann welche Aufgabe kam.
+- Lehrgang › Aufgaben: Umschalter „Nach Tag“ (Standard, gemerkt in `settings.campView`) / „Nach Fach“ (wie bisher, mit „Stoff nachgeholt“). Nach Tag: eine Karte je Lehrgangstag (heute umrandet), darin die Aufgaben dieses Tages nach Fach, Knopf „+ Aufgabe für Do 26.11.“.
+- Aufgabe hat neues Feld `given` („Bekommen am“, Tages-Chips des Lehrgangs + Datum). Neue Lehrgangs-Aufgabe ohne Tag: heute, wenn der Lehrgang läuft. „Speichern & nächste“ behält den Tag. Alte Aufgaben ohne Tag stehen unter „Ohne Tag / außerhalb“ (abwärtskompatibel). In Listen erscheint „📥 Do 26.11.“.
+- PC: Programm 1.1.0 hat einen zweiten Starter „Schule“ (`planer --app=schule`, `/usr/share/applications/planer-schule.desktop`, Symbol `schule.svg`) – volle Schul-App im eigenen Fenster mit Seitenleiste, gleiche Daten wie im Planer. Menü Fenster: Strg+Umschalt+P / S.
+- Fehler: Schule allein im Fenster leitete in die Hülle um (`design.js` leitet alle Seiten außer /app/ um). Lösung: Start mit `?einzeln=1`.
+- Fehler: Seitenleiste der Schule am PC (≥ 900 px) war abgeschnitten – `.tabs{height:80px}` aus dem Material-Design blieb stehen, oben/unten wirkten nicht. Lösung: `height:auto` in der Seitenleisten-Regel.
+- Tests: `lehrgang-tag.js` (neu, 1440 und 412 px), `desktop.js` (Starter Schule), CI startet das installierte Paket auch mit `--app=schule`; `schnell-app.js schule`, `klicktest.js schule` grün.
+
 ## Kalenderdatei ITP Team Cortina (22.–29.11.2026)
 - `kalender/itp-cortina-2026.ics`: 30 Termine – Bahntraining (7×) mit „Abfahrt zur Bahn“ 60 Min. vorher, Training G/H (7×, Name wie im Plan), AntiDoping Do 18:00, Nachtruhe 22:00 jeden Abend. Erinnerung 60 Min. vor Bahn, G/H und AntiDoping. Dauer im Plan nicht angegeben → 1 Std. (G/H am Do bis 9:35, dann Abfahrt). Mittag „?“ und Frühstück 7:30 als Hinweis in der Beschreibung.
 - Geprüft mit dem Import-Test (Planer, Handykalender nachgestellt): 30 von 30 übernommen und im Kalender „Planer“.

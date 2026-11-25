@@ -58,6 +58,10 @@ jobs:
           # 124 = lief bis zum Zeitlimit, also gestartet; alles andere = Abbruch beim Start
           if [ "$rc" != "124" ]; then echo "::error::Planer startete nicht (Code $rc)"; tail -40 "$RUNNER_TEMP/start.log"; exit 1; fi
           echo "Planer läuft als normaler Nutzer"
+          test -f /usr/share/applications/planer-schule.desktop && test -f /opt/Planer/resources/schule.svg || { echo "::error::Starter Schule fehlt"; exit 1; }
+          set +e; timeout 20 xvfb-run -a /usr/bin/planer --app=schule > "$RUNNER_TEMP/schule.log" 2>&1; rc=$?; set -e
+          if [ "$rc" != "124" ]; then echo "::error::Schule startete nicht (Code $rc)"; tail -40 "$RUNNER_TEMP/schule.log"; exit 1; fi
+          echo "Schule läuft als eigenes Fenster"
       - if: steps.v.outputs.neu == 'ja'
         name: Release desktop-v${{ steps.v.outputs.ver }}
         run: |
@@ -66,7 +70,7 @@ jobs:
           **Planer für Ubuntu $VER** – Kalender, Aufgaben, Schule, Training und Bibel in einem Programm, mit Cloud-Abgleich zum Handy.
 
           **Installieren:** \`planer-desktop-$VER.deb\` herunterladen, doppelklicken (Ubuntu-Software) – oder im Terminal: \`sudo apt install ./planer-desktop-$VER.deb\`.
-          Danach im App-Menü „Planer“ starten. **Update:** neue .deb genauso installieren, die Daten bleiben.
+          Danach im App-Menü „Planer“ starten – oder „Schule“ (die Schul-App im eigenen Fenster, gleiche Daten). **Update:** neue .deb genauso installieren, die Daten bleiben.
           **Handy-Daten:** im Programm Mehr › Sicherung › Cloud mit demselben Zugang wie auf dem Handy verbinden.
           NOTES
           gh release delete "desktop-v$VER" --yes 2>/dev/null || true

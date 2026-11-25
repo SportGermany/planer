@@ -26,5 +26,17 @@ let bad = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (
   }
   ok(!errs.length, 'keine Skriptfehler ' + errs.join(' | '));
   await app.close();
+  // Starter „Schule“: planer --app=schule öffnet die volle Schul-App im eigenen Fenster (Seitenleiste, alle Reiter, Lehrgang nach Tag)
+  const app2 = await electron.launch({ args: ['--no-sandbox', '--disable-gpu', DIR, '--app=schule'], executablePath: path.join(DIR, 'node_modules/electron/dist/electron') });
+  const s = await app2.firstWindow(), errs2 = []; s.on('pageerror', e => errs2.push(e.message));
+  await s.setViewportSize({ width: 1440, height: 900 }).catch(() => {});
+  await s.waitForTimeout(3500);
+  const q = await s.evaluate(() => ({ href: location.href, title: document.title, tabs: [...document.querySelectorAll('.tabs .tab')].filter(t => t.offsetParent).map(t => t.dataset.v), side: parseInt(getComputedStyle(document.body).paddingLeft) }));
+  ok(q.href.indexOf('app://local/planer/schule/') === 0, 'Starter Schule: eigenes Fenster ' + q.href);
+  ok(q.tabs.includes('lehrgang') && q.side >= 80, 'Schule am PC: Seitenleiste (' + q.side + ' px), Reiter ' + q.tabs.join(', '));
+  await s.evaluate(() => { location.hash = 'lehrgang'; }); await s.waitForTimeout(800);
+  ok(await s.evaluate(() => /Lehrg/.test(document.body.innerText)), 'Lehrgänge öffnen');
+  ok(!errs2.length, 'Schule: keine Skriptfehler ' + errs2.join(' | '));
+  await app2.close();
   console.log(bad ? bad + ' Fehler' : 'PC-Programm grün'); process.exit(bad ? 1 : 0);
 })();

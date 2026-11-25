@@ -567,7 +567,7 @@ function hwItem(h, o = {}) {
   return `<div class="hw${h.done ? ' done' : ''}">
     <button class="chk sm${h.done ? ' on' : ''}" data-a="hwdone" data-v="${h.id}" aria-label="Erledigt">${ICON.check}</button>
     <div class="body" data-a="hwedit" data-v="${h.id}"><div class="txt">${esc(h.text || HW_KINDS[h.kind] || 'Aufgabe')}</div>
-    <div class="meta">${s.name && o.campBadge !== false ? `<span class="row" style="gap:5px"><i class="dot" style="--c:${s.color}"></i>${esc(s.name)}</span>` : ''}${h.page ? `<span>📖 ${esc(h.page)}</span>` : ''}${h.kind && h.kind !== 'ha' ? `<span>${HW_KINDS[h.kind]}</span>` : ''}${due}${h.campId && o.campBadge !== false ? `<span class="campbadge">🛷 ${esc((db.camps.find(c => c.id === h.campId) || {}).title || 'Lehrgang')}</span>` : ''}${h.handed ? '<span style="color:var(--good);font-weight:700">✓ abgegeben</span>' : ''}${(() => { const n = db.docs.filter(d => d.hwId === h.id).length; return n ? `<span>📎 ${n}</span>` : ''; })()}</div>
+    <div class="meta">${s.name && o.campBadge !== false ? `<span class="row" style="gap:5px"><i class="dot" style="--c:${s.color}"></i>${esc(s.name)}</span>` : ''}${h.given && o.given !== false ? `<span title="bekommen am">📥 ${fmtShort(h.given)}</span>` : ''}${h.page ? `<span>📖 ${esc(h.page)}</span>` : ''}${h.kind && h.kind !== 'ha' ? `<span>${HW_KINDS[h.kind]}</span>` : ''}${due}${h.campId && o.campBadge !== false ? `<span class="campbadge">🛷 ${esc((db.camps.find(c => c.id === h.campId) || {}).title || 'Lehrgang')}</span>` : ''}${h.handed ? '<span style="color:var(--good);font-weight:700">✓ abgegeben</span>' : ''}${(() => { const n = db.docs.filter(d => d.hwId === h.id).length; return n ? `<span>📎 ${n}</span>` : ''; })()}</div>
     ${h.notes && o.notes !== false ? `<div class="hwnotes">${esc(h.notes)}</div>` : ''}</div>
     ${h.campId && h.done ? `<button class="chip sm${h.handed ? ' on' : ''}" data-a="hwHanded" data-v="${h.id}" style="align-self:center">${h.handed ? 'abgegeben' : 'abgeben?'}</button>` : ''}
   </div>`;
@@ -1037,6 +1037,8 @@ function campStatus(c) {
   return { k: 'now', txt: 'Tag ' + (diffDays(c.start, t) + 1) + ' von ' + (diffDays(c.start, end) + 1) };
 }
 const campTasks = id => db.homework.filter(h => h.campId === id);
+// alle Tage eines Lehrgangs (höchstens 62), für „Aufgaben nach Tag“
+function campDays(c) { const out = [], e = c.end && c.end > c.start ? c.end : c.start; for (let d = c.start, g = 0; d <= e && g < 62; d = addDays(d, 1), g++) out.push(d); return out; }
 function campHomeCard(t) {
   const now = db.camps.filter(c => c.start <= t && (c.end || c.start) >= t);
   const soon = db.camps.filter(c => c.start > t && diffDays(t, c.start) <= 21).sort((a, b) => a.start < b.start ? -1 : 1);
@@ -1082,6 +1084,27 @@ function lehrgangHTML() {
   h += `<button class="addline" data-a="campNew">${ICON.plus} Lehrgang / Wettkampf anlegen</button>`;
   return h;
 }
+// Lehrgang › Nach Tag: jeder Tag eine Karte, darin die Aufgaben, die an dem Tag kamen – nach Fach geordnet
+function campDaysHTML(c, tasks, f) {
+  const t = todayStr(), days = campDays(c), ids = new Set(days);
+  const pick = l => f === 'offen' ? l.filter(x => !x.done) : f === 'erledigt' ? l.filter(x => x.done) : l;
+  const sOrd = id => { const i = db.subjects.findIndex(s => s.id === id); return i < 0 ? 999 : i; };
+  const block = (list) => {
+    const by = {}; list.forEach(x => (by[x.subject || ''] = by[x.subject || ''] || []).push(x));
+    return Object.keys(by).sort((a, b) => sOrd(a) - sOrd(b)).map(sid => { const s = subj(sid); return `<div class="dsub" style="--c:${s.color || 'var(--muted)'}"><div class="dsh"><i class="dot" style="--c:${s.color || 'var(--muted)'}"></i><b>${esc(s.name || 'Ohne Fach')}</b>${s.teacher ? `<span class="small muted">${esc(s.teacher)}</span>` : ''}<span class="grow1"></span><span class="small muted">${by[sid].filter(x => !x.done).length} offen</span></div><div class="stack">${by[sid].map(x => hwItem(x, { campBadge: false, given: false })).join('')}</div></div>`; }).join('');
+  };
+  let h = `<div class="gridcards campdays">`;
+  days.forEach(d => {
+    const all = tasks.filter(x => x.given === d), list = pick(all);
+    if (f !== 'alle' && !list.length) return;
+    const cls = d === t ? ' today' : d < t ? ' past' : '';
+    h += `<div class="card cday${cls}" data-day="${d}"><div class="cdh"><b>${WDL[dow(d)]}, ${fmtDM(d)}</b>${d === t ? '<span class="pill" style="--c:var(--accent)">Heute</span>' : ''}<span class="grow1"></span><span class="small muted">${all.length ? all.length + ' Aufgabe' + (all.length > 1 ? 'n' : '') : 'keine Aufgaben'}</span></div>
+      ${list.length ? block(list) : ''}<button class="addline noprint" data-a="campDayAdd" data-v="${d}">${ICON.plus} Aufgabe für ${WD[dow(d)]} ${fmtDM(d)}</button></div>`;
+  });
+  const rest = pick(tasks.filter(x => !x.given || !ids.has(x.given)));
+  if (rest.length) h += `<div class="card cday"><div class="cdh"><b>Ohne Tag / außerhalb</b><span class="grow1"></span><span class="small muted">${rest.length}</span></div><div class="small muted" style="margin:2px 0 6px">Aufgabe antippen und bei „Bekommen am“ den Tag wählen.</div>${block(rest)}</div>`;
+  return h + `</div>`;
+}
 function campDetailHTML(c) {
   const st = campStatus(c), tasks = campTasks(c.id), m = campMissed(c), missed = c.missed || {};
   const f = ui.campFilter || 'alle';
@@ -1098,8 +1121,12 @@ function campDetailHTML(c) {
   const hid = new Set(c.hidden || []);
   const sids = new Set([...Object.keys(m.per).filter(k => !hid.has(k)), ...tasks.map(x => x.subject || ''), ...Object.keys(missed).filter(k => missed[k].note), ...(c.subjects || [])]);
   const order = db.subjects.map(s => s.id).filter(id => sids.has(id)); if (sids.has('')) order.push('');
-  h += `<div class="sec">Aufgaben & verpasster Stoff <span class="cnt">${order.length} Fächer</span></div>`;
-  h += `<div class="seg noprint" style="margin-top:0">${[['alle', 'Alle'], ['offen', 'Offen'], ['erledigt', 'Erledigt']].map(([k, l]) => `<button class="${f === k ? 'on' : ''}" data-a="campFilter" data-v="${k}">${l}</button>`).join('')}</div>`;
+  const cv = db.settings.campView || 'tag';
+  h += `<div class="sec">Aufgaben & verpasster Stoff <span class="cnt">${cv === 'tag' ? campDays(c).length + ' Tage' : order.length + ' Fächer'}</span></div>`;
+  h += `<div class="seg noprint" style="margin-top:0">${[['tag', 'Nach Tag'], ['fach', 'Nach Fach']].map(([k, l]) => `<button class="${cv === k ? 'on' : ''}" data-a="campView" data-v="${k}">${l}</button>`).join('')}</div>`;
+  h += `<div class="seg noprint">${[['alle', 'Alle'], ['offen', 'Offen'], ['erledigt', 'Erledigt']].map(([k, l]) => `<button class="${f === k ? 'on' : ''}" data-a="campFilter" data-v="${k}">${l}</button>`).join('')}</div>`;
+  if (cv === 'tag') h += campDaysHTML(c, tasks, f);
+  if (cv === 'fach') {
   h += `<div class="gridcards">`;
   if (!order.length) h += `<div class="empty">Noch keine Aufgaben. Tippe unten auf „Aufgabe hinzufügen“ und wähle das Fach.</div>`;
   order.forEach(sid => {
@@ -1116,9 +1143,10 @@ function campDetailHTML(c) {
     h += `</div>`;
   });
   h += `</div>`;
+  }
   const rest = db.subjects.filter(s => !sids.has(s.id));
-  h += `<div class="noprint" style="margin-top:8px"><button class="btn ghost wide" data-a="campSubjPick">${ui.campSubjPick ? 'Schließen' : '+ Fach hinzufügen / wieder einblenden'}</button>${ui.campSubjPick ? `<div class="chips" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">${rest.map(s => `<button class="chip" style="--c:${s.color}" data-a="campSubjAdd" data-v="${s.id}"><i class="dot" style="--c:${s.color}"></i> ${esc(s.name)}</button>`).join('') || '<span class="small muted">Alle Fächer sind schon da.</span>'}</div>` : ''}</div>`;
-  h += `<button class="btn wide noprint" style="margin-top:8px" data-a="campTaskAdd" data-v="">+ Aufgabe hinzufügen</button>`;
+  if (cv === 'fach') h += `<div class="noprint" style="margin-top:8px"><button class="btn ghost wide" data-a="campSubjPick">${ui.campSubjPick ? 'Schließen' : '+ Fach hinzufügen / wieder einblenden'}</button>${ui.campSubjPick ? `<div class="chips" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">${rest.map(s => `<button class="chip" style="--c:${s.color}" data-a="campSubjAdd" data-v="${s.id}"><i class="dot" style="--c:${s.color}"></i> ${esc(s.name)}</button>`).join('') || '<span class="small muted">Alle Fächer sind schon da.</span>'}</div>` : ''}</div>`;
+  if (cv === 'fach') h += `<button class="btn wide noprint" style="margin-top:8px" data-a="campTaskAdd" data-v="">+ Aufgabe hinzufügen</button>`;
   // Unterlagen
   const cdocs = db.docs.filter(d => d.campId === c.id && !d.hwId);
   h += `<div class="sec">Unterlagen & Arbeitsblätter <span class="cnt">${cdocs.length}</span></div>${cdocs.length ? `<div class="stack gridcards">${cdocs.map(d => docRow(d, { noLink: true })).join('')}</div>` : ''}<div class="row noprint" style="gap:8px;margin-top:8px"><button class="btn ghost" data-a="attScan" data-v="campId:${c.id}:">📷 Scannen</button><button class="btn ghost" data-a="attFile" data-v="campId:${c.id}:">📄 Datei</button></div>`;
@@ -1619,7 +1647,8 @@ function offInfo(id) {
 
 // ---------- Hausaufgaben ----------
 function openHw(h, preset = {}) {
-  formState = h ? { ...h, _new: false } : { id: 'h' + uid(), subject: preset.subject || '', text: '', kind: 'ha', due: preset.due || '', page: '', notes: '', campId: preset.campId || '', done: false, handed: false, _new: true, _manualSubj: !!preset.subject };
+  formState = h ? { ...h, _new: false } : { id: 'h' + uid(), subject: preset.subject || '', text: '', kind: 'ha', due: preset.due || '', page: '', notes: '', campId: preset.campId || '', given: preset.given || '', done: false, handed: false, _new: true, _manualSubj: !!preset.subject };
+  if (!h && formState.campId && !preset.given && !('given' in preset)) { const c = db.camps.find(x => x.id === formState.campId), t = todayStr(); if (c && c.start <= t && (c.end || c.start) >= t) formState.given = t; }
   openSheet(hwFormHTML(), 'hw');
   if (!h) setTimeout(() => $('#hwText')?.focus(), 250);
 }
@@ -1635,6 +1664,11 @@ function hwFieldsHTML() {
   const subs = camp && !f._allSubj ? wpfgSubjects() : db.subjects;
   let h = `<label class="fl">Fach${camp ? ` <span style="font-weight:500">(Wahlpflichtfächergruppe ${esc(db.settings.wpfg || 'I')})</span>` : ''}</label><div class="${camp ? 'wrap' : 'hscroll'}">${subs.map(s => `<button class="chip${f.subject === s.id ? ' on' : ''}" data-a="hsubj" data-v="${s.id}"><i class="dot" style="--c:${s.color}"></i>${esc(s.name)}</button>`).join('')}<button class="chip${!f.subject ? ' on' : ''}" data-a="hsubj" data-v="">Ohne Fach</button>${camp && !f._allSubj ? '<button class="chip" data-a="hAllSubj">Alle Fächer …</button>' : ''}</div>`;
   h += `<div class="row2"><div><label class="fl">Buchseite / Nummer</label><input class="inp" data-f="hpage" value="${esc(f.page || '')}" placeholder="z. B. S. 45, Nr. 3a–c"></div><div><label class="fl">Art</label><select class="inp" data-f="hkindsel">${Object.entries(HW_KINDS).map(([k, l]) => `<option value="${k}"${f.kind === k ? ' selected' : ''}>${l}</option>`).join('')}</select></div></div>`;
+  if (camp || f.given) {
+    const days = camp ? campDays(camp) : [];
+    h += `<label class="fl">Bekommen am</label>${days.length ? `<div class="wrap">${days.map(d => `<button class="chip${f.given === d ? ' on' : ''}" data-a="hgiven" data-v="${d}">${WD[dow(d)]} ${fmtDM(d)}</button>`).join('')}<button class="chip${!f.given ? ' on' : ''}" data-a="hgiven" data-v="">Ohne Tag</button></div>` : ''}
+      <input type="date" class="inp" data-f="hgiven" value="${f.given || ''}" style="margin-top:8px" aria-label="Bekommen am (Datum)">`;
+  }
   h += `<label class="fl">Notizen</label><textarea class="inp" data-f="hnotes" placeholder="${camp ? 'z. B. Arbeitsblatt liegt im Ordner, per Mail an Frau Huber schicken' : 'optional'}" style="min-height:60px">${esc(f.notes || '')}</textarea>`;
   const quick = [];
   if (camp) {
@@ -1666,7 +1700,7 @@ function saveHw(next) {
   if (_new) { const r = parseQuick(text, { hw: true }); if (r.title && ((r.subject && r.subject === clean.subject) || (r.date && r.date === clean.due))) clean.text = r.title; }
   if (clean.handed) clean.done = true;
   upsert('homework', clean); save();
-  if (next) { const keep = { campId: clean.campId, due: clean.due }; formState = null; openHw(null, keep); formState._manualDue = true; toast('Gespeichert – nächste Aufgabe'); return; }
+  if (next) { const keep = { campId: clean.campId, due: clean.due, given: clean.given || '' }; formState = null; openHw(null, keep); formState._manualDue = true; toast('Gespeichert – nächste Aufgabe'); return; }
   sheetReturn = null; closeSheet(); render();
   toast(f._new ? 'Aufgabe eingetragen' + (clean.due ? ' · fällig ' + fmtShort(clean.due) : '') : 'Gespeichert');
 }
@@ -2619,6 +2653,7 @@ document.addEventListener('click', e => {
     case 'hsubj': f.subject = v; f._manualSubj = true; $('#ff').innerHTML = hwFieldsHTML(); break;
     case 'hkind': f.kind = v; $('#ff').innerHTML = hwFieldsHTML(); break;
     case 'hdue': f.due = v; f._manualDue = true; $('#ff').innerHTML = hwFieldsHTML(); break;
+    case 'hgiven': f.given = v; $('#ff').innerHTML = hwFieldsHTML(); break;
     case 'hwdel': { const x = removeItem('homework', f.id); save(); closeSheet(); render(); if (x) toast('Aufgabe gelöscht', 'Rückgängig', () => { upsert('homework', x); save(); render(); }); break; }
     case 'hwshare': shareHw(f); break;
     case 'subject': openSubject(v); break;
@@ -2680,6 +2715,8 @@ document.addEventListener('click', e => {
     case 'campSubjAdd': campUpdate(ui.camp, c => { c.subjects = [...new Set([...(c.subjects || []), v])]; c.hidden = (c.hidden || []).filter(x => x !== v); }); render(); break;
     case 'campSubjDel': campUpdate(ui.camp, c => { c.subjects = (c.subjects || []).filter(x => x !== v); c.hidden = [...new Set([...(c.hidden || []), v])]; }); render(); break;
     case 'campFilter': ui.campFilter = v; render(); break;
+    case 'campView': db.settings.campView = v; save(); render(); break;
+    case 'campDayAdd': { const c = db.camps.find(x => x.id === ui.camp); openHw(null, { campId: ui.camp, given: v, due: c ? nextSchoolDay(c.end || c.start) : '' }); break; }
     case 'allCamps': ui.allCamps = !ui.allCamps; render(); break;
     case 'campTaskAdd': { const c = db.camps.find(x => x.id === ui.camp); openHw(null, { campId: ui.camp, subject: v, due: c ? nextSchoolDay(c.end || c.start) : '' }); break; }
     case 'hwSaveNext': saveHw(true); break;
@@ -2800,6 +2837,7 @@ document.addEventListener('input', e => {
       return;
     }
     case 'hdue': f.due = el.value; f._manualDue = true; return;
+    case 'hgiven': f.given = el.value; $('#ff').innerHTML = hwFieldsHTML(); return;
     case 'hpage': f.page = el.value; return;
     case 'hnotes': f.notes = el.value; return;
     case 'ctitle': f.title = el.value; return;

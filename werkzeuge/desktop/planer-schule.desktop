@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Schule
+Comment=Stundenplan, Aufgaben, Prüfungen und Lehrgänge (Planer)
+Exec=/opt/Planer/planer --app=schule %U
+Icon=/opt/Planer/resources/schule.svg
+Terminal=false
+Type=Application
+Categories=Office;Education;
+Keywords=Schule;Stundenplan;Hausaufgaben;Lehrgang;
+StartupWMClass=Planer

@@ -1,7 +1,7 @@
 {
   "name": "planer-desktop",
   "productName": "Planer",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Planer für Ubuntu: Kalender, Aufgaben, Schule, Training und Bibel – offline, mit Cloud-Abgleich zum Handy",
   "homepage": "https://github.com/SportGermany/planer",
   "author": {
@@ -58,7 +58,17 @@
         "libsecret-1-0"
       ]
     },
-    "publish": null
+    "publish": null,
+    "extraResources": [
+      {
+        "from": "schule.svg",
+        "to": "schule.svg"
+      },
+      {
+        "from": "planer-schule.desktop",
+        "to": "planer-schule.desktop"
+      }
+    ]
   },
   "repository": {
     "type": "git",

@@ -30,6 +30,10 @@ PROFIL
         apparmor_parser -r -T -W /etc/apparmor.d/planer 2>/dev/null || true
     fi
 fi
+# zweiter Starter „Schule“ (öffnet die Schul-App im eigenen Fenster, gleiche Daten wie im Planer)
+if [ -f /opt/Planer/resources/planer-schule.desktop ]; then
+    install -m 644 /opt/Planer/resources/planer-schule.desktop /usr/share/applications/planer-schule.desktop || true
+fi
 if hash update-mime-database 2>/dev/null; then
     update-mime-database /usr/share/mime || true
 fi

@@ -24,7 +24,7 @@ Sprache in App, Commits, Doku: Deutsch. Ausführliches Wissen: `werkzeuge/WISSEN
 | `werkzeuge/quellen/{schnell,suche,bibelstelle,suchdaten}.js` | Schnelleingabe, Such-Kern, Bibelstellen (Node-Tests) |
 | `training/`, `schule/`, `bibel/`, `pause/`, `wissen/`, `training/bahnplan/` | Bereiche, als iframe in der Hülle |
 | `werkzeuge/apk/android/.../PlanerKalenderPlugin.java`, `PlanerSystemPlugin.java` | native Teile: Handykalender, Systemfarben/Leisten/Vibration |
-| `werkzeuge/desktop/` (+ `.github/workflows/desktop.yml`) | PC-Programm für Ubuntu (Electron, .deb, Release desktop-v…), Version in package.json; Test `werkzeuge/tests/desktop.js` |
+| `werkzeuge/desktop/` (+ `.github/workflows/desktop.yml`) | PC-Programm für Ubuntu (Electron, .deb, Release desktop-v…), Version in package.json; zweiter Starter „Schule“ (`--app=schule`); Test `werkzeuge/tests/desktop.js` |
 | `.github/workflows/apk.yml` | Bauen, Emulator-Test, Release (nur wenn Release `v<Version>` fehlt) |
 
 ## Testen (Server: `cd /home/user && python3 -m http.server 8765 &`, `NODE_PATH=/opt/node-tools/node_modules`)

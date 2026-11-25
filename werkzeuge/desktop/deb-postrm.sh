@@ -6,6 +6,7 @@ if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
     else
         rm -f '/usr/bin/planer'
     fi
+    rm -f /usr/share/applications/planer-schule.desktop
     if [ -f /etc/apparmor.d/planer ]; then
         if hash apparmor_parser 2>/dev/null; then apparmor_parser -R /etc/apparmor.d/planer 2>/dev/null || true; fi
         rm -f /etc/apparmor.d/planer
